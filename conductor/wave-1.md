@@ -153,8 +153,14 @@ math-quest) is dispatched separately after these gates.
 
 - [x] merge the trellis PR — human merged #103 directly (2026-07-07T17:30:48Z,
   commit `0e3b6df`), ahead of the batched-gate schedule this brief assumed.
-- [ ] bless the `v0.1.0` DS tag — open, pending human skim.
-- [ ] skim the three bootstrapped repos — open, pending human skim.
+- [x] bless the `v0.1.0` DS tag — human: "yes, blessed" (2026-07-07), after
+  reviewing the conductor's independent verification (43/43 tokens matched
+  against the trellis LP; icon set noted as self-flagged provisional, not
+  blocking the bless).
+- [ ] skim the three bootstrapped repos — open. Two items already surfaced
+  and resolved via this skim: head-gardener ported as a scoped advisor
+  (espalier `4c185da`); trellis decision-0032 superseded via PR #104
+  (open, pending human ratify-and-merge).
 
 ## Wave report (your final output)
 
