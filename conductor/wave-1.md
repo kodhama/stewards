@@ -229,12 +229,21 @@ below), `.claude/skills/espalier-status/SKILL.md`, real `trellis setup
 charter files, 9 agent files, and that `head-gardener` has a charter but
 no dispatched-agent file.
 
-**Judgment call flagged for human skim:** `head-gardener` was deliberately
-not ported to `.claude/agents/` — ADR-0030 charters it as the interactive
-driving session itself (v0), not a role a session dispatches. Verified
-consistent with the charter text; a genuine interpretive call, not a gap,
-but worth a second pair of eyes since it diverges from the "port the
-subagent versions of the roles" instruction's literal reading.
+**Judgment call flagged for human skim, then revisited (2026-07-07,
+post-report):** `head-gardener` was deliberately not ported to
+`.claude/agents/` — ADR-0030 charters it as the interactive driving
+session itself (v0), not a role a session dispatches; verified against
+the charter text. The maintainer disagreed with the omission. Rather
+than silently comply or silently hold the original position, the
+mechanical constraint (a dispatched subagent cannot hold a whole run's
+sequencing state) was restated and the maintainer chose a middle
+resolution: `.claude/agents/head-gardener.md` now ships as a **scoped
+one-shot advisor** — workflow classification and next-dispatch
+recommendation only, explicitly refuses to sequence a run end-to-end.
+Charter and README updated to match (commit `4c185da`, direct to
+`main` — outside the brief's literal "first commit only" bootstrap
+exception, but inside the still-open gate window and directed by the
+maintainer, said here rather than silently done).
 
 ### Lane B — espial
 
@@ -279,12 +288,17 @@ exactly the three expected changed files and — as of this report — is
 outside the lane (see Order & gates above). Confirmed the tap README on
 `main` reads as reported.
 
-**Open item, correctly left alone:** `decisions/0032-homebrew-distribution.md`
-in trellis (ratified, append-only) still names the old per-product tap
-path. Per this repo's own decision rules that file must not be edited in
-place — it needs a **superseding decision** in trellis, referencing
-`kodhama-0001-family-delivery`, not a patch. Flagged in the PR body;
-not fixed by the lane, correctly.
+**Resolved (2026-07-07, post-report):** `decisions/0032-homebrew-distribution.md`
+in trellis (ratified, append-only) named the old per-product tap path.
+Fixed via trellis's own decision lifecycle (`draft → ratified →
+superseded`, confirmed against `core/fixtures/README.md` and
+`profiles/trellis-self.md` rather than assumed): opened
+[PR #104](https://github.com/kodhama/trellis/pull/104) with
+`decisions/0041-family-tap-supersedes-per-product-tap.md` (`status:
+draft` — an agent does not self-ratify a decision) and a forward
+pointer + `status: superseded` added to 0032's frontmatter, its
+reasoning content left untouched. **Not merged — human gate**; PR body
+asks the human to flip 0041 to `ratified` as part of merging.
 
 ### Cross-wave note: math-quest owes a supersession pointer
 
