@@ -1,7 +1,7 @@
 ---
 id: kodhama-0002-delivery-channels
 type: decision
-status: gated
+status: approved  # ratified by PR #1 merge (2026-07-07); names read through kodhama-0003-family-naming
 depends_on: [kodhama-0001-family-delivery]
 owner: agent
 updated: 2026-07-07
@@ -9,6 +9,14 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 ---
 
 # Decision: family delivery — one marketplace front door, npx for espial
+
+> **Forward pointer (2026-07-07, post-ratification annotation).**
+> `kodhama-0003-family-naming` renames espalier → **grove** and
+> espial → **wisp**. This decision was ratified carrying the pre-rename
+> names; per the append-only rule its text below is preserved as merged.
+> Read every espalier/espial through that mapping — in particular the
+> delivery strings: plugin **`grove@kodhama`**, setup skill
+> **`/grove:setup`**, npm **`@kodhama/wisp`**.
 
 **Context (maintainer, 2026-07-07).** Espalier's current delivery
 ("vendor the charters by hand", espalier README §Adopting) reads as
