@@ -151,6 +151,11 @@ bless the `v0.1.0` DS tag; skim the three bootstrapped repos. Wave 2
 (A3/B2 LPs — need the DS tag; A4 self-furrow; C consolidation back into
 math-quest) is dispatched separately after these gates.
 
+- [x] merge the trellis PR — human merged #103 directly (2026-07-07T17:30:48Z,
+  commit `0e3b6df`), ahead of the batched-gate schedule this brief assumed.
+- [ ] bless the `v0.1.0` DS tag — open, pending human skim.
+- [ ] skim the three bootstrapped repos — open, pending human skim.
+
 ## Wave report (your final output)
 
 Per lane: landed (commits/PRs with links), verification run (tests/greps
@@ -164,14 +169,139 @@ decision.
 
 ## Acceptance criteria
 
-- AC1: all four preconditions-verified lanes ran; none silently skipped.
-- AC2: design-system tagged v0.1.0 with tokens/patterns/icons/lp-generator.
-- AC3: espalier charters pass the zero-math-quest-nouns grep.
-- AC4: espial tests + typecheck green in its own repo from a fresh clone.
-- AC5: trellis PR open (not merged — that's the human's).
-- AC6: wave report delivered with per-lane verification evidence.
+- [x] AC1: all four preconditions-verified lanes ran; none silently skipped.
+- [x] AC2: design-system tagged v0.1.0 with tokens/patterns/icons/lp-generator.
+- [x] AC3: espalier charters pass the zero-math-quest-nouns grep.
+- [x] AC4: espial tests + typecheck green in its own repo from a fresh clone.
+- [x] AC5 (superseded in practice): brief specified "open, not merged — that's
+  the human's"; the human merged #103 directly mid-wave. Intent (PR-gated,
+  never direct-to-main) was honored — the lane opened it and stopped; the
+  human's own action closed the gate ahead of the brief's batching plan.
+- [x] AC6: wave report delivered with per-lane verification evidence (below).
 
 ## Open questions
 
 None blocking — anything discovered mid-run parks at the lane, batches to
 the terminal.
+
+## Wave 1 report (2026-07-07)
+
+All four lanes ran in parallel as Sonnet 5 subagents from this local
+session (conductor itself ran on Fable 5 — a deviation from this brief's
+"session model should be Sonnet 5," said here rather than silently). One
+lane (B) was stopped mid-run by a stray human interrupt, confirmed
+accidental, and relaunched clean (nothing had been committed, so nothing
+was lost). Every lane's claimed landing was independently re-verified by
+the conductor against the live GitHub state or a fresh clone — not taken
+on the lane's word alone.
+
+### Lane T1 — design-system
+
+**Landed:** `kodhama/design-system` main, 6 commits, tag `v0.1.0` @ `6ade494`.
+`tokens.css`, `patterns.md`, `icons/{trellis,espalier,espial}.svg` +
+`icons/grammar.md`, `lp-generator.md`, `README.md`, `LICENSE`.
+
+**Conductor verification:** fetched `tokens.css` at the `v0.1.0` tag and
+diffed its custom-property pairs against `trellis-src/docs/index.html`
+across all four blocks (`:root`, `prefers-color-scheme:dark`,
+`[data-theme="light"]`, `[data-theme="dark"]`) — 43/43 pairs match
+exactly (the only tool-reported non-matches were inline SVG animation
+`--d:` delay attributes, not design tokens, correctly excluded). Tag and
+full file listing (7 root files + 4 icon files) confirmed live via the
+GitHub API.
+
+**Open items:** icon set is explicitly provisional per its own source
+README (marks await a dedicated design-review sitting — not attempted
+here, correctly deferred); `lp-generator.md` is unexercised until a real
+consumer (trellis, most likely) regenerates an LP against it.
+
+### Lane A — espalier
+
+**Landed:** `kodhama/espalier` main, 4 commits. `README.md`, `LICENSE`,
+`decisions/`, `specs/`, `charters/` (10 charters + README), `.claude/agents/`
+(9 subagent defs + README — `head-gardener` excluded by design, see
+below), `.claude/skills/espalier-status/SKILL.md`, real `trellis setup
+--apply` overlay (no snapshot fallback needed).
+
+**Conductor verification:** fresh clone; reran the acceptance grep
+`grep -riE "math.?quest|mariana|tier.?2|7\.º" charters/` — empty, exit 1
+(no match), confirming AC3. Reran repo-wide — also empty. Confirmed 10
+charter files, 9 agent files, and that `head-gardener` has a charter but
+no dispatched-agent file.
+
+**Judgment call flagged for human skim:** `head-gardener` was deliberately
+not ported to `.claude/agents/` — ADR-0030 charters it as the interactive
+driving session itself (v0), not a role a session dispatches. Verified
+consistent with the charter text; a genuine interpretive call, not a gap,
+but worth a second pair of eyes since it diverges from the "port the
+subagent versions of the roles" instruction's literal reading.
+
+### Lane B — espial
+
+**Landed:** `kodhama/espial` main, 6 commits (one relaunch after an
+accidental mid-run stop; original attempt had committed nothing, so the
+relaunch started clean). Flat-root viz code (`protocol.ts`, `bus.ts`,
+`emit.ts`, `server.ts`, `dashboard.html`, `demo.ts`), `test/protocol.test.ts`,
+`package.json` (`@kodhama/espial`), `tsconfig.json`, `LICENSE`,
+`.gitignore`, `README.md`, real trellis overlay.
+
+**Conductor verification:** fresh clone, `npm install`, `npx vitest run`
+→ 26/26 passed; `npx tsc --noEmit` → clean, exit 0; confirmed
+`package.json` has zero runtime `dependencies` and exactly 3 devDeps
+(`@types/node`, `typescript`, `vitest`) — satisfies AC4.
+
+**Deviation flagged by the lane, confirmed reasonable by the conductor:**
+added `@types/node` as a devDependency beyond the brief's literal
+"vitest + typescript only." Without it `tsc --noEmit` fails with ~29
+errors (Node builtins/globals unresolvable) — it is type-only, adds zero
+runtime footprint, and the actual invariant (zero *runtime* deps) holds.
+Also added `.espalier/` to `.gitignore` (bus.ts's own runtime-telemetry
+output dir) — consistent with the source repo's convention, not
+mentioned in the brief but not a meaningful deviation either.
+**Open item:** stale in-comment usage-example paths in `emit.ts`/`server.ts`/
+`demo.ts` (referencing the old `tools/espalier/viz/...` layout) were left
+untouched per "don't rewrite the code, this is a lift" — flagged in the
+new README for the B3 (adapters) wave to reconcile.
+
+### Lane E1 — trellis PR + tap README
+
+**Landed:** trellis PR [#103](https://github.com/kodhama/trellis/pull/103)
+(`chore/family-tap`, commit `c6d85c0`) — README, `docs/index.html` (incl.
+copy-button JS), `.github/workflows/auto-release.yml` repointed from
+`kodhama/homebrew-trellis`/`kodhama/trellis/trellis` to
+`kodhama/tap`/`kodhama/homebrew-tap`. `kodhama/homebrew-tap` README
+rewritten direct-to-main (commit `4b0fc54`) to frame the tap as the
+family's, not just trellis's.
+
+**Conductor verification:** confirmed via `gh pr view` that #103 carries
+exactly the three expected changed files and — as of this report — is
+**merged** (`0e3b6df`, 2026-07-07T17:30:48Z), by direct human action
+outside the lane (see Order & gates above). Confirmed the tap README on
+`main` reads as reported.
+
+**Open item, correctly left alone:** `decisions/0032-homebrew-distribution.md`
+in trellis (ratified, append-only) still names the old per-product tap
+path. Per this repo's own decision rules that file must not be edited in
+place — it needs a **superseding decision** in trellis, referencing
+`kodhama-0001-family-delivery`, not a patch. Flagged in the PR body;
+not fixed by the lane, correctly.
+
+### Cross-wave note: math-quest owes a supersession pointer
+
+`discovery/kodhama-delivery.md` in `gundisalwa/math-quest`
+(branch `claude/agentic-runtime-viz-x1884q`) is now migrated here as
+`decisions/0001-family-delivery.md` (id `kodhama-0001-family-delivery`).
+The math-quest original needs a one-paragraph stub pointing here — owed
+on the math-quest branch, not from this repo. See the paste-ready summary
+below.
+
+### Wave-level verdict
+
+AC1–AC6 met (AC5 met in substance, not literal form — see above). No
+lane silently skipped a step; every deviation from the brief's literal
+text was flagged by the lane and independently re-verified here, not
+taken on trust. Two open human gates remain: bless the DS `v0.1.0` tag,
+skim the three bootstrapped repos (espalier's `head-gardener` call is the
+one item most worth a deliberate look). Wave 2 (A3/B2 LPs, A4
+self-furrow, C consolidation) is unblocked and can be dispatched once
+those gates close.
