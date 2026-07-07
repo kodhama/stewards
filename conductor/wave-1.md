@@ -461,3 +461,54 @@ direct pushes for espalier/espial going forward or require PRs from
 here on; A3 and Lane C re-dispatch (via PR this time); the
 dashboard.html token gap; identity/'s missing tag coverage; AC2's
 completed-vs-merged reading.
+
+**Resolved (2026-07-07, same day):** human decided — leave B2's commit
+as-is (content independently verified high quality); require PRs for
+espalier/espial/design-system/trellis going forward, direct-to-main
+reserved for `kodhama/kodhama` itself and genuine first-commits to
+still-empty repos. Both blocked lanes re-dispatched accordingly:
+
+- **A3 (espalier LP) — landed.** PR
+  [#2](https://github.com/kodhama/espalier/pull/2)
+  (`furrow/landing-page`, open, not merged). Independently confirmed:
+  touches exactly `docs/index.html` + `docs/lp-content.md`, DS stamp
+  present, zero external fetches/links beyond plain GitHub nav anchors.
+- **Lane C (math-quest consolidation) — landed, as a PR against the
+  feature branch itself** (an extra review seam beyond the original
+  spec, matching the new PR-first policy's spirit) rather than another
+  direct push. PR
+  [#169](https://github.com/gundisalwa/math-quest/pull/169)
+  (`consolidate/vendor-espial` → `claude/agentic-runtime-viz-x1884q`,
+  open, not merged). Independently re-verified from a fresh clone:
+  `tools/espalier/viz/` gone, `vendor/espial/` populated with espial's
+  six core files, `npm test` green (30 files / 383 tests, matching the
+  lane's own claim exactly), live server→emit→read-back round-trip
+  reproduced independently, CLAUDE.md diff is genuinely surgical (+27/-49
+  lines — keeps the project-specific severity taxonomy and kid-session
+  routing, points the generic bug-pipeline/checkpoint-resume discipline
+  at espalier's charter), the previously-stale
+  `discovery/espalier-runtime-viz.md` pointer now correctly reads
+  "Implemented; moved to `kodhama/espial`", and the new closing decision
+  (`decisions/adr-0031-espial-consolidation.md`) is correctly numbered
+  with no collision. `.claude/agents/*` judgment call: kept, not
+  retired — each math-quest copy fills espalier's generic placeholders
+  with real project-specific content (commands, filenames, incident
+  history) that would be lost by deleting them; a reasoned call, stated
+  explicitly, not silently decided.
+
+**Still open, unactioned, flagged not fixed:** `espial/dashboard.html`
+never made to consume the DS tokens (AC6 names it as its own required
+consumer, distinct from the LPs — genuinely nobody's done this yet);
+`design-system`'s `identity/` still uncovered by any tag (landed 47
+minutes after `v0.1.0` was cut); AC2's "completed self-furrow"
+open-PR-vs-merged tension, left for a human reading, not resolved by an
+agent.
+
+**Outstanding human gates, all repos, as of this entry:** merge/ratify
+trellis PR #104 (`decisions/0041` → `ratified`); review + merge espalier
+PR #1 (self-furrow, `CONTRIBUTING.md`) and PR #2 (landing page); review +
+merge math-quest PR #169 into the feature branch, then the feature
+branch itself into `main` at leisure; decide the `dashboard.html` and
+`identity/` tag gaps whenever convenient — none of these block anything
+further from being dispatched, they're just unmerged, exactly as
+designed.
