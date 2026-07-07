@@ -603,3 +603,27 @@ design-system PR #1; review + merge math-quest PR #169's parent branch
 into `main` at leisure; decide the math-quest `gated→approved` bump
 question; `design-system`'s `identity/` tag-coverage gap remains open,
 deferred to the in-flight T2 design pass rather than acted on here.
+
+**Closed (2026-07-07, same day):** human merged all seven remaining
+open PRs directly — trellis #104, espalier #1/#2/#3, espial #1/#2,
+design-system #1. Independently re-verified every `main` post-merge, not
+taken on report:
+- trellis: `decisions/0041` reads `status: ratified` (`ratified:
+  2026-07-07`); `decisions/0032` reads `status: superseded` with its
+  forward pointer intact — the family-tap decision chain is complete.
+- espalier `main`: `CONTRIBUTING.md`, `docs/index.html`,
+  `docs/lp-content.md`, `specs/0001-contributing-guide.md`, and the
+  lifecycle-mapping section all coexist with no conflicts.
+- espial `main`: dashboard's `kodhama-ds` stamp present, lifecycle
+  mapping present.
+- design-system `main`: full `.trellis/` overlay now installed
+  (`trellis`, `profile`, `invariants`, `version`).
+
+**Every PR opened across this whole lift (wave 1 through the vocabulary
+consolidation) is now merged.** Remaining open items, all previously
+flagged, none newly discovered: math-quest's `ADR-0031`/`ADR-0030`
+amendment `gated → approved` bump question; `design-system`'s
+`identity/` tag-coverage gap (deferred to the in-flight T2 design
+pass); the math-quest feature branch itself (`claude/agentic-runtime-viz-x1884q`)
+still awaiting the maintainer's own product-level review and merge into
+`main` — a separate, larger act than anything in this ledger.
