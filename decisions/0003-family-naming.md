@@ -1,7 +1,7 @@
 ---
 id: kodhama-0003-family-naming
 type: decision
-status: gated
+status: approved  # ratified by PR #2 merge (2026-07-07)
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels]
 owner: agent
 updated: 2026-07-07

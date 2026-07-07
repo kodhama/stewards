@@ -8,12 +8,12 @@ seat** (`conductor/` — wave briefs and ledgers for work that spans
 family repos).
 
 The family: [trellis](https://github.com/kodhama/trellis) (governance) ·
-[espalier](https://github.com/kodhama/espalier) (agent swarm) ·
-[espial](https://github.com/kodhama/espial) (runtime observability) ·
+[grove](https://github.com/kodhama/grove) (agent swarm) ·
+[wisp](https://github.com/kodhama/wisp) (runtime observability) ·
 [design-system](https://github.com/kodhama/design-system) (brand asset,
 git-tag versioned) · [homebrew-tap](https://github.com/kodhama/homebrew-tap)
 (delivery). Dependency direction is strictly downward
-(espial → espalier → trellis); the DS reaches consumers only through
+(wisp → grove → trellis); the DS reaches consumers only through
 generation-time links. This repo sits above all of them and none of
 them know it.
 
@@ -31,7 +31,7 @@ Rules (the family's, applied here):
 - **Model economy**: Sonnet-class for execution waves; strongest model
   only for design/judgment sittings (see the suite-lift plan §Model
   economy, until that section migrates here).
-- This repo runs the kodhama stack on itself once espalier + espial are
+- This repo runs the kodhama stack on itself once grove + wisp are
   liftable; until then the trellis overlay alone is owed — if the
   `trellis` CLI is available run `trellis setup`, otherwise record the
   debt in `conductor/` loudly.
