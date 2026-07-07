@@ -1,7 +1,7 @@
 ---
 id: kodhama-0001-family-delivery
 type: discovery
-status: gated
+status: approved  # ratified by the kodhama-0002-delivery-channels PR merge (maintainer review 2026-07-07)
 depends_on: [adr-0030-espalier, discovery-espalier-runtime-viz]
 rubric: rubrics/research-quality.md
 owner: agent
@@ -145,7 +145,8 @@ builder repo, no monorepo.**
   vendored cover it indefinitely?
 - Claude marketplace: one marketplace per repo, or one org marketplace in
   `kodhama/kodhama` listing all plugins? (Check marketplace mechanics when
-  espalier's plugin ships.)
+  espalier's plugin ships.) → **Answered by `kodhama-0002-delivery-channels`:
+  one org marketplace here; mechanics doc-verified.**
 - Linux beyond curl (apt/AUR/nix): out of scope until someone asks.
 
 ## Rubric check
