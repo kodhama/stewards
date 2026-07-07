@@ -627,3 +627,16 @@ amendment `gated → approved` bump question; `design-system`'s
 pass); the math-quest feature branch itself (`claude/agentic-runtime-viz-x1884q`)
 still awaiting the maintainer's own product-level review and merge into
 `main` — a separate, larger act than anything in this ledger.
+
+**Resolved (2026-07-07, same day):** human asked to do the
+`gated → approved` bump. Checked the two documents' actual git history
+before touching either — they were not equivalent. `ADR-0031`'s entire
+content was authored and merged as part of PR #169 (Lane C's own C4
+work); bumped to `approved` (commit `35688e5` on the feature branch,
+safety-checked for concurrent commits first, same pattern as Lane R/C).
+`ADR-0030` deliberately left at `gated`: its substantive espalier-design
+content was committed directly to the branch at 06:43 that morning,
+hours before any of this session's work — PR #169 only added an
+unrelated one-line forward-pointer note to it (C3). Bumping the whole
+document based on that note's own merge would have conflated two
+separate review events; flagged to the human rather than guessed.
