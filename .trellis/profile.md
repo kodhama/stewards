@@ -58,4 +58,6 @@ for the whole family, per trellis's own open-lifecycle contract
 (`spec-0001`), not a bespoke one per repo. Trellis's own self-application
 (its own `decisions/`) keeps its native `draft → ratified` — that's the
 same act under `decision-0037`'s already-declared equivalence, not a
-separate thing to reconcile.
+separate thing to reconcile. *[Superseded 2026-07-08 by
+`kodhama-0004-uniform-lifecycle`: the maintainer decided uniformity
+outweighs the variability — trellis-self adopts the family enum too.]*
