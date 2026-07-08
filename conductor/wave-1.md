@@ -628,6 +628,16 @@ pass); the math-quest feature branch itself (`claude/agentic-runtime-viz-x1884q`
 still awaiting the maintainer's own product-level review and merge into
 `main` — a separate, larger act than anything in this ledger.
 
+**Resolved (2026-07-08): the maintainer declared that feature branch
+temporary** — it will not merge into math-quest `main` as-is. Disposition:
+everything still useful consolidates to `main` via a fresh, clean PR
+(vendoring CURRENT wisp under the current names, the CLAUDE.md repoint,
+the supersession pointers); **ADR-0030 and ADR-0031 ship `gated` in that
+PR and its merge is their real ratification** (the branch-side ADR-0031
+`approved` bump recorded a merge into a temp branch — not a ratification
+act — and is deliberately not carried); the branch is deleted after the
+salvage PR merges. This closes both outstanding math-quest gates.
+
 **Resolved (2026-07-07, same day):** human asked to do the
 `gated → approved` bump. Checked the two documents' actual git history
 before touching either — they were not equivalent. `ADR-0031`'s entire

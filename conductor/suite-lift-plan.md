@@ -378,6 +378,10 @@ raised).
 artifact in the viz repo per the research discipline (preflight, tagged
 claims): hosting options for the read view, auth models for a command
 channel, cost floor. Gate: rubric self-check; informs tier-3 adoption only.
+*Ledger 2026-07-08: Lane D closed unstarted — moved to the grove backlog
+as [kodhama/grove#8](https://github.com/kodhama/grove/issues/8) at the
+maintainer's instruction; the family's backlog/roadmap model itself is
+now [kodhama/kodhama#10](https://github.com/kodhama/kodhama/issues/10).*
 
 ## Conductor (item 8 — "everything automatic")
 
