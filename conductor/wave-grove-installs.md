@@ -32,11 +32,13 @@ in any of the three; optional by construction).
       briefs' Parked sections; specs/ deliberately NOT seeded — the
       three-things mandate keeps decisions/ + conductor/ as the only
       stores) — rides this wave's PR
-- [ ] trellis: install lane STOPPED itself, correctly, at a real
-      collision — trellis has a native `.claude/agents/conformance-reviewer.md`
-      (an artifact-corpus linter: different object, different tool grant
-      than grove's build gate). Maintainer redirect (see below): resume
-      after the corpus-reviewer generalization + lifecycle decision land.
+- [x] trellis: lane stopped correctly at the native
+      conformance-reviewer collision; resumed after both redirects
+      ratified — landed as [trellis #107](https://github.com/kodhama/trellis/pull/107)
+      (stacked on [#106](https://github.com/kodhama/trellis/pull/106), the
+      decision-0042 lifecycle adoption): eleven roles, native linter
+      renamed to the corpus-reviewer reference instance (four surgical
+      edits, diff-verified), canonical status language unchanged.
 - [x] design-system: [design-system PR #4](https://github.com/kodhama/design-system/pull/4)
       — conductor-verified (+752 additive, 14 files, zero markers,
       CLAUDE.md grove block above an intact trellis block)
@@ -45,7 +47,7 @@ in any of the three; optional by construction).
       quality critique of the conductor's own kodhama fills (clunky
       mechanical substitution) was confirmed and fixed — all nine
       parenthetical fill sites rewritten as prose.
-- [ ] Report appended; wave closed pending merges + trellis resume
+- [x] Report appended; wave closed pending merges
 
 ## Maintainer redirects (mid-wave, 2026-07-08)
 
@@ -65,7 +67,40 @@ in any of the three; optional by construction).
 
 ## Parked
 
-(none — both redirects are being executed as decisions, not parked)
+- Live plugin smoke (maintainer-only): `/plugin marketplace add
+  kodhama/kodhama` → `/plugin install grove@kodhama` → `/grove:setup` —
+  no scripted path exists in this CLI build.
+
+## Report (close, 2026-07-08)
+
+Wave complete pending merges. Installs landed: kodhama (conductor,
+self), design-system (lane), trellis (lane, stacked on the lifecycle
+PR), wisp already grove-managed since B4. Grove itself and math-quest
+deliberately skipped (recorded reasons above).
+
+Both maintainer redirects executed as ratified decisions, not patches:
+`kodhama-0004-uniform-lifecycle` (merged, bumped approved) with its
+trellis-side execution open as [#106](https://github.com/kodhama/trellis/pull/106)
+(decision-0042 + ratify-guard + CLAUDE.md + profile mapping +
+artifact-contract rubric alignment); grove `adr-0001` (merged, bumped
+approved) adding the corpus-reviewer role, with catch-up PRs composing
+the instance into wisp/kodhama/design-system and the plugin payload
+(grove #7, wisp #7, kodhama #9 — this PR — design-system #5).
+
+Findings owned along the way: the conductor's own kodhama fills needed
+a prose rewrite (flagged by the DS lane) and had one line-wrapped
+dangling charter pointer (flagged by the catch-up lane, fixed on this
+branch); B4's wisp block predated the grove:begin markers (added on
+wisp #7); the trellis lane's cross-reference audit caught the
+artifact-contract rubric as a missed 0042 dependent (fixed on #106).
+Lanes: DS install ≈122k tokens, trellis install ≈109k+139k (two
+sittings), catch-up ≈107k — all Sonnet 5; decisions and instance
+authoring by the conductor on Fable.
+
+Outstanding merges, in order: trellis #106 → #107 (stacked,
+auto-retargets), then grove #7 · wisp #7 · kodhama #9 ·
+design-system #5 (independent). Post-merge bumps owed: trellis 0042
+`gated → approved`; grove charter/adr bumps already ride grove #7.
 
 ## Report
 

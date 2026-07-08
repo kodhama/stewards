@@ -1,7 +1,7 @@
 ---
 id: kodhama-0004-uniform-lifecycle
 type: decision
-status: gated
+status: approved  # ratified by PR #8 merge (2026-07-08)
 depends_on: [kodhama-0003-family-naming]
 owner: agent
 updated: 2026-07-08
