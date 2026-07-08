@@ -638,6 +638,19 @@ PR and its merge is their real ratification** (the branch-side ADR-0031
 act — and is deliberately not carried); the branch is deleted after the
 salvage PR merges. This closes both outstanding math-quest gates.
 
+**Executed same day:** salvage landed as math-quest PR #170 (vendored
+CURRENT wisp byte-identical to its main, CLAUDE.md repoint, skill
+wrapper on `$GROVE_EVENTS` preserving the historical `.espalier/` bus
+path, discovery pointers, `plans/suite-lift-pointer.md` carried on the
+lane's stated judgment); conductor-verified (vendor sync diff, ADR
+statuses, 383/383 tests fresh) and merged on the maintainer's standing
+instruction; ADR-0030's amendment + ADR-0031 bumped `approved` via PR
+#171 recording #170 as their real review event; the temp branch
+`claude/agentic-runtime-viz-x1884q` deleted (history reachable via the
+PR refs). **Every gate from the original lift is now closed.** Remaining
+open across the whole program: T2 (in-flight design process) and two
+backlog ideas (grove#8 remote-ops, kodhama#10 PM model).
+
 **Resolved (2026-07-07, same day):** human asked to do the
 `gated → approved` bump. Checked the two documents' actual git history
 before touching either — they were not equivalent. `ADR-0031`'s entire
