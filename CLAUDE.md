@@ -3,7 +3,9 @@
 This repo is the kodhama family's meta home. THREE things live here and
 nothing else: **cross-family decisions** (`decisions/`), the **family
 front door** (`docs/` — a generated derivative of kodhama/design-system,
-built only after the DS ships its LP generator), and the **conductor
+built only after the DS ships its LP generator — plus
+`.claude-plugin/marketplace.json`, the org plugin marketplace: the
+family's canonical install door per `kodhama-0002`), and the **conductor
 seat** (`conductor/` — wave briefs and ledgers for work that spans
 family repos).
 

@@ -1,0 +1,17 @@
+{
+  "name": "kodhama",
+  "owner": { "name": "kodhama" },
+  "description": "The kodhama family marketplace — one install door for the family: trellis (governance), grove (agent swarm).",
+  "plugins": [
+    {
+      "name": "trellis",
+      "source": { "source": "git-subdir", "url": "kodhama/trellis", "path": "plugins/trellis" },
+      "description": "Install and consult Trellis in a Claude Code project: the invariants, expressed at your strength."
+    },
+    {
+      "name": "grove",
+      "source": { "source": "git-subdir", "url": "kodhama/grove", "path": "plugins/grove" },
+      "description": "Compose the grove agent swarm onto your project: ten chartered gardener roles, placeholders filled interactively via /grove:setup."
+    }
+  ]
+}
