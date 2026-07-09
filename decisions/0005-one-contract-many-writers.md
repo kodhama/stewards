@@ -10,6 +10,15 @@ provenance: maintainer, 2026-07-08, during the live plugin smoke — "would it m
 
 # Decision: one contract, many writers — delegation flows toward the deterministic writer
 
+> **Superseded in part by `kodhama-0007-one-render-many-copiers`**
+> (2026-07-10 annotation; text below preserved as written). Rule 2's
+> delegation-toward-the-binary is superseded — install-time rendering is
+> abolished, so there is no deterministic *writer* to delegate to; the
+> deterministic thing is the pre-rendered artifact + manifest. Rules 1
+> and 3 stand, strengthened by 0007. Trigger: the prose fallback this
+> rule tolerated drifted and clobbered hand-authored content
+> (kodhama/trellis#112).
+
 **Decision.** When a family product's install/compose artifact has more
 than one writer (a deterministic binary, an agentic plugin skill, a
 documented manual path), the rules are:
