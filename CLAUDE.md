@@ -40,11 +40,11 @@ Rules (the family's, applied here):
 
 <!-- grove:begin (managed by grove — edit .claude/agents/, not this block) -->
 This repo is **grove-managed**: conductor work items run as
-[grove](https://github.com/kodhama/grove) furrows. The gardener roles
+[grove](https://github.com/kodhama/grove) runs. The agent roles
 live in `.claude/agents/` (placeholders resolved for this repo — no
 test/typecheck gates, parked items ride the conductor briefs' Parked
 sections). Telemetry: wisp not vendored here, no grove-status skill
-installed (optional by construction). grove plugin@4cdfec5
+installed (optional by construction). grove plugin@20fecdc
 <!-- grove:end -->
 
 <!-- trellis:begin (managed by trellis — edit .trellis/, not this block) -->
