@@ -114,7 +114,12 @@ health of the swarm) carried by the org's founding metaphor.
 4. **Unchanged**: the swarm's internal vocabulary (gardeners, furrows,
    head-gardener), the icon grammar and marks (relabel
    `espalier.svg`→`grove.svg`, `espial.svg`→`wisp.svg`; the drawings
-   stay).
+   stay). *[Superseded in part 2026-07-09 by
+   `grove/adr-0002-agent-vocabulary`: gardener→agent, head-gardener→
+   dispatcher, furrow→run become grove's official vocabulary, with
+   druid/archdruid sanctioned as conversational/marketing register —
+   a grove-level decision, not a family one, since it governs grove's
+   own internal naming rather than any org-level identifier.]*
 5. **Historical records keep their names** — 0001, 0002's ratified text,
    the source repos' ADR-0030-espalier lineage, past conductor briefs
    are not rewritten (append-only); forward pointers only where a doc is
