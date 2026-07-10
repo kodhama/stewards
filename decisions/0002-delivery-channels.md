@@ -154,7 +154,9 @@ matrix — so the LP/design work has a settled install story to build on.
   2026-07-10 forward pointer above.**
 - Marketplace `name` string (determines the `@kodhama` install suffix) —
   confirm at implementation that the org marketplace can be named
-  `kodhama` and that nothing collides.
+  `kodhama` and that nothing collides. **Resolved (2026-07-10) —
+  implemented as `"name": "kodhama"` in `.claude-plugin/marketplace.json`;
+  no collision observed.**
 
 ## Self-check (gate)
 
