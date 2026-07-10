@@ -2,7 +2,7 @@
 id: kodhama-0001-family-delivery
 type: discovery
 status: approved  # ratified by the kodhama-0002-delivery-channels PR merge (maintainer review 2026-07-07)
-depends_on: [adr-0030-espalier, discovery-espalier-runtime-viz]
+depends_on: [math-quest/adr-0030-espalier, math-quest/discovery-espalier-runtime-viz]
 rubric: rubrics/research-quality.md
 owner: agent
 updated: 2026-07-07
