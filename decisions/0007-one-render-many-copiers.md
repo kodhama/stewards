@@ -186,3 +186,25 @@ install-stamp reading (shipped in trellis slice 2) is retired: it fires on
 payload-neutral plugin updates and depends on cache naming, where the
 render stamp fires only when composed content actually differs. Recorded
 at kodhama/trellis#120 Addendum 4; trellis-side execution rides that slice.
+
+## Amendment note (2026-07-10, maintainer ruling — curl returns as a vendoring writer)
+
+Rule 5 said "curl/brew retire," full stop — correct for the binary-distribution
+channel, but read too broadly: it retired *curl the delivery mechanism* along
+with *curl the binary-fetcher*, and those are different things. The maintainer's
+question that reopened this ("if he can [make the needed decisions in a shell
+script], then curl would be ok") resolves it: curl returns, but as a **thin
+mechanical vendoring writer**, not as the binary-fetching channel rule 5
+retired. It makes exactly one decision (install scope), then copies the
+`plugins/trellis/` bundle onto disk at a location Claude Code's
+skills-directory mechanism discovers — zero project-specific logic, the setup
+skill runs unmodified afterward. This is the same class of artifact as the
+manual copy path rule 5 already kept ("kodhama-0005 already recognized the
+manual path as a legitimate writer"), just scripted instead of by-hand; it is
+**not** a reinstatement of the retired binary channel, and does not reopen
+rule 5's retirement of that channel. Trellis's long-run channels (rule 5,
+as amended): org marketplace + manual copy, **including its scripted
+(curl-delivered) form** + brew retires.
+
+Recorded at kodhama/trellis#124 / spec-0005-curl-install-mechanical-vendoring;
+trellis-side execution rides that issue.
