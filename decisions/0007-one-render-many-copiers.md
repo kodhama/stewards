@@ -1,7 +1,7 @@
 ---
 id: kodhama-0007-one-render-many-copiers
 type: decision
-status: gated
+status: approved  # ratified by PR #19 merge (2026-07-09); bump per kodhama-0004
 depends_on: [kodhama-0005-one-contract-many-writers, kodhama-0002-delivery-channels]
 owner: agent
 updated: 2026-07-10
@@ -175,3 +175,14 @@ recorded with reasons; ACs give pass/fail "done"; 0005's surviving
 rules explicitly named so the partial supersession has a crisp edge.
 Promote `draft → gated`. `approved` = human merge — deliberately the
 maintainer's own read, as this re-rules how the family ships.
+
+## Amendment note (2026-07-10, maintainer ruling — stamp scheme)
+
+Rule 3's staleness mechanism, made precise: the overlay stamp is the
+**render stamp** — `.trellis/version` is a verbatim copy of the payload's
+`version` file (`payload@<hash>`), and staleness is a file-to-file compare
+against the installed plugin's `reference/version`. The `plugin@<sha>`
+install-stamp reading (shipped in trellis slice 2) is retired: it fires on
+payload-neutral plugin updates and depends on cache naming, where the
+render stamp fires only when composed content actually differs. Recorded
+at kodhama/trellis#120 Addendum 4; trellis-side execution rides that slice.

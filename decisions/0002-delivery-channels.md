@@ -10,6 +10,15 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 
 # Decision: family delivery — one marketplace front door, npx for espial
 
+> **Amended in part by `kodhama-0007-one-render-many-copiers`**
+> (2026-07-10 annotation; text below preserved as written). The trellis
+> rows' end-user binary channels are retired by 0007 rule 5: brew
+> (`kodhama/tap`) goes with the tap deprecation, and the curl installer
+> as a *binary* channel goes with it (kodhama/trellis#120). A curl path
+> may return as a thin mechanical *copier* script — kodhama/trellis#124.
+> Espalier/espial rows stand.
+
+
 > **Forward pointer (2026-07-07, post-ratification annotation).**
 > `kodhama-0003-family-naming` renames espalier → **grove** and
 > espial → **wisp**. This decision was ratified carrying the pre-rename

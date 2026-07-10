@@ -1,10 +1,10 @@
 ---
 id: kodhama-0005-one-contract-many-writers
 type: decision
-status: gated
+status: approved  # ratified by PR #13 merge (2026-07-08); bump per kodhama-0004
 depends_on: [kodhama-0002-delivery-channels]
 owner: agent
-updated: 2026-07-08
+updated: 2026-07-10
 provenance: maintainer, 2026-07-08, during the live plugin smoke — "would it make sense for the non-destructive path of the trellis CLI simply run the plugin install... wait, that's claude code only"; resolved as the inverse delegation, to act on family-wide from the conductor seat.
 ---
 
