@@ -34,6 +34,15 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 > `docs/lp-content.md`, pending a design-system-owned LP generator.
 > trellis's LP block is unaffected.
 
+> **Forward pointer (2026-07-10, post-ratification annotation).**
+> The "Open questions" alias question, resolved: **trellis's in-repo
+> marketplace is deprecated.** `.claude-plugin/marketplace.json` removed
+> from `kodhama/trellis`; the org marketplace (`kodhama/kodhama`) is now
+> the only door. Maintainer's call — nothing in trellis's own docs or
+> self-hosting depended on the alias, and its own honesty section already
+> puts external adoption at "validated on essentially one project," so
+> the migration cost of retiring it is judged near-zero.
+
 **Context (maintainer, 2026-07-07).** Espalier's current delivery
 ("vendor the charters by hand", espalier README §Adopting) reads as
 inconsistent with trellis (brew + curl + Claude plugin). The maintainer
@@ -141,7 +150,8 @@ matrix — so the LP/design work has a settled install story to build on.
 
 - Does trellis's in-repo marketplace deprecate once the org marketplace
   is live, or stay as an alias indefinitely? (Decide when the org
-  marketplace ships; alias until then.)
+  marketplace ships; alias until then.) **Resolved — see the
+  2026-07-10 forward pointer above.**
 - Marketplace `name` string (determines the `@kodhama` install suffix) —
   confirm at implementation that the org marketplace can be named
   `kodhama` and that nothing collides.

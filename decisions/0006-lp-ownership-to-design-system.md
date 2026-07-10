@@ -93,7 +93,9 @@ trellis's block is unaffected.
 - Does trellis's in-repo marketplace alias (`kodhama/trellis`) deprecate
   now that its README/LP point at the org marketplace, or stay as a
   documented-but-unadvertised fallback? Same open question `kodhama-0002`
-  already parked, still unresolved.
+  already parked, still unresolved. **Resolved 2026-07-10 — see
+  `kodhama-0002`'s forward pointer of the same date:** deprecated,
+  `.claude-plugin/marketplace.json` removed from trellis.
 
 ## Self-check (gate)
 
