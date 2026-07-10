@@ -11,7 +11,7 @@
     {
       "name": "grove",
       "source": { "source": "git-subdir", "url": "kodhama/grove", "path": "plugins/grove" },
-      "description": "Compose the grove agent swarm onto your project: ten chartered gardener roles, placeholders filled interactively via /grove:setup."
+      "description": "Compose the grove agent swarm onto your project: eleven chartered gardener roles, placeholders filled interactively via /grove:setup."
     }
   ]
 }

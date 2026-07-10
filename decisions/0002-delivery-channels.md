@@ -27,6 +27,13 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 > delivery strings: plugin **`grove@kodhama`**, setup skill
 > **`/grove:setup`**, npm **`@kodhama/wisp`**.
 
+> **Forward pointer (2026-07-09, post-ratification annotation).**
+> `kodhama-0006-lp-ownership-to-design-system` amends §5 / AC4 in part:
+> the per-product canonical LP install blocks for grove and wisp no
+> longer apply — both retired their per-repo `docs/index.html` /
+> `docs/lp-content.md`, pending a design-system-owned LP generator.
+> trellis's LP block is unaffected.
+
 **Context (maintainer, 2026-07-07).** Espalier's current delivery
 ("vendor the charters by hand", espalier README §Adopting) reads as
 inconsistent with trellis (brew + curl + Claude plugin). The maintainer
