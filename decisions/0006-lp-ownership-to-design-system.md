@@ -1,10 +1,10 @@
 ---
 id: kodhama-0006-lp-ownership-to-design-system
 type: decision
-status: gated
+status: approved  # ratified by PR #21 merge (2026-07-10); bump per kodhama-0004
 depends_on: [kodhama-0002-delivery-channels]
 owner: agent
-updated: 2026-07-09
+updated: 2026-07-10
 provenance: maintainer, 2026-07-09, directing a reconciliation pass on family install-path claims after a landing-page design session kept assuming vendoring — "An LP generator should be a feature of the design system anyway, not the project, so should live outside of it."
 ---
 
