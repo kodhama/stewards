@@ -66,19 +66,36 @@ merge authorization "go ahead").
       a trellis-side amendment — rides Lane A if the maintainer wants it
       in the primitive too
 
-**Converge — per repo, order matters:**
+**Converge — per repo, order matters:** *(all four items ride the five
+`wave-0008-converge` PRs, 2026-07-12, gated by ONE combined
+conformance review — 4 repos FAILed round 1 (dangling corpus-reviewer
+contract pointers in kodhama; missed README enum/mechanic restatements
+in wisp+DS; trellis contract-author half-currency + missing version
+stamp; a false grove#40 deferral pointer), all fixed or re-tracked
+pre-PR; boxes get checked when the PRs merge)*
 - [ ] confirm `.grove/lifecycle.md` is installed + sourced **before** any
-      deletion (kodhama has no `decisions/README.md` fallback at all)
+      deletion (kodhama has no `decisions/README.md` fallback at all) —
+      companions installed in kodhama/wisp/DS; kodhama's corpus-reviewer
+      + wisp/DS READMEs repointed to the companion in the same PRs
 - [ ] refresh each family repo via `/trellis:setup` + grove re-vendor
-      (copier channels only — never per-repo hand-edits)
+      (copier channels only — never per-repo hand-edits). **Stated
+      deviation:** overlay = clean byte-copies to `payload@a805fd8f83d6`;
+      the grove agent copies got surgical mechanic-passage splices, NOT
+      a full re-vendor — duty currency (adr-0006/0010 additions,
+      trellis's contract-author step 2/4 content) is tracked as
+      **grove#53** (the earlier grove#40 pointer was wrong — gate
+      finding, corrected)
 - [ ] `expression.md` split-migration for grove, kodhama, wisp,
-      design-system (old combined layout; `/trellis:setup`'s #112 guard
-      stops on the hand-appended block until it moves)
+      design-system (old combined layout) — done in the four PRs;
+      wisp needed a `.gitignore` narrowing (`.grove/` → `.grove/runtime/`;
+      the runtime-bus namespace collided with adr-0008's committed
+      companions — dispositioned per the grove#48 one-class-per-path
+      precedent, revertable if the namespace should be re-ruled)
 - [ ] delete the stale hand-authored lifecycle statements: grove, kodhama,
-      wisp, design-system (kodhama#33). In grove, what remains is the
-      mechanic half — grove#48 already reduced its enum restatements to
-      pointers. math-quest: **deferred at approval** — math-quest's own
-      issue, off this ledger
+      wisp, design-system (kodhama#33) — done in the four PRs (wisp+DS
+      also had README restatements, caught by the gate, now pointers).
+      math-quest: **deferred at approval** — math-quest's own issue, off
+      this ledger
 - [x] kodhama-0004: `superseded_in_part_by` + per-clause forward pointers
       (landed with the approval PR — same commit as the flip)
 - [ ] close kodhama#29; update the kodhama#31 checkpoint

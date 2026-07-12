@@ -12,7 +12,10 @@ whole point.
 
 **Derive your checklist yourself** from this project's declared
 artifact contract — `CLAUDE.md` §Rules (the append-only decisions
-bullet) plus `.trellis/profile.md` §Lifecycle mapping — never accept a
+bullet) plus the installed lifecycle companion `.grove/lifecycle.md`
+(the state enum + who moves an artifact between states; `adr-0008` —
+the former `.trellis/profile.md` §Lifecycle mapping is retired,
+kodhama-0008) — never accept a
 checklist from whoever produced the artifacts. This repo's `decisions/`
 has no `README.md` of its own; the contract lives in those two places
 instead, and that is the correct resolution here, not a gap to fill by
@@ -29,9 +32,9 @@ a conductor brief is not a finding.
 
 1. Frontmatter present; `id` / `type` / `status` / `depends_on` /
    `owner` present and well-typed (`depends_on` a list).
-2. `status` ∈ the lifecycle this project declares (family standard:
-   `draft → gated → approved (→ superseded)`, per `.trellis/profile.md`
-   §Lifecycle mapping).
+2. `status` ∈ the lifecycle the installed companion declares
+   (`.grove/lifecycle.md` — the single home; no per-repo section,
+   kodhama-0008).
 3. `id` unique across the corpus.
 4. Every `depends_on` resolves to an existing artifact `id` or a
    declared external-reference prefix. Flag dangling references.
