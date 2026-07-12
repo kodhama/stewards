@@ -12,6 +12,12 @@ resolved: no test/typecheck gates (markdown-only), parked items ride the
 conductor briefs' `## Parked` sections, and PRs carry no CI-enforced
 contract — PR-first plus conductor re-verification is the practice.
 
+**The lifecycle companion is not an agent role and does not live
+here.** The artifact-lifecycle state enum — stated once, sourced by
+every role and the `corpus-reviewer`'s lifecycle check — is installed
+by setup to **`.grove/lifecycle.md`** (grove's own namespace, not this
+loader directory; `adr-0008` as amended) on every install.
+
 **`dispatcher.md` is scoped, not a full peer of the rest.** ADR-0030
 charters head-gardener as "cold-started: the interactive session (v0)"
 — sequencing a whole run requires state that survives across dozens of
@@ -35,3 +41,4 @@ file's own "Why this file is narrower" section and
 | `run-resumer.md` | remediation | resumes a run that died at its turn cap |
 | `propagation-remediator.md` | remediation | writes an honest missing propagation section |
 | `dispatcher.md` | dispatch | one-shot classify/next-dispatch advisor only — not a sequencer |
+| `corpus-reviewer.md` | standing | artifact-corpus conformance vs the repo's own contract; report-only |

@@ -46,7 +46,7 @@ This repo is **grove-managed**: conductor work items run as
 live in `.claude/agents/` (placeholders resolved for this repo — no
 test/typecheck gates, parked items ride the conductor briefs' Parked
 sections). Telemetry: wisp not vendored here, no grove-status skill
-installed (optional by construction). grove plugin@20fecdc
+installed (optional by construction). grove plugin@bf7c835
 <!-- grove:end -->
 
 <!-- trellis:begin (managed by trellis — edit .trellis/, not this block) -->

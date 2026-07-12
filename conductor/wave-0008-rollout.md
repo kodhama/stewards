@@ -171,8 +171,12 @@ Every independent gate in this wave (2 adversary rounds on 0008, 1 on
 adr-0010, 5 conformance reviews) returned real findings; all were fixed
 or re-tracked before the human act, none waived silently.
 
-Open debts, each with a tracked home: **grove#53** (full re-vendor of
-consumer-installed agent copies — duty currency), **grove#52**
+Open debts, each with a tracked home: ~~**grove#53** (full re-vendor of
+consumer-installed agent copies — duty currency)~~ — **executed
+2026-07-12** (four `grove-53-revendor` PRs, one combined conformance
+gate: one blocking stamp fix + two tracked riders — grove#55
+charter-link 404s in the reference payload; stale `plugin@` stamps
+refreshed in the same PRs), **grove#52**
 (adr-0010's missing `changes:` field), **trellis#148** (`cites`
 relation), **grove#47** (README role), **grove#40** (grove-internal
 copy-sync mechanics), math-quest's stale expression copy (needs a

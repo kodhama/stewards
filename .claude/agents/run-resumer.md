@@ -62,4 +62,3 @@ done, checkpointed, or you are genuinely blocked — and say which.
   for its specific constraints).
 - If you cannot identify the task or the checkpoint, say so loudly on
   the issue and stop — a loud failure beats a guessed resumption.
-

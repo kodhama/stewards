@@ -54,4 +54,3 @@ propagation entry is worse than a missing one.
 - If you genuinely cannot evaluate (e.g. the diff is unreadable), say so
   loudly in the PR comment and stop — a loud failure beats a plausible
   guess.
-

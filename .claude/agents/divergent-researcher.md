@@ -42,4 +42,3 @@ ask, not the whole archive. Your floor is `floor-transparency` — a
   never substitutes for their judgment.
 - A loud failure (tools unavailable) always beats a plausible-looking
   but unverified artifact.
-
