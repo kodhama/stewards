@@ -88,9 +88,24 @@ merge authorization "go ahead").
       (landed with the approval PR — same commit as the flip)
 - [ ] close kodhama#29; update the kodhama#31 checkpoint
 
+## Adjacent decision spun out mid-wave (2026-07-12)
+
+The maintainer's trellis#149 ruling generalized: **versioning is not a
+principle** — sync is the principle (already trellis's); versioning is
+detection mechanics → grove's. **grove adr-0010** (PR grove#50, gated,
+one adversary round folded) declares the forward home: a
+`.grove/versioning.md` companion; decision-0045 stays as origin record
+with scoped supersession-in-part marks; trellis de-reflects (spec-0001 +
+rubric → shape-only methodology-defined clauses) AFTER the companion
+ships. Its trellis-side execution joins this wave's converge lane. It
+also answers this brief's parked 0045-twin question: **grove-only, by
+construction**.
+
 ## Parked (to the maintainer, carried on the decision)
 
 - ~~Bootstrap: which act approves kodhama-0008~~ — answered: in-PR flip,
   then merge.
 - ~~math-quest: in-scope or deferred~~ — answered: deferred to
   math-quest's own tracker.
+- ~~decision-0045 counter-init twin~~ — answered by adr-0010
+  (grove-only); at the maintainer's gate on grove#50.
