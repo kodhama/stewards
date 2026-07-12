@@ -85,6 +85,16 @@ merge authorization "go ahead").
 
 ## Adjacent decision spun out mid-wave (2026-07-12)
 
+**Status:** adr-0010 APPROVED + merged (grove#50, in-PR flip). Execution
+Consequence 1 (the `versioning.md` companion + role repoints + the Q2
+cross-check duty) rides **grove#51** (conformance-gated PASS 19/19,
+three non-blocking findings fixed pre-PR; one duty-owner reading
+surfaced for the maintainer). Consequence 2 (trellis de-reflection of
+spec-0001 + rubric → shape-only methodology-defined clauses, per the Q1
+ruling) becomes actionable when grove#51 merges + trellis's converge
+refresh installs `.grove/versioning.md`.
+
+
 The maintainer's trellis#149 ruling generalized: **versioning is not a
 principle** — sync is the principle (already trellis's); versioning is
 detection mechanics → grove's. **grove adr-0010** (PR grove#50, gated,
