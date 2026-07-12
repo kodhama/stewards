@@ -85,14 +85,21 @@ merge authorization "go ahead").
 
 ## Adjacent decision spun out mid-wave (2026-07-12)
 
-**Status:** adr-0010 APPROVED + merged (grove#50, in-PR flip). Execution
-Consequence 1 (the `versioning.md` companion + role repoints + the Q2
-cross-check duty) rides **grove#51** (conformance-gated PASS 19/19,
-three non-blocking findings fixed pre-PR; one duty-owner reading
-surfaced for the maintainer). Consequence 2 (trellis de-reflection of
-spec-0001 + rubric → shape-only methodology-defined clauses, per the Q1
-ruling) becomes actionable when grove#51 merges + trellis's converge
-refresh installs `.grove/versioning.md`.
+**Status:** adr-0010 APPROVED + merged (grove#50, in-PR flip).
+Consequence 1 **DONE** — grove#51 merged 2026-07-12 (companion approved
+by in-PR flip at the maintainer's act; cross-check duty homed
+corpus-reviewer-only, maintainer deferring to the builder's
+source-backed recommendation). Consequence 2 rides **trellis#150**
+(conformance-gated: one blocking finding — collective vs per-clause
+0045 marks — fixed pre-PR): `.grove/lifecycle.md` + `.grove/versioning.md`
+installed in trellis (clears trellis's adr-0008 per-consumer
+prerequisite too), spec-0001 + rubric de-reflected to shape-only,
+spec-0001 `version: 1` initialized, 0045 marked per-clause. Named
+riders on trellis#150: trellis's installed grove agent copies stale vs
+grove#51 (converge refresh item below); adr-0010 carries no `changes:`
+field for the spec-0001 bump it caused (companion's soft direction,
+recorded in the spec's rubric-check record — a line for grove's
+tracker).
 
 
 The maintainer's trellis#149 ruling generalized: **versioning is not a
