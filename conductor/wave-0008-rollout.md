@@ -73,11 +73,11 @@ contract pointers in kodhama; missed README enum/mechanic restatements
 in wisp+DS; trellis contract-author half-currency + missing version
 stamp; a false grove#40 deferral pointer), all fixed or re-tracked
 pre-PR; boxes get checked when the PRs merge)*
-- [ ] confirm `.grove/lifecycle.md` is installed + sourced **before** any
+- [x] confirm `.grove/lifecycle.md` is installed + sourced **before** any
       deletion (kodhama has no `decisions/README.md` fallback at all) —
       companions installed in kodhama/wisp/DS; kodhama's corpus-reviewer
       + wisp/DS READMEs repointed to the companion in the same PRs
-- [ ] refresh each family repo via `/trellis:setup` + grove re-vendor
+- [x] refresh each family repo via `/trellis:setup` + grove re-vendor
       (copier channels only — never per-repo hand-edits). **Stated
       deviation:** overlay = clean byte-copies to `payload@a805fd8f83d6`;
       the grove agent copies got surgical mechanic-passage splices, NOT
@@ -85,20 +85,20 @@ pre-PR; boxes get checked when the PRs merge)*
       trellis's contract-author step 2/4 content) is tracked as
       **grove#53** (the earlier grove#40 pointer was wrong — gate
       finding, corrected)
-- [ ] `expression.md` split-migration for grove, kodhama, wisp,
+- [x] `expression.md` split-migration for grove, kodhama, wisp,
       design-system (old combined layout) — done in the four PRs;
       wisp needed a `.gitignore` narrowing (`.grove/` → `.grove/runtime/`;
       the runtime-bus namespace collided with adr-0008's committed
       companions — dispositioned per the grove#48 one-class-per-path
       precedent, revertable if the namespace should be re-ruled)
-- [ ] delete the stale hand-authored lifecycle statements: grove, kodhama,
+- [x] delete the stale hand-authored lifecycle statements: grove, kodhama,
       wisp, design-system (kodhama#33) — done in the four PRs (wisp+DS
       also had README restatements, caught by the gate, now pointers).
       math-quest: **deferred at approval** — math-quest's own issue, off
       this ledger
 - [x] kodhama-0004: `superseded_in_part_by` + per-clause forward pointers
       (landed with the approval PR — same commit as the flip)
-- [ ] close kodhama#29; update the kodhama#31 checkpoint
+- [x] close kodhama#29; update the kodhama#31 checkpoint
 
 ## Adjacent decision spun out mid-wave (2026-07-12)
 
@@ -137,3 +137,45 @@ construction**.
   math-quest's own tracker.
 - ~~decision-0045 counter-init twin~~ — answered by adr-0010
   (grove-only); at the maintainer's gate on grove#50.
+
+## Wave report (closed 2026-07-12)
+
+Opened and closed the same day. Every ledger item landed, all
+maintainer-gated:
+
+- **kodhama-0008 approved** (in-PR flip + merge, PR kodhama#35) after two
+  independent spec-adversary rounds, three maintainer re-shapes, and a
+  final cut to a one-page supersession record. kodhama-0004 carries the
+  per-clause forward pointers.
+- **Lane A** (trellis#149): catalog de-merged, mechanism-agnostic;
+  directive-verb-list scope ruling recorded in the artifact.
+- **Lane B** (grove#49): 12-charter mechanic sweep -> pointers to the
+  lifecycle companion; clarify-when-ambiguous added; spec-0001 R2/R8
+  amended with delta note; counter-initialization rule (maintainer,
+  2026-07-12) added to contract-author + first applied.
+- **Mid-wave spur — adr-0010** (grove#50/#51, trellis#150): versioning
+  ruled operational; `.grove/versioning.md` companion shipped; trellis
+  de-reflected to shape-only; decision-0045 marked per-clause;
+  trellis spec-0001 counter-initialized at v1 by the new rule.
+- **Converge** (kodhama#36, wisp#16, design-system#13, grove#54,
+  trellis#151): all five repos byte-current at payload@a805fd8f83d6;
+  `.grove/` companions installed everywhere they belong; expression
+  split-migrations done; every stale hand-authored lifecycle statement
+  and README restatement deleted or pointer-ized. One combined
+  conformance gate FAILed four repos in round 1 (dangling
+  corpus-reviewer pointers, missed README restatements, a false
+  deferral pointer, trellis's missing version stamp) — all fixed
+  pre-merge.
+
+Every independent gate in this wave (2 adversary rounds on 0008, 1 on
+adr-0010, 5 conformance reviews) returned real findings; all were fixed
+or re-tracked before the human act, none waived silently.
+
+Open debts, each with a tracked home: **grove#53** (full re-vendor of
+consumer-installed agent copies — duty currency), **grove#52**
+(adr-0010's missing `changes:` field), **trellis#148** (`cites`
+relation), **grove#47** (README role), **grove#40** (grove-internal
+copy-sync mechanics), math-quest's stale expression copy (needs a
+math-quest-sourced session — cross-tier restriction verified 2026-07-12).
+kodhama#33 closes with this wave; kodhama#29 closed at approval.
+**Wave closed.**
