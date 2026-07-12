@@ -5,8 +5,10 @@ same day** ("approved. flip it and merge after", PR #35) — the in-PR
 status flip records the act. **Wave is live.** Both parked questions were
 answered at approval: the act = flip + merge; math-quest = deferred (it
 inherits from grove like any adopter; its stale copy is math-quest's own
-issue — not yet filed there, this session has no math-quest access; the
-debt is recorded here, loudly).
+issue — **not yet filed**: an add-to-session was attempted 2026-07-12 and
+refused by the platform's same-owner restriction (gundisalwa-tier repo,
+kodhama-tier session), so it needs a math-quest-sourced session or a
+manual filing; the debt stays recorded here, loudly).
 
 Context: kodhama-0008 withdraws the approval mechanic from the meta layer
 and retires kodhama-0004 AC1's per-repo restatement mandate. The rollout
