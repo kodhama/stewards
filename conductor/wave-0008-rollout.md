@@ -35,12 +35,20 @@ repo.
 
 ## Ledger
 
-**Lane A — trellis (principle, merge-free):**
+**Lane A — trellis (principle, merge-free):** *(both items ride
+trellis#149, opened 2026-07-12, conformance-gated — mechanical checks
+all PASS; one judgment finding parked to the maintainer on the PR:
+the invariant `directive`'s "never finalize, ship, or merge…" verb list
+— exempt as gated-delivery-acts (merging as-is records this) or extend
+the de-merge to the directive text. Also parked there: the
+decision-0045 twin of the counter-initialization rule — in the
+primitive too, or grove-only?)*
 - [ ] catalog `floor-intent-gate`: drop the merge-hardwired example
       (*"here: the maintainer's merge"*); state the principle as a human
       intent act, mechanism-agnostic
 - [ ] re-render the payload (`plugins/trellis/reference/*`), bump
-      `version` + `checksums` (kodhama-0007)
+      `version` + `checksums` (kodhama-0007) — landed as
+      `payload@bd287e40718a` on the PR branch
 
 **Lane B — grove (operational alignment):** **DONE — grove#49 merged
 2026-07-12** (squash `49a35aa`), conformance-gated (one FAIL — a
