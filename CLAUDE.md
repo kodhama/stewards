@@ -16,8 +16,10 @@ The family: [trellis](https://github.com/kodhama/trellis) (governance) ·
 git-tag versioned) · [homebrew-tap](https://github.com/kodhama/homebrew-tap)
 (delivery). Dependency direction is strictly downward
 (wisp → grove → trellis); the DS reaches consumers only through
-generation-time links. This repo sits above all of them and none of
-them know it.
+generation-time links. Layering, family-wide: **trellis carries the
+principles; grove carries the operating model** — mechanics included.
+Repos, this one included, restate neither (`kodhama-0008`). This repo
+sits above all of them and none of them know it.
 
 Rules (the family's, applied here):
 - **Decisions are append-only** — markdown with frontmatter
