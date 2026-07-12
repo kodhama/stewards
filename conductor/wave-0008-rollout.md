@@ -89,17 +89,16 @@ merge authorization "go ahead").
 Consequence 1 **DONE** — grove#51 merged 2026-07-12 (companion approved
 by in-PR flip at the maintainer's act; cross-check duty homed
 corpus-reviewer-only, maintainer deferring to the builder's
-source-backed recommendation). Consequence 2 rides **trellis#150**
-(conformance-gated: one blocking finding — collective vs per-clause
-0045 marks — fixed pre-PR): `.grove/lifecycle.md` + `.grove/versioning.md`
-installed in trellis (clears trellis's adr-0008 per-consumer
-prerequisite too), spec-0001 + rubric de-reflected to shape-only,
-spec-0001 `version: 1` initialized, 0045 marked per-clause. Named
-riders on trellis#150: trellis's installed grove agent copies stale vs
-grove#51 (converge refresh item below); adr-0010 carries no `changes:`
-field for the spec-0001 bump it caused (companion's soft direction,
-recorded in the spec's rubric-check record — a line for grove's
-tracker).
+source-backed recommendation). Consequence 2 **DONE** —
+**trellis#150 merged 2026-07-12** (rebase `2aa7535`; nothing on the PR
+sat at `gated`, so no flip was owed — stated, not skipped):
+`.grove/lifecycle.md` + `.grove/versioning.md` installed in trellis
+(clears trellis's adr-0008 per-consumer prerequisite too), spec-0001 +
+rubric de-reflected to shape-only, spec-0001 `version: 1` initialized,
+0045 marked per-clause. **The adr-0010 arc is closed.** Riders
+dispositioned: trellis's installed grove agent copies stale vs grove#51
+→ the converge refresh item below; adr-0010's missing `changes:` field
+→ filed as **grove#52** (`[consider]`, soft direction, no violation).
 
 
 The maintainer's trellis#149 ruling generalized: **versioning is not a
