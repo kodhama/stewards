@@ -42,7 +42,9 @@ repo.
 - [ ] re-render the payload (`plugins/trellis/reference/*`), bump
       `version` + `checksums` (kodhama-0007)
 
-**Lane B — grove (operational alignment):**
+**Lane B — grove (operational alignment):** *(all three items ride
+grove#49, opened 2026-07-12, conformance-gated — one FAIL found and
+fixed pre-PR; boxes get checked when it merges)*
 - [ ] sweep all 12 charters + the spec corpus for restatements of the
       superseded kodhama-0004 mechanic → each becomes a **pointer** to
       `charters/lifecycle.md`, never a fresh restatement (adr-0008's own
