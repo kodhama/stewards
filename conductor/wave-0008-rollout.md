@@ -42,20 +42,26 @@ repo.
 - [ ] re-render the payload (`plugins/trellis/reference/*`), bump
       `version` + `checksums` (kodhama-0007)
 
-**Lane B — grove (operational alignment):** *(all three items ride
-grove#49, opened 2026-07-12, conformance-gated — one FAIL found and
-fixed pre-PR; boxes get checked when it merges)*
-- [ ] sweep all 12 charters + the spec corpus for restatements of the
+**Lane B — grove (operational alignment):** **DONE — grove#49 merged
+2026-07-12** (squash `49a35aa`), conformance-gated (one FAIL — a
+spec-vs-product R8 divergence — found and fixed pre-PR; maintainer
+merge authorization "go ahead").
+- [x] sweep all 12 charters + the spec corpus for restatements of the
       superseded kodhama-0004 mechanic → each becomes a **pointer** to
       `charters/lifecycle.md`, never a fresh restatement (adr-0008's own
-      single-home rule). Verified-in-source targets: `charters/shaper.md`
-      (*"the merge is the approval"*), `charters/contract-author.md`
-      (*"`approved` happens only by human merge — never set by hand"*),
-      `specs/0001-contributing-guide.md:81`
-- [ ] add decision-0046's clarify-when-ambiguous rule where the act is
-      consumed (shaper), if absent
-- [ ] re-vendor (three-copy sync). Historical ADR self-check texts:
+      single-home rule). Landed targets: `charters/shaper.md`,
+      `charters/contract-author.md`, `specs/0001-contributing-guide.md`
+      (R2 + R8, adr-0004 delta note), `CONTRIBUTING.md` (shaper
+      exception + R8 resting-state clause)
+- [x] add decision-0046's clarify-when-ambiguous rule where the act is
+      consumed (shaper) — added, all three copies
+- [x] re-vendor (three-copy sync). Historical ADR self-check texts:
       append-only, exempt
+- [x] *(rider, maintainer rule 2026-07-12)* counter-initialization rule
+      in `contract-author` step 4 (+ copies); `spec-0001` counter
+      initialized at `version: 1`. The decision-0045 twin of the rule is
+      a trellis-side amendment — rides Lane A if the maintainer wants it
+      in the primitive too
 
 **Converge — per repo, order matters:**
 - [ ] confirm `.grove/lifecycle.md` is installed + sourced **before** any
