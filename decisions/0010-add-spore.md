@@ -1,7 +1,7 @@
 ---
 id: kodhama-0010-add-spore
 type: decision
-status: gated  # → approved on ratifying PR merge (status bumped with the PR number before merge)
+status: approved  # ratified by PR #7 merge (2026-07-22)
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0009-org-topology-spirit-stewards-trees]
 owner: agent
 updated: 2026-07-22
@@ -67,5 +67,4 @@ from the live `main` of each repo before editing; spore's repo exists and is
 public (`github.com/kodhama/spore`, first commit pushed 2026-07-22); spore
 ships no plugin manifest, so its marketplace absence matches wisp/DS/tap, which
 were confirmed absent from `marketplace.json`. Ordering appends last, leaving
-the triad order intact. `draft → gated`; `approved` = human merge of the
-ratifying PR.
+the triad order intact. `draft → gated → approved`, ratified by the maintainer's merge of PR #7.
