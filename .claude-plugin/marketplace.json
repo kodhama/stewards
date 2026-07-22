@@ -1,7 +1,7 @@
 {
   "name": "kodhama",
   "owner": { "name": "kodhama" },
-  "description": "The kodhama marketplace — one install door for the stewards: trellis (governance), grove (agent swarm).",
+  "description": "The kodhama marketplace — one install door for the stewards: trellis (governance), grove (agent swarm), spore (session drivers).",
   "plugins": [
     {
       "name": "trellis",
@@ -12,6 +12,11 @@
       "name": "grove",
       "source": { "source": "git-subdir", "url": "kodhama/grove", "path": "plugins/grove" },
       "description": "Compose the grove agent swarm onto your project: twelve chartered gardener roles, placeholders filled interactively via /grove:setup."
+    },
+    {
+      "name": "spore",
+      "source": { "source": "git-subdir", "url": "kodhama/spore", "path": "plugins/spore" },
+      "description": "Session-driver skills for Claude Code — spawn, hot-fork, and tend Remote-Control sessions & plugins from the side (macOS). Loads spore:<skill> skills; install via /plugin install spore@kodhama."
     }
   ]
 }
