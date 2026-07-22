@@ -20,7 +20,8 @@ The stewards: [trellis](https://github.com/kodhama/trellis) (governance) ·
 [wisp](https://github.com/kodhama/wisp) (runtime observability) ·
 [design-system](https://github.com/kodhama/design-system) (brand asset,
 git-tag versioned) · [homebrew-tap](https://github.com/kodhama/homebrew-tap)
-(delivery). Dependency direction is strictly downward
+(delivery) · [spore](https://github.com/kodhama/spore) (session drivers).
+Dependency direction is strictly downward
 (wisp → grove → trellis); the DS reaches consumers only through
 generation-time links. Layering: **trellis carries the principles; grove
 carries the operating model** — mechanics included. Repos, this one
