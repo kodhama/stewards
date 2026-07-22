@@ -1,7 +1,7 @@
 ---
 id: kodhama-0011-spore-plugin-channel
 type: decision
-status: gated  # → approved on ratifying PR merge (status bumped with the PR number before merge)
+status: approved  # ratified by PR #8 merge (2026-07-22)
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0010-add-spore]
 owner: agent
 updated: 2026-07-22
@@ -59,5 +59,4 @@ lands in stewards. The `git-subdir` / `plugin.json` / skill-namespacing /
 per-user-scope facts were confirmed against the Claude Code plugin docs
 (plugins-reference, plugin-marketplaces, settings). The `plugins/spore/` layout,
 `plugin.json` validity, `_lib` resolution, and `install.sh` from the new path
-were all exercised before this landed. `draft → gated`; `approved` = human merge
-of the ratifying PR.
+were all exercised before this landed. `draft → gated → approved`, ratified by the maintainer's merge of PR #8.
