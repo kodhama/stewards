@@ -1,0 +1,57 @@
+---
+id: kodhama-0012-codex-marketplace-channel
+type: decision
+status: gated
+depends_on: [kodhama-0002-delivery-channels]
+owner: agent
+updated: 2026-07-23
+provenance: maintainer approval on 2026-07-23 to implement Grove distribution for both Claude Code and Codex, with final review at the ship gate
+---
+
+# Decision: the install door gains a native Codex catalog
+
+## Decision
+
+`kodhama/stewards` remains the one canonical install repository and the
+marketplace name remains `kodhama`. It carries one host-native catalog
+manifest for each supported plugin host:
+
+- `.claude-plugin/marketplace.json` is the Claude Code catalog;
+- `.agents/plugins/marketplace.json` is the Codex catalog.
+
+The Codex catalog initially lists only Grove. A steward joins that catalog
+only after its own package has a valid Codex manifest and a supported Codex
+surface; Claude availability does not imply Codex support. Product code,
+role contracts, and release cadence remain in the product repositories.
+The catalogs contain only discovery metadata and source pointers.
+
+For Grove, the Codex source is the same `plugins/grove` subdirectory used by
+Claude distribution. Grove's package owns host manifests and release
+validation; stewards owns only the catalog pointer.
+
+## Why
+
+The standing “one org marketplace” decision chose a thin canonical install
+door, not a Claude-only architecture. Codex has a native marketplace
+manifest and can install Grove's Codex package from the same product source.
+Adding that host projection preserves one install repository without
+pretending the two hosts share a manifest schema or support matrix.
+
+Listing only proven products avoids turning an existing Claude entry into an
+unsupported Codex claim.
+
+## Acceptance criteria
+
+- A clean Codex installation can add `kodhama/stewards`, discover
+  `grove@kodhama`, and resolve its `plugins/grove` source.
+- The Claude marketplace remains functionally unchanged except for correcting
+  stale Grove discovery metadata.
+- Both catalogs are named `kodhama`; neither contains product code or role
+  contracts.
+- A product without a validated Codex package is absent from the Codex
+  catalog.
+
+## Gate
+
+The maintainer approved implementation on 2026-07-23. This decision remains
+`gated`; merging its change request is the human-owned ship act.

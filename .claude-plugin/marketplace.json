@@ -11,7 +11,7 @@
     {
       "name": "grove",
       "source": { "source": "git-subdir", "url": "kodhama/grove", "path": "plugins/grove" },
-      "description": "Compose the grove agent swarm onto your project: twelve chartered gardener roles, placeholders filled interactively via /grove:setup."
+      "description": "Compose Grove's thirteen-role operating model through generated host adapters and repo-owned configuration via /grove:setup."
     },
     {
       "name": "spore",

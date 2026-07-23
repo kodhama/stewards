@@ -1,0 +1,21 @@
+{
+  "name": "kodhama",
+  "interface": {
+    "displayName": "kodhama stewards"
+  },
+  "plugins": [
+    {
+      "name": "grove",
+      "source": {
+        "source": "git-subdir",
+        "url": "kodhama/grove",
+        "path": "plugins/grove"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
