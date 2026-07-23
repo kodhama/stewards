@@ -21,6 +21,12 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 > install strings below (`/plugin marketplace add kodhama/kodhama`) as
 > `kodhama/stewards`.
 
+> **Forward pointer (2026-07-23).**
+> `kodhama-0012-wisp-plugin-channel` adds Wisp's self-contained dual-host
+> plugin as the low-friction agent-facing channel. It supersedes §4 and the
+> Wisp channel-matrix row only to the extent that npm/npx are no longer the
+> sole intended zero-install surface; the one-marketplace principle stands.
+
 > **Amended in part by `kodhama-0007-one-render-many-copiers`**
 > (2026-07-10 annotation; text below preserved as written). The trellis
 > rows' end-user binary channels are retired by 0007 rule 5: brew
