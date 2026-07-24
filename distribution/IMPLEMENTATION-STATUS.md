@@ -86,5 +86,6 @@ The historical external dependencies tracked by issue #20 remain unchanged.
 
 The bounded pre-agent provisioner is not implemented in this slice.
 Spec 0002 v2 scenarios S1–S32 and requirements R1–R45 remain unimplemented,
-including S27/S31 and R40/R44's joint receipt/audit commit, invocation-owned
-pre-commit cleanup, and stable-path minimal-receipt replacement contract.
+including S27/S31 and R40/R44's canonical receipt commit witness,
+same-invocation pre-commit cleanup, operator-owned abrupt-termination debris,
+and stable-path minimal-receipt replacement contract.

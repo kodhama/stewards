@@ -12,20 +12,24 @@ updated: 2026-07-24
 # Bounded pre-agent provisioner
 
 > **Amended 2026-07-24 — two-output commit and bounded cleanup.**
-> **WHAT:** Defined the normal receipt/audit commit point, final identity
-> validation for both requested outputs, and descriptor-relative cleanup
-> limited to invocation-created uncommitted leaves.
+> **WHAT:** Defined the identity-stable canonical receipt as the durable commit
+> witness, final audit/receipt binding validation, and same-invocation
+> descriptor-relative cleanup limited to invocation-created uncommitted
+> leaves.
 > **WHY:** v1 defined sealing order and failure receipts but did not distinguish
-> a sealed leaf from a committed output, while its blanket no-delete rule left
-> partial and orphan output recovery underdetermined.
+> a sealed audit from externally committed evidence, while its blanket
+> no-delete rule left handled-failure cleanup and abrupt-termination debris
+> underdetermined.
 > **SCOPE:** Output identity, successful sealing, failure recovery, fixtures,
 > S27/S31, and R40/R44; all other v1 behavior and ownership boundaries remain
 > current.
 > **POINTER:** `distribution/IMPLEMENTATION-STATUS.md` at
 > `fe95bb93e59e4e24faaabe5ddfe1a6c8e8b9215c`; implementation-readiness review
-> of `kodhama-spec-0002-bounded-pre-agent-provisioner@v1`.
+> of `kodhama-spec-0002-bounded-pre-agent-provisioner@v1` and spec-adversary
+> `NEEDS-REVISION` on `07555da`.
 > **VALUE:** Maintainers can distinguish trustworthy committed evidence from
-> recoverable invocation-owned debris without risking caller-owned files.
+> handled-failure cleanup and operator-owned crash debris without risking
+> caller-owned files.
 > **CONFIDENCE:** verified.
 
 ## Scope
@@ -370,8 +374,8 @@ Cause attribution outside request validation is exact:
 | Acquisition/registration/installation/verification | `execution` / `/results/<result_id>/<phase>` | only request-reference ids actually consulted by that failing operation |
 | Preservation conflict/breach | `state` / `/results/<result_id>/shared_catalog_changes` | empty |
 | Rollback failure | `state` / `/results/<result_id>/shared_catalog_changes/<index>/rollback_status` | empty |
-| Receipt parent/create/write/flush/final validation | `outputs` / `/receipt/parent`, `/receipt/create`, `/receipt/write`, `/receipt/flush`, or `/receipt/final-validation` | empty |
-| Audit parent/create/write/flush/read-back/final validation | `outputs` / `/audit/parent`, `/audit/create`, `/audit/write`, `/audit/flush`, `/audit/read-back`, or `/audit/final-validation` | empty |
+| Receipt parent/create/write/fsync/final validation | `outputs` / `/receipt/parent`, `/receipt/create`, `/receipt/write`, `/receipt/fsync`, or `/receipt/final-validation` | empty |
+| Audit parent/create/write/fsync/read-back/final validation | `outputs` / `/audit/parent`, `/audit/create`, `/audit/write`, `/audit/fsync`, `/audit/read-back`, or `/audit/final-validation` | empty |
 
 Provisioner records sort by their declared complete key before `<sorted-index>`
 is assigned. Diagnostic owner is `consumer/environment` for request and
@@ -603,11 +607,19 @@ Output ownership and commitment are exact:
 |---|---|
 | pre-existing or foreign | A leaf that existed before this invocation's exclusive create, or whose current identity differs from the identity returned by that create; the invocation shall not modify or remove it |
 | invocation-created, uncommitted | A leaf successfully exclusive-created through the held parent descriptor by this invocation, whose file identity is retained, before the applicable commit point |
-| committed normal pair | Both requested leaves after the two-file commit point below |
-| committed minimal receipt | A minimal output-failure receipt after its own final identity/read-back validation succeeds |
+| sealed, uncommitted audit | The identity-stable canonical audit after fsync/read-back and before a committed normal receipt binds its digest |
+| committed normal evidence | The sealed audit plus the requested receipt leaf after that receipt's identity-stable canonical fsync/read-back validates and binds the audit |
+| committed minimal receipt | A minimal output-failure receipt after its own identity-stable canonical fsync/read-back and schema validation succeeds |
 
-A schema-valid or fully flushed output is still uncommitted until its commit
-point. Before commitment it is not valid distribution evidence.
+A sealed audit alone and a partial, non-canonical, schema-invalid, or
+identity-unstable receipt are uncommitted and are not valid distribution
+evidence. A valid canonical normal receipt at the requested stable identity
+that binds the stable sealed-audit identity and digest is the durable,
+externally observable commit witness; no separate marker or later in-memory
+state transition participates in commitment. Descriptor read-back proves that
+state but does not create it; after abrupt termination, an external validator's
+equivalent identity/byte/schema/binding validation recognizes the same
+committed witness.
 
 For each executable tuple, the core computes a tuple allowed-write set
 containing only:
@@ -650,33 +662,39 @@ receipt's tuple aggregate outcome:
    `finished_at`/`sealed_at` to that stop instant, and forbid further
    non-exempt process-tree writes;
 2. canonicalize the audit object and write it exactly once through its
-   parent descriptor using no-follow/exclusive-create, then flush/close and
-   compute SHA-256 from the bytes read back from that file;
-3. construct the receipt with that audit stable reference/digest, write it
-   exactly once through its parent descriptor using
-   no-follow/exclusive-create, then flush/close;
-4. finally validate both requested outputs in audit-then-receipt order. For
-   each, the held parent descriptor and its requested parent path shall still
-   identify the preflight parent; descriptor-relative no-follow lookup shall
-   identify the same regular file returned by this invocation's exclusive
-   create; and read-back bytes shall equal the flushed canonical bytes. The
-   audit shall pass its schema and digest checks, and the receipt shall pass
-   its schema and exact audit-reference/digest checks;
-5. only after both outputs pass step 4, atomically mark the pair committed;
-   this logical commit point performs no filesystem write; and
-6. perform no further process-tree write, modification, or deletion before
+   parent descriptor using no-follow/exclusive-create, then fsync the file and
+   held parent directory and compute SHA-256 from descriptor-read-back bytes.
+   The held parent descriptor, requested parent path, and descriptor-relative
+   leaf lookup shall still identify the preflight parent and the regular file
+   returned by this invocation's create; the bytes shall be canonical and
+   schema-valid;
+3. construct the complete normal receipt in memory with that audit stable
+   reference/digest, canonicalize it, and schema-validate it before creating
+   the receipt leaf;
+4. while retaining the audit descriptor and guaranteeing that the audit's
+   requested parent/leaf identity and digest remain stable, exclusive-create
+   the receipt through its held parent descriptor, write exactly the
+   prevalidated canonical bytes, fsync the file and held parent directory, and
+   descriptor-read the file back. The receipt's requested parent/leaf identity
+   shall remain the preflight parent and this invocation's regular file;
+   read-back bytes shall equal the prevalidated bytes and shall still
+   schema-validate and bind the retained audit identity/digest. The first
+   durable receipt state satisfying all of these conditions is the commit
+   transition, and successful descriptor read-back proves it; and
+5. perform no further process-tree write, modification, or deletion before
    exit.
 
 On the successful path the monitor intentionally omits only the two writes in
-steps 2–3, whose exact paths are sealed inside the audit. Failure cleanup below
-may operate only on those same exempt leaves after monitoring stops and never
-supports a success or preservation claim. Because the audit contains neither
-its own digest nor receipt bytes, and the receipt is written only after the
-audit digest exists, no receipt/audit digest cycle is permitted.
+steps 2 and 4, whose exact paths are sealed inside the audit. Failure cleanup
+below may operate only on those same exempt leaves after monitoring stops and
+never supports a success or preservation claim. Because the audit contains
+neither its own digest nor receipt bytes, and the receipt is written only
+after the audit digest exists, no receipt/audit digest cycle is permitted.
 
-Pre-commit cleanup is permitted only for a partial audit, a fully sealed audit
-orphaned by receipt failure, or an uncommitted normal receipt. For each
-candidate, the core shall prove through the retained parent descriptor that:
+During the same invocation, handled-failure pre-commit cleanup is permitted
+only for a partial audit, a fully sealed audit orphaned by receipt failure, or
+an uncommitted normal receipt. For each candidate, the core shall prove through
+the retained parent descriptor that:
 
 1. this invocation created the leaf by no-follow/exclusive-create;
 2. the output is not committed;
@@ -691,6 +709,18 @@ permitted and the leaf remains. Cleanup never resolves the leaf from an
 absolute path and never unlinks a missing, pre-existing, foreign,
 identity-changed, or committed output.
 
+Abrupt termination ends that cleanup authority. Any invocation-created leaf
+left without either a valid canonical normal receipt at the requested stable
+identity that binds the valid sealed audit or a valid canonical minimal
+output-failure receipt at that identity is pre-commit operator-owned crash
+debris: a later invocation has no retained creation identity that authorizes
+recovery, treats the leaf as pre-existing, fails closed under the ordinary
+parent/leaf rules, and never modifies or deletes it. If either applicable
+durable receipt witness exists, that normal evidence or minimal failure
+evidence is committed even when the process terminates before returning;
+otherwise operator action outside the provisioner contract is required before
+retry.
+
 Output failure handling is exact and never requires an impossible receipt:
 
 1. validate the receipt parent/leaf first. Parent open/realpath failure,
@@ -700,24 +730,28 @@ Output failure handling is exact and never requires an impossible receipt:
    minimal receipt with `overall_outcome: output-failure`, exit `7`, empty
    results, and envelope diagnostic `output-parent-invalid`; it creates no
    audit and performs no request work;
-3. after request work, any audit exclusive-create, write, flush, close, or
+3. after request work, any audit exclusive-create, write, fsync,
    read-back/hash/final-validation failure attempts eligible cleanup of a
    partial or sealed-but-uncommitted audit and attempts the same minimal
    receipt with `audit-seal-failed`; any remaining audit is invalid evidence
    and no tuple success is claimed; and
-4. after a valid audit, any receipt exclusive-create, write, flush, or close
+4. after a valid audit, any receipt exclusive-create, write, fsync,
    or final-validation failure reports `receipt-seal-failed` to stderr, exits
    `7`, and attempts eligible cleanup of the uncommitted normal receipt and
    orphaned sealed audit; no valid receipt or success claim is promised.
 
 If an audit failure is discovered after an uncommitted normal receipt exists,
-the core may replace that receipt only when the receipt parent and leaf still
+that receipt is necessarily partial, invalid, or identity-unstable; a valid
+canonical receipt at the requested stable identity that binds the audit is
+already committed and ineligible for cleanup. The core may replace the
+uncommitted receipt only when the receipt parent and leaf still
 satisfy every cleanup identity condition above. It descriptor-unlinks the
 normal receipt, confirms leaf absence through the same parent descriptor, and
 exclusive-creates the minimal `audit-seal-failed` receipt at that leaf; it
 never truncates or edits the normal receipt in place. The minimal receipt is
-committed only after its own flush, close, descriptor-relative identity,
-canonical read-back, and schema validation succeed. If the path is not stable
+committed only when its own precomputed canonical bytes are
+exclusive-created, written, file-and-parent-fsynced, descriptor-read back at
+the requested stable identity, and schema-validated. If the path is not stable
 or any replacement step fails, the core leaves the existing leaf untouched
 from that point and promises no valid receipt.
 
@@ -725,7 +759,7 @@ The minimal output-failure receipt is a separate envelope variant: it contains
 the ordinary schema/request/version/timestamps when decoded, otherwise null,
 requires empty results and exactly one output diagnostic, and forbids tuple
 success, audit reference/digest, and preservation fields. Failure while
-creating, writing, flushing, closing, or finally validating that minimal
+creating, writing, fsyncing, or finally validating that minimal
 receipt reports `receipt-seal-failed` to stderr and may leave no valid receipt.
 Exit `7` overrides every tuple aggregate outcome. Recovery never modifies or
 deletes a pre-existing, foreign, identity-changed, or committed output; it may
@@ -957,7 +991,7 @@ Positive fixtures:
 | `positive/two-run-launch-intercept-bundle/` | Actual launch interception, canonical state digests, and immutable evidence layout |
 | `positive/multi-entrypoint-controls/` | Every declared entrypoint and distinct real binary has exact positive-control coverage |
 | `positive/retained-state-recompute/` | State and unselected fingerprints recompute from retained schema-valid documents |
-| `positive/two-output-commit/` | Audit and normal receipt remain uncommitted until both final parent/leaf identities, canonical bytes, and digest binding validate |
+| `positive/two-output-commit/` | A prevalidated canonical receipt becomes the durable commit witness only after identity-stable exclusive-create/write/file-and-parent-fsync/read-back binds the sealed audit |
 
 Negative fixtures:
 
@@ -993,9 +1027,10 @@ Negative fixtures:
 | `negative/credential-in-output/` | Detect secret material |
 | `negative/evidence-bundle-digest/` | Reject missing/changed/unindexed evidence |
 | `negative/cross-surface-evidence/` | Reject another exact row's evidence |
-| `negative/output-sealing-failure/` | Apply exact exit 7/minimal-or-no-receipt behavior for parent/create/flush/read-back/final-validation failures |
-| `negative/output-cleanup-identity/` | Descriptor-unlink only an invocation-created uncommitted partial audit, orphan audit, or normal receipt; preserve every pre-existing, foreign, identity-changed, or committed output |
-| `negative/audit-failure-receipt-replacement/` | Replace an uncommitted normal receipt with a minimal audit-seal-failed receipt only through identity-safe unlink plus exclusive-create at the stable leaf |
+| `negative/output-sealing-failure/` | Apply exact exit 7/minimal-or-no-receipt behavior for parent/create/fsync/read-back/final-validation failures |
+| `negative/output-cleanup-identity/` | During one handled invocation, descriptor-unlink only its uncommitted partial audit, orphan audit, or invalid/partial normal receipt; preserve every pre-existing, foreign, identity-changed, or committed output |
+| `negative/audit-failure-receipt-replacement/` | Replace an uncommitted invalid/partial normal receipt with a minimal audit-seal-failed receipt only through identity-safe unlink plus exclusive-create at the stable leaf |
+| `negative/abrupt-output-termination/` | At each abrupt boundary, retain a valid durable normal/minimal receipt witness as committed and treat every other remaining leaf as operator-owned pre-existing debris that later invocations fail on and never reclaim |
 | `negative/ordinary-same-host-failure/` | Continue later same-host tuples unless an unrecovered preservation breach taints the host |
 
 ## Acceptance criteria
@@ -1173,12 +1208,13 @@ distinct real binary, and hashes exact NFC exec argv JSON bytes.
 
 **S27 — Receipt/audit sealing**
 
-Given a completed provisioner process tree and two sealable requested output
-leaves, when the normal output transaction runs, then monitoring stops before
-the self-digest-free audit and digest-bound receipt are exclusive-created in
-that order, both parent/leaf identities, canonical read-back bytes, and digest
-binding pass final validation, the pair commits only after both pass, and no
-later write, modification, or deletion occurs.
+Given a completed provisioner process tree, a sealed identity-stable audit,
+and a precomputed canonical schema-valid normal receipt binding that audit,
+when the receipt is exclusive-created at its requested stable identity,
+written, file-and-parent-fsynced, and descriptor-read back, then successful
+read-back proves that the first durable identity, byte, schema, and
+audit-binding-valid receipt state is the commit transition, and no later
+logical mark, write, modification, or deletion occurs.
 
 **S28 — Same-phase error representation**
 
@@ -1205,13 +1241,14 @@ or unknown target reference ids instead fail phases 3–4 before any lookup.
 
 **S31 — Output sealing failure**
 
-Given an output-parent, create/write/flush/read-back/final-validation failure
+Given an output-parent, create/write/fsync/read-back/final-validation failure
 or identity change, when recovery and termination run, then exit `7` dominates,
-descriptor-relative cleanup touches only an identity-stable
-invocation-created uncommitted partial audit, orphan audit, or normal receipt,
-a stable uncommitted normal receipt may be unlink-plus-exclusive-create
-replaced by a minimal `audit-seal-failed` receipt, and no pre-existing,
-foreign, identity-changed, or committed output is modified or deleted.
+same-invocation descriptor-relative cleanup touches only an identity-stable
+invocation-created uncommitted partial audit, orphan audit, or invalid/partial
+normal receipt, a stable uncommitted normal receipt may be
+unlink-plus-exclusive-create replaced by a minimal `audit-seal-failed`
+receipt, and any pre-commit leaf left by abrupt termination is operator-owned
+pre-existing debris that later invocations fail on and never modify or delete.
 
 **S32 — Same-host continuation**
 
@@ -1322,9 +1359,11 @@ preservation breach, then only that taint skips remaining same-host tuples.
   LF.
 - **R40:** The provisioner shall break receipt/audit self-reference by sealing
   a digest-free audit after monitoring quiesces, writing it once, hashing its
-  read-back bytes, writing the normal receipt once with that digest, finally
-  validating both requested parent/leaf identities, canonical bytes, and
-  binding, committing the pair only after both pass, and permitting no later
+  read-back bytes, fully canonicalizing and schema-validating the normal
+  receipt with that digest before leaf creation, and treating successful
+  identity-stable
+  exclusive-create/write/file-and-parent-fsync/descriptor-read-back validation
+  of that receipt as the durable commit witness with no later logical mark,
   output write, modification, or deletion.
 - **R41:** A same-phase diagnostic shall contain every assigned cause exactly
   once and shall use the exact source/path/reference attribution and fixed
@@ -1339,13 +1378,15 @@ preservation breach, then only that taint skips remaining same-host tuples.
   run globally after phase 5 passes and exit `2` shall override route exit `3`
   for unused references, while duplicate/unknown target reference ids shall
   fail globally before route lookup.
-- **R44:** When output parent/create/write/flush/read-back/final validation
+- **R44:** When output parent/create/write/fsync/read-back/final validation
   fails, the provisioner shall terminate with exit `7`, shall descriptor-unlink
-  only an identity-stable invocation-created uncommitted partial audit,
-  orphan audit, or normal receipt, may replace that normal receipt with a
-  minimal `audit-seal-failed` receipt only by unlink plus exclusive-create at
-  the stable leaf, and shall never modify or delete a pre-existing, foreign,
-  identity-changed, or committed output.
+  only during that invocation and only an identity-stable
+  invocation-created uncommitted partial audit, orphan audit, or
+  invalid/partial normal receipt, may replace that receipt with a minimal
+  `audit-seal-failed` receipt only by unlink plus exclusive-create at the
+  stable leaf, shall classify abrupt-termination debris as operator-owned for
+  later invocations, and shall never modify or delete a pre-existing, foreign,
+  identity-changed, crash-debris, or committed output.
 - **R45:** An ordinary same-host tuple failure shall not block later
   independent tuples; only an unrecovered preservation breach shall taint and
   block that host.
@@ -1392,9 +1433,11 @@ Self-check used the local contract-author rules, `specs/README.md`,
 | Intrinsic F4 same-phase diagnostics | CLOSED | Exact all-class code ranks, source/path/reference mapping, cause sorting, single-result representation, and no-duplicate attribution are normative |
 | Intrinsic F5 later shared ownership | CLOSED | Node evaluation filters finalized members, explicitly does not execute with none, and never reassigns outcomes |
 | Intrinsic F6 route lookup failures | CLOSED | Duplicate/unknown target refs fail pre-route; lookup occurs before route-dependent phase 5; phase 6 remains global across route failures with exit-2 precedence |
-| Intrinsic F7 sealing failures | CLOSED | Parent/create/write/flush/read-back/receipt failure paths distinguish minimal receipt from impossible receipt and use exit 7 |
+| Intrinsic F7 sealing failures | CLOSED | Parent/create/write/fsync/read-back/receipt failure paths distinguish minimal receipt from impossible receipt and use exit 7 |
 | Intrinsic F8 same-host continuation | CLOSED | Ordinary failures continue; only restore-failed preservation breach taints and blocks the host |
-| v2 two-output commit and cleanup | CLOSED | Normal order ends in joint final identity/byte/binding validation and one commit; cleanup is descriptor-relative, pre-commit, and limited to invocation-created identities; pre-existing and committed outputs are immutable |
+| v2 two-output commit and cleanup | CLOSED | The identity-stable canonical receipt is the durable audit-binding commit witness; cleanup authority is same-invocation and pre-commit only; abrupt debris becomes operator-owned; pre-existing and committed outputs are immutable |
+| v2 adversary F1 durable witness | CLOSED | Precomputed canonical receipt bytes bind the sealed audit; identity-stable exclusive-create/write/file-and-parent-fsync/descriptor-read-back is the commit transition with no unwritten logical mark |
+| v2 adversary F2 crash recovery | CLOSED | Abrupt termination ends invocation cleanup authority; later invocations treat every remaining leaf as pre-existing, fail closed, and never reclaim it |
 | Whole-corpus validation | NOT CLAIMED | Issue #20 blocks literal full-corpus PASS; this artifact uses strict YAML/exact ids and was checked change-scoped |
 
 **Result: PASS for author self-check.**

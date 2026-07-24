@@ -30,5 +30,5 @@ no-live-host-state projection boundary.
 No test in the landed package implements
 `kodhama-spec-0002-bounded-pre-agent-provisioner@v2`. Its S1–S32 and R1–R45
 remain tracked as unimplemented in `distribution/IMPLEMENTATION-STATUS.md`,
-including S27/S31 and R40/R44's two-output commit and pre-commit cleanup
-contract.
+including S27/S31 and R40/R44's canonical receipt commit witness,
+same-invocation pre-commit cleanup, and operator-owned crash-debris contract.
