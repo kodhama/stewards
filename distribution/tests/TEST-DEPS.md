@@ -31,4 +31,6 @@ No test in the landed package implements
 `kodhama-spec-0002-bounded-pre-agent-provisioner@v2`. Its S1–S32 and R1–R45
 remain tracked as unimplemented in `distribution/IMPLEMENTATION-STATUS.md`,
 including S27/S31 and R40/R44's canonical receipt commit witness,
-same-invocation pre-commit cleanup, and operator-owned crash-debris contract.
+retained-state-only external validation, producer-obligation separation,
+same-invocation partial/invalid cleanup, and operator-owned uncertain or
+crash-debris contract.
