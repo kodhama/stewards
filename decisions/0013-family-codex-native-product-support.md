@@ -5,7 +5,7 @@ status: draft
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0008-family-inheritance-restate-nothing, kodhama-0012-codex-marketplace-channel]
 owner: agent
 updated: 2026-07-24
-provenance: maintainer request 2026-07-24 to make native Codex support, preferably through plugin distribution, a product-family standard; initial named products trellis, grove, and wisp. Reconciled 2026-07-24 with merged grove#134 (dual-host Grove distribution) and open stewards#9 / kodhama-0012 (the Grove-first Codex marketplace catalog).
+provenance: maintainer request 2026-07-24 to make native Codex support, preferably through plugin distribution, a product-family standard; initial named products trellis, grove, and wisp. Reconciled 2026-07-24 with merged grove#134 (dual-host Grove distribution) and merged stewards#9 / kodhama-0012 (the Grove-first Codex marketplace catalog).
 ---
 
 # Decision: native Codex support becomes a product-family standard
@@ -75,7 +75,7 @@ surface-specific support record. Its supported Codex claim is deliberately
 bounded to non-ephemeral `codex exec`; it does not imply support for every
 Codex host surface.
 
-Open draft [stewards#9](https://github.com/kodhama/stewards/pull/9) is the
+Merged [stewards#9](https://github.com/kodhama/stewards/pull/9) is the
 corresponding thin catalog delivery. It creates
 `.agents/plugins/marketplace.json` in the existing `kodhama/stewards` install
 repository and initially points only to Grove's product-owned package. Its
@@ -147,7 +147,7 @@ users where they work without changing product ownership or coupling releases.
   [grove#134](https://github.com/kodhama/grove/pull/134) adds a native Codex
   package and reports support evidence for its bounded
   `codex-exec-non-ephemeral` surface.
-- **Family catalog (verified, 2026-07-24):** open draft
+- **Family catalog (verified, 2026-07-24):** merged
   [stewards#9](https://github.com/kodhama/stewards/pull/9) carries gated
   `kodhama-0012-codex-marketplace-channel`, adds the host-native catalog, and
   initially lists only Grove. It keeps product code and releases in product
