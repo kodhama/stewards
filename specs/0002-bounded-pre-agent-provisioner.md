@@ -1,7 +1,7 @@
 ---
 id: kodhama-spec-0002-bounded-pre-agent-provisioner
 type: spec
-status: gated  # v3 author self-check passed; independent v3 review/ratification remains due
+status: approved  # Maintainer-authorized merge records v3 approval after independent gates passed
 version: 3
 depends_on: [kodhama-0016-distribution-availability-and-effective-support, kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2]
 implements: [kodhama-0016-distribution-availability-and-effective-support]
@@ -1493,6 +1493,9 @@ Self-check used the local contract-author rules, `specs/README.md`,
 ## Gate record
 
 On 2026-07-24 the maintainer approved v1 after spec-adversary
-`APPROVE-READY` and conformance `PASS` against approved decision 0016. This v3
-amendment passed the author self-check above and is `gated`; the prior v1 act
-is not reused as approval of the amended S27/S31 or R40/R44 output contract.
+`APPROVE-READY` and conformance `PASS` against approved decision 0016. The
+maintainer then authorized this family wave to merge when its independent
+gates passed. V3 received spec-adversary `APPROVE-READY`, conformance `PASS`,
+and a change-scoped corpus `PASS`; recording `approved` here records that
+maintainer act for the amended S27/S31 and R40/R44 output contract rather than
+reusing v1's approval.
