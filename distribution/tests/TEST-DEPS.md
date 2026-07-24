@@ -22,5 +22,6 @@ Tests additionally name the exact spec scenario or requirement above each
 test function. Existing `@v1` annotations remain accurate provenance because
 v2 preserves those clauses; S24–S28 and R41–R49 remain unimplemented and are
 tracked in `distribution/IMPLEMENTATION-STATUS.md`, including S28/R49's
-canonical platform detection, explicit content-addressed runtime-store
-resolution, and no-live-host-state projection boundary.
+canonical Linux/macOS platform detection and pre-store rejection of Windows
+and other hosts, explicit content-addressed runtime-store resolution, and
+no-live-host-state projection boundary.
