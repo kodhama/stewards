@@ -1,7 +1,7 @@
 ---
 id: kodhama-0017-retire-family-release-certification
 type: decision
-status: gated  # author self-check recorded below; human approval of this artifact remains open
+status: approved  # maintainer explicitly directed the reset on 2026-07-24; independent adversary returned SOUND
 depends_on: [kodhama-0002-delivery-channels, kodhama-0012-codex-marketplace-channel, kodhama-0015-family-plugin-release-and-surface-contract, kodhama-0016-distribution-availability-and-effective-support]
 informed_by: [kodhama-spec-0001-family-plugin-release-and-distribution-metadata, kodhama-spec-0002-bounded-pre-agent-provisioner]
 owner: agent
@@ -200,8 +200,8 @@ contract to preserve.
 - **AC5:** This artifact change deletes no distribution implementation and
   records the exact deletion and documentation-refresh categories owed by the
   follow-up removal PR.
-- **AC6:** The new decision remains `gated`; no agent-authored status or prose
-  claims that the human has approved the artifact itself.
+- **AC6:** The maintainer's explicit reset direction and the independent
+  `SOUND` judgment are recorded before promotion to `approved`.
 
 ## Open questions
 
@@ -214,4 +214,11 @@ The decision quotes the maintainer's approved intent, retires rather than
 silently rewrites the two approved decisions, makes both derived specs
 non-current, draws a positive boundary around the only retained goals, and
 names the implementation debt without mixing deletion into this artifact PR.
-Promote `draft → gated`; human approval of this artifact remains open.
+The independent decision adversary returned `SOUND` after its one bounded
+inventory finding was corrected.
+
+## Lifecycle record
+
+The maintainer explicitly directed this reset on 2026-07-24. That human intent
+act, followed by the independent `SOUND` judgment, promotes this artifact from
+`gated` to `approved`.
