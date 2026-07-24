@@ -5,7 +5,16 @@ status: approved  # maintainer's intent act 2026-07-12 ("approved. flip it and m
 depends_on: [kodhama-0004-uniform-lifecycle, kodhama-0007-one-render-many-copiers, trellis/decision-0046, grove/adr-0008]
 owner: agent
 updated: 2026-07-12
-provenance: shaped on PR kodhama/kodhama#35 (2026-07-12) — two independent spec-adversary rounds and three maintainer re-shape calls; the full shaping history, including the grove source check that found the approval mechanic already encoded operationally, lives on that PR. Final maintainer call, same day — "sometimes we are putting too much bureaucracy" — cut to a minimal supersession record: the rollout program moved to conductor/wave-0008-rollout.md, the layering orientation line to CLAUDE.md. DRAFT — the maintainer's approval (the intent act) is pending; the intent gate is not opened by an agent.
+provenance: >-
+  shaped on PR kodhama/kodhama#35 (2026-07-12) — two independent
+  spec-adversary rounds and three maintainer re-shape calls; the full shaping
+  history, including the grove source check that found the approval mechanic
+  already encoded operationally, lives on that PR. Final maintainer call,
+  same day — "sometimes we are putting too much bureaucracy" — cut to a
+  minimal supersession record: the rollout program moved to
+  conductor/wave-0008-rollout.md, the layering orientation line to CLAUDE.md.
+  DRAFT — the maintainer's approval (the intent act) is pending; the intent
+  gate is not opened by an agent.
 ---
 
 # Decision (DRAFT): kodhama-0004 superseded in part — no approval mechanic is defined at the meta layer, and the per-repo restatement mandate retires
