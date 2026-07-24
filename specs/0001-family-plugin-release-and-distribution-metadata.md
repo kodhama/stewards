@@ -14,7 +14,8 @@ updated: 2026-07-24
 > **Amended 2026-07-24 — whole-spec completion protocol.**
 > **WHAT:** Defined the product extension-validator process protocol,
 > canonical JSON grammar, execution identity/order, a digest-bound immutable
-> validator runtime and audited sandbox boundary, retained catalog
+> validator runtime, canonical platform detection, deterministic local-store
+> resolution, and audited sandbox boundary, retained catalog
 > product-contract/history resolution, and the exact public release-engine
 > and local-repository-resolver interfaces.
 > **WHY:** The approved v1 contract named those obligations but left their
@@ -26,7 +27,8 @@ updated: 2026-07-24
 > remain current.
 > **POINTER:** `distribution/IMPLEMENTATION-STATUS.md` at
 > `495b4cb632fc796f76200d8cf0be7442b4d41997`; intrinsic remediation triggered
-> by the spec-adversary `NEEDS-REVISION` verdicts on `95fced9` and `88f1988`.
+> by the spec-adversary `NEEDS-REVISION` verdicts on `95fced9`, `88f1988`,
+> and `c5bedda`.
 > **VALUE:** Product maintainers can ship independently while Stewards verifies
 > exact release claims without interpreting or taking ownership of product
 > behavior.
@@ -321,10 +323,43 @@ canonical JSON bytes without a terminal LF. The manifest has
 | Field | Contract |
 |---|---|
 | `schema_version` | Integer `1` |
-| `platform` | Object with only non-empty lowercase dot-id `os`, `architecture`, and `abi`; it shall exactly equal the launcher's detected target tuple |
+| `platform` | Object containing only `os`, `architecture`, and `abi`; it shall be exactly one supported tuple below and equal the launcher's detected tuple |
 | `path_entries` | Non-empty, ordered, duplicate-free array of normalized absolute sandbox directories |
 | `executables` | Sorted, duplicate-free array of normalized absolute sandbox paths |
 | `entries` | Duplicate-free array sorted by normalized absolute sandbox path, with exactly one row for every runtime directory, regular file, and symbolic link |
+
+The complete platform vocabulary is:
+
+| `os` | `architecture` | `abi` |
+|---|---|---|
+| `linux` | `x86_64` | `elf` |
+| `linux` | `aarch64` | `elf` |
+| `macos` | `x86_64` | `macho` |
+| `macos` | `aarch64` | `macho` |
+| `windows` | `x86_64` | `pe` |
+| `windows` | `aarch64` | `pe` |
+
+The launcher detects its tuple once, before runtime-store lookup:
+
+1. On POSIX, it calls the operating-system `uname` API directly. `sysname`
+   `Linux` maps to `os: linux` and `abi: elf`; `Darwin` maps to `os: macos`
+   and `abi: macho`. Machine `x86_64` or `amd64` maps to
+   `architecture: x86_64`; `aarch64` or `arm64` maps to
+   `architecture: aarch64`.
+2. On Windows, `os` is `windows` and `abi` is `pe`. The launcher calls
+   `IsWow64Process2`; its process-machine value is used unless it is
+   `IMAGE_FILE_MACHINE_UNKNOWN`, in which case its native-machine value is
+   used. `IMAGE_FILE_MACHINE_AMD64` maps to `x86_64` and
+   `IMAGE_FILE_MACHINE_ARM64` maps to `aarch64`.
+3. Any other OS, API result, machine value, or combination is unsupported.
+   The launcher emits
+   `error: extension-runtime-platform-unsupported\n` and fails before store
+   lookup or spawn.
+
+The ABI value identifies the executable format accepted by the detected
+operating system; the image supplies and enumerates its own userland loader
+and libraries. The launcher never infers ABI from a caller string, shell
+command, host libc, or runtime manifest.
 
 Sandbox paths use `/`-rooted POSIX syntax regardless of host operating system;
 the launcher projects them into the synthetic child view without exposing the
@@ -347,20 +382,69 @@ does not imply visibility of an unlisted child.
 
 The runtime image contains exactly the manifest entries with the declared
 types, modes, link targets, and file hashes—no extra entry or implicit
-live-host bind. It contains no credential, user profile, mutable host state,
-device, socket, or writable file. Entries under `/home`, `/Users`, `/root`,
-`/private`, `/proc`, `/sys`, `/tmp`, `/dev`, `/run/secrets`, and
-`/var/run/secrets` are invalid. An individually enumerated immutable
-`configuration` file may use `/etc`; `/etc` directory visibility never exposes
-an unenumerated child.
+live-host bind. It contains no device, socket, or writable file. Entries under
+`/home`, `/Users`, `/root`, `/private`, `/proc`, `/sys`, `/tmp`, `/dev`,
+`/run/secrets`, and `/var/run/secrets` are invalid. An individually enumerated
+immutable `configuration` file may use `/etc`; `/etc` directory visibility
+never exposes an unenumerated child.
 
-Before either execution, the launcher resolves the declaration's exact digest
-from its local content-addressed runtime store, validates the manifest digest,
-schema, platform tuple, and complete image tree, and projects the same verified
-tree read-only into both sandboxes. It does not fetch or substitute another
-digest or platform. An unavailable digest, malformed manifest, digest
-mismatch, platform mismatch, missing or extra image entry, type/mode/hash/link
-mismatch, forbidden path, or unsupported projection fails before spawn.
+Manifest and image bytes are trusted, versioned runtime supply-chain input
+selected by the product's human-owned release. Digest and tree verification
+prove identity and immutability, not semantic safety or confidentiality:
+Stewards does not inspect or claim that enumerated runtime or package bytes
+are credential-free. The enforceable boundary is that no ambient live-host
+content outside the explicitly supplied package root and verified runtime
+object is projected into the child; no host profile, environment state, or
+runtime subtree is injected implicitly.
+
+`validate-product` receives the store root only through its required
+`--runtime-store <path>` argument. On Linux/macOS, the value is a `/`-rooted
+path with no empty, `.`, or `..` component. On Windows, it is a fully qualified
+drive path with an uppercase drive letter, `:\`, backslash separators, and no
+empty, `.`, or `..` component; UNC, drive-relative, and device-namespace input
+forms are invalid. Every root component is a directory and is neither a
+symbolic link nor, on Windows, a reparse point.
+
+For digest `aabb…` (64 lowercase hex characters), the one permitted object
+layout is:
+
+```text
+<runtime-store>/sha256/aa/<remaining-62-hex>/manifest.json
+<runtime-store>/sha256/aa/<remaining-62-hex>/image/
+```
+
+Slashes after `<runtime-store>` denote the host platform's directory
+separator. Every shown relative component uses the exact lowercase ASCII
+spelling even on a case-insensitive filesystem.
+The digest object directory contains exactly regular file `manifest.json` and
+directory `image`, neither reached through a symbolic link or reparse point.
+`manifest.json` contains the exact canonical manifest bytes without LF.
+`image/` represents sandbox `/`; stripping the leading `/` from each manifest
+entry yields its relative image path, and the manifest's required `/`
+directory entry describes the `image/` root. Other digest objects may coexist
+in the store.
+
+Before either execution, the launcher opens the exact object without following
+lookup symlinks, verifies the manifest digest, schema, canonical bytes,
+detected platform tuple, and complete image tree, and holds stable file
+handles or a private verified snapshot so path replacement cannot change the
+projected bytes. Image traversal uses no-follow metadata reads; a declared
+symbolic-link target is compared as a string and resolved only within the
+manifest graph, never through the live-host filesystem. The launcher projects
+the same verified tree read-only into both sandboxes, does not fetch, and
+rechecks that the source object did not change through process-group
+termination.
+
+Runtime failures use these exact public diagnostics; the first failure in
+validator execution order wins:
+
+| Diagnostic | Condition |
+|---|---|
+| `error: extension-runtime-unavailable <digest>\n` | Store root fails its absolute normalized no-symlink directory contract, or the digest object, manifest, or image is absent or unreadable |
+| `error: extension-runtime-malformed <digest>\n` | Readable manifest is invalid UTF-8/JSON/schema/canonical bytes, hashes to another digest, or names an invalid/unsupported entry |
+| `error: extension-runtime-platform-mismatch <digest>\n` | Valid manifest tuple differs from the detected supported tuple |
+| `error: extension-runtime-drift <digest>\n` | Object directory has an extra entry; image has a missing/extra or type/mode/hash/link mismatch; a lookup component between store root and image root is a symlink/reparse point; or the verified object changes before validation ends |
+| `error: extension-runtime-enforcement-unavailable <digest>\n` | Exact read-only projection, stable-object handling, or required sandbox auditing cannot be established |
 
 Each validator is executed twice with this exact process contract:
 
@@ -388,9 +472,11 @@ The child environment contains exactly these keys:
 | `NO_PROXY` | `*` |
 | `http_proxy`, `https_proxy`, `HTTP_PROXY`, `HTTPS_PROXY` | Empty string |
 
-No other inherited variable, file descriptor, credential, or stdin byte is
-available to the child. A launcher unable to establish the filesystem or
-network boundary fails closed before executing the validator.
+No other inherited variable, file descriptor, or stdin byte is available to
+the child. No ambient live-host content outside the explicit package/runtime
+inputs is injected through those channels or through an undeclared filesystem
+projection. A launcher unable to establish the filesystem or network boundary
+fails closed before executing the validator.
 
 The sandbox presents a synthetic filesystem view, using a mount namespace,
 sandbox profile, or equivalent enforcement. Its complete visibility is:
@@ -1175,8 +1261,8 @@ ratify its decision.
 
 | Command | Required result |
 |---|---|
-| `validate-product --phase pre-tag --package-root <path> --release-metadata <path>` | Preserve the landed interface: validate the pre-tag contract and emit exactly `{"expected_tag": string, "package_version": string}` |
-| `validate-product --phase release --package-root <path> --release-metadata <path>` | Repeat pre-tag validation, validate extensions with the peeled commit, resolve/validate every package tag, appended history row, compatibility change, bump, and approval, then preserve v1's release-identity result as exactly `{"expected_tag": string, "package_version": string, "source_commit": string}` |
+| `validate-product --phase pre-tag --package-root <path> --release-metadata <path> --runtime-store <absolute-path>` | Preserve the landed result: validate the pre-tag contract and emit exactly `{"expected_tag": string, "package_version": string}` |
+| `validate-product --phase release --package-root <path> --release-metadata <path> --runtime-store <absolute-path>` | Repeat pre-tag validation, validate extensions with the peeled commit, resolve/validate every package tag, appended history row, compatibility change, bump, and approval, then preserve v1's release-identity result as exactly `{"expected_tag": string, "package_version": string, "source_commit": string}` |
 | `validate-door` | Validate all schemas, sources, cross-references, identities, baselines, host projections, and verified retained product bytes through `STEWARDS_PRODUCT_REPOSITORIES` |
 | `generate` | Deterministically write both host catalogs and `distribution/availability.md` |
 | `generate --check` | Make no writes; fail and name every stale catalog, availability, README, or CLAUDE derivative |
@@ -1186,6 +1272,10 @@ ratify its decision.
 
 `--package-root` resolves to an existing package directory inside a Git
 checkout; `--release-metadata` is a normalized path relative to that root.
+`--runtime-store` is the sole runtime-store discovery input and satisfies the
+absolute, normalized, no-symlink root contract above; environment variables,
+default directories, package-relative stores, and upward search cannot
+provide or override it.
 The validator reads package inputs from that root, resolves repository refs
 with `git -C <package-root>`, and passes the same resolved root to the
 inventory-provider and extension protocols. It does not fetch. In `release`,
@@ -1295,7 +1385,7 @@ Positive fixtures:
 | `positive/release-tag-resolution/` | Expected Git tag is the only tag source and peels to the emitted commit |
 | `positive/typed-supported-row/` | Exact evidence/load/support/setup objects validate |
 | `positive/product-extension/` | Nested namespaced product data survives canonicalization; distinct metadata/host identities bind exact runtime digests, run in exact order, and pass the repeated v1 process protocol |
-| `positive/immutable-extension-runtime/` | An exact platform manifest and image enumerate every executable, loader, library, configuration file, and link; only that read-only runtime plus package/private overlays is visible |
+| `positive/immutable-extension-runtime/` | Canonical host detection accepts the exact matching platform manifest from the explicit content-addressed store; every executable, loader, library, configuration file, and link verifies before only that runtime plus package/private overlays becomes visible |
 | `positive/canonical-nested-json/` | Nested objects, arrays, NFC strings, control/non-BMP scalars, booleans, null, and numbers produce the single canonical byte stream |
 | `positive/retained-verified-release/` | Local no-fetch resolution binds selector, product blobs, history, and catalog identity |
 | `positive/published-mutable-catalog/` | Typed mutable selector remains published |
@@ -1348,7 +1438,9 @@ Negative fixtures:
 | `negative/wave-close-with-stock/` | Reject first-wave completion |
 | `negative/stale-derived/` | Name every stale derivative without writes |
 | `negative/extension-validator-protocol/` | Reject wrong identity/order, argv/env/request/result/exit, stderr, differing runs, timeout, oversize output, forbidden path/write, caught socket attempt, or persistent mutation |
-| `negative/extension-runtime-unavailable-or-drifted/` | Reject absent/mismatched digest, platform mismatch, missing/extra or type/mode/hash/link-drifted entry, unenumerated loader/configuration/executable, forbidden runtime path, or live-host runtime substitution before spawn |
+| `negative/extension-runtime-platform/` | Reject every non-vocabulary host result before store lookup and a valid manifest for a supported but different tuple with the exact distinct diagnostic |
+| `negative/extension-runtime-store/` | Reject implicit/default store discovery, invalid root or object layout, absent object, malformed manifest, drifted image, changed object, and unavailable enforcement with the exact category diagnostic |
+| `negative/extension-runtime-live-host-state/` | Reject an ambient live-host bind or injected host environment/state outside explicit package/runtime inputs while treating those enumerated immutable bytes as trusted product-owned supply-chain input rather than asserting their semantic contents |
 | `negative/canonical-json-ambiguity/` | Reject invalid UTF-8/scalars/numbers, duplicate pre/post-NFC keys, or non-canonical key order, escaping, number bytes, whitespace, or LF |
 | `negative/retained-verified-release/` | Reject absent/wrong checkout, origin, Git object mode, path composition, digest, ancestry, last row, or release binding |
 | `negative/release-interface-output/` | Reject partial or non-canonical success/failure output and a release ledger other than prior rows plus one exact append |
@@ -1544,12 +1636,15 @@ and rejects invalid or normalization-duplicate input.
 
 **S28 — Immutable validator runtime**
 
-Given a validator declaration with an exact runtime-manifest digest and a
-matching launcher platform, when extension validation starts, then the
-launcher resolves and verifies that exact local manifest and complete image,
-exposes only its enumerated read-only entries plus the package, private
-temporary directory, and `/dev/null` overlays, and fails before spawn when the
-digest, platform, content, or enforcement is unavailable or differs.
+Given a validator declaration, an explicit runtime-store root, and a launcher
+whose API-derived tuple is in the canonical platform vocabulary, when
+extension validation starts, then the launcher resolves the digest only at the
+exact content-addressed object path, verifies and holds the matching manifest
+and image, exposes only those enumerated read-only entries plus the package,
+private temporary directory, and `/dev/null` overlays, and emits the exact
+unsupported, unavailable, malformed, platform-mismatch, drift, or
+enforcement-unavailable diagnostic before spawn when its applicable boundary
+is not satisfied.
 
 ### Requirements and invariants
 
@@ -1681,10 +1776,13 @@ digest, platform, content, or enforcement is unavailable or differs.
   audit flag shall fail validation even when the validator catches the error
   and otherwise returns `pass`.
 - **R49:** Every extension-validator declaration shall bind an exact
-  platform-specific immutable runtime-manifest digest; the launcher shall
-  verify every enumerated entry and shall fail before spawn rather than fetch,
-  substitute live-host content, or continue when that exact runtime or its
-  credential-free read-only projection is unavailable.
+  platform-specific immutable runtime-manifest digest; `validate-product`
+  shall derive the platform only through the canonical host mapping, resolve
+  the object only beneath its explicit runtime-store argument, verify and hold
+  every enumerated entry, exclude ambient live-host content outside the
+  explicit package/runtime inputs without classifying those trusted contents,
+  and fail before spawn with the exact applicable diagnostic rather than
+  fetch, search, substitute, or continue.
 
 ## Open questions
 
@@ -1722,6 +1820,9 @@ Self-check used the local contract-author rules, `specs/README.md`,
 | Intrinsic F3 immutable initial stock | CLOSED | Exact initial row, stable comparison commit/digest, working-file equality, and removal-only comparison are normative |
 | Adversary remediation F1–F4 | CLOSED | Generic nested canonical JSON including number bytes; unique host identity/order; manifest-derived PATH and exact immutable runtime/package/private visibility with forbidden-path audit; and process-tree network-attempt audit are normative |
 | Second-adversary F3 immutable runtime | CLOSED | Every declaration binds a platform-specific canonical manifest digest; every runtime entry is content/type/mode/link enumerated; live-host substitution and unavailable or drifted images fail before spawn |
+| Third-adversary F3.1 platform mapping | CLOSED | Six exact OS/architecture/executable-ABI tuples, direct POSIX/Windows API mappings, and unsupported-host behavior are normative |
+| Third-adversary F3.2 runtime-store resolution | CLOSED | Required CLI root, exact digest-object layout, stable no-symlink resolution, failure precedence, and distinct unavailable/malformed/platform/drift/enforcement diagnostics are normative |
+| Third-adversary F3.3 confidentiality claim | CLOSED | The contract excludes ambient live-host content outside explicit package/runtime inputs and treats those immutable bytes as trusted product-owned supply-chain input whose semantic contents Stewards does not classify |
 | v2 whole-spec execution boundary | CLOSED | Recursive canonical JSON, unique validator identities/order, digest-bound audited filesystem/runtime/network boundary, extension subprocess request/result/limits, retained verified-catalog resolution, release-history digest/append staging, and public CLI results are exact |
 | Whole-corpus validation | NOT CLAIMED | Issue #20 blocks literal full-corpus PASS; this artifact uses strict YAML/exact ids and was checked change-scoped |
 
