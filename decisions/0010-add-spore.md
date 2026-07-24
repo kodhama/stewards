@@ -1,14 +1,18 @@
 ---
 id: kodhama-0010-add-spore
 type: decision
-status: approved  # ratified by PR #7 merge (2026-07-22)
+status: superseded  # retired by kodhama-0014 (2026-07-24); original ratification: PR #7 merge (2026-07-22)
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0009-org-topology-spirit-stewards-trees]
+superseded_by: [kodhama-0014-retire-spore]
 owner: agent
 updated: 2026-07-22
 provenance: maintainer request 2026-07-22 to formally admit spore (Claude Code session-driver skills, github.com/kodhama/spore) to the stewards after its first public commit. spore was distilled 2026-07-22 from a live session that used it to hot-migrate a running session onto the grove thin-vendor plugin.
 ---
 
 # Decision: spore joins the stewards — the session-driver tool
+
+> **Superseded by `kodhama-0014-retire-spore` (2026-07-24).** Spore is no
+> longer a steward. This file remains the historical record of its admission.
 
 **Decision.** **spore** (`github.com/kodhama/spore`) is admitted to the
 **stewards** as a full family member, listed as **spore (session drivers)**.
