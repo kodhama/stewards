@@ -61,6 +61,19 @@ Rules (the collective's):
   and committed CI-range whitespace checks. This project-owned rule supersedes the managed
   block's older “no test/typecheck gates” description for distribution files;
   the next Grove refresh should update that adapter projection.
+  CI provisions product-adoption repositories automatically. Local runs require
+  these exact pinned checkouts and resolver mapping:
+
+      git clone https://github.com/kodhama/grove.git .product-repositories/grove
+      git -C .product-repositories/grove checkout db650fe5855a197eb65375b50e3e81b1065ebddb
+      git clone https://github.com/kodhama/trellis.git .product-repositories/trellis
+      git -C .product-repositories/trellis checkout 4062120cea71737bd28cb171785a2dcdd6192deb
+      export STEWARDS_PRODUCT_REPOSITORIES='{"kodhama/grove":".product-repositories/grove","kodhama/trellis":".product-repositories/trellis"}'
+      distribution/check
+
+  Without that mapping, the gate intentionally fails closed with the
+  product-adoption resolver prerequisite instead of trusting unresolved
+  references.
 
 <!-- grove:begin (managed by grove — edit .claude/agents/, not this block) -->
 This repo is **grove-managed**: conductor work items run as

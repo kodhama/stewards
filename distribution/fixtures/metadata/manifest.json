@@ -27,6 +27,12 @@
       "guards": "S8 S14 S15 S20 R12-R14 R23 R27-R28 R37"
     },
     {
+      "name": "product-row-declared-surface-binding",
+      "test": "test_product_row_surface_matches_declared_subject",
+      "expected_exit": "contract-failure",
+      "guards": "S8 S12 R12 R20"
+    },
+    {
       "name": "effective-setup-product-binding",
       "test": "test_effective_setup_complete_binds_product_requirement",
       "expected_exit": "contract-failure-and-success",

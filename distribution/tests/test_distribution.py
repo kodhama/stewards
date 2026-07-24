@@ -500,6 +500,26 @@ class DistributionContractTests(unittest.TestCase):
             self.assertNotEqual(rejected.returncode, 0)
             self.assertEqual(rejected.stdout, "")
 
+    # spec-0001@v1 S8, S12, R12, R20; fourth-review cross-surface finding
+    def test_product_row_surface_matches_declared_subject(self) -> None:
+        row = supported_surface_row()
+        row["surface_id"] = "codex.local.interactive"
+        row["host"] = "codex"
+        for evidence in row["evidence"]:
+            evidence["surface_id"] = "codex.local.interactive"
+        row["support_record"]["surface_id"] = "codex.local.interactive"
+        fact = {
+            "kind": "record",
+            "source_reference": stable_ref("surfaces.json"),
+            "subject": subject(),
+            "row": row,
+        }
+        with self.assertRaisesRegex(
+            contract.ContractError,
+            "row.surface_id",
+        ):
+            contract.validate_product_fact(fact)
+
     # spec-0001@v1 S8, R23; conformance setup-binding counterexamples
     def test_effective_setup_complete_binds_product_requirement(self) -> None:
         product_reference = stable_ref("surfaces.json")
@@ -1273,6 +1293,17 @@ class DistributionContractTests(unittest.TestCase):
             "4062120cea71737bd28cb171785a2dcdd6192deb",
             workflow,
         )
+        instructions = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+        self.assertIn("STEWARDS_PRODUCT_REPOSITORIES", instructions)
+        self.assertIn(
+            "db650fe5855a197eb65375b50e3e81b1065ebddb",
+            instructions,
+        )
+        self.assertIn(
+            "4062120cea71737bd28cb171785a2dcdd6192deb",
+            instructions,
+        )
+        self.assertIn("fails closed", instructions)
 
     # spec-0001@v1 complete-inventory provider; third-review escaped-session finding
     def test_provider_capture_returns_with_setsid_descendant(self) -> None:

@@ -1934,6 +1934,10 @@ def validate_product_fact(value: Any) -> dict[str, Any]:
         subject = validate_subject(obj["subject"], "effective_facts.product_contract.subject")
         validate_stable_reference(obj["source_reference"], "effective_facts.product_contract.source_reference")
         validate_surface_row(obj["row"], subject["package_version"], "effective_facts.product_contract.row")
+        require(
+            obj["row"]["surface_id"] == subject["surface_id"],
+            "effective_facts.product_contract.row.surface_id: declared subject mismatch",
+        )
     elif kind == "missing":
         obj = exact_keys(value, ("kind", "source_reference", "lookup"), where="effective_facts.product_contract")
         validate_stable_reference(obj["source_reference"])
