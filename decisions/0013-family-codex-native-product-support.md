@@ -10,6 +10,10 @@ provenance: maintainer request 2026-07-24 to make native Codex support, preferab
 
 # Decision: native Codex support becomes a product-family standard
 
+> **Spore follow-up (2026-07-24):** `kodhama-0014-retire-spore` settles this
+> decision’s parked Spore question by retiring the tool from the family. The
+> Trellis/Grove/Wisp Codex mandate is unchanged.
+
 ## Decision state
 
 **Decided** (maintainer request, 2026-07-24):

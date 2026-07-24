@@ -1,14 +1,19 @@
 ---
 id: kodhama-0011-spore-plugin-channel
 type: decision
-status: approved  # ratified by PR #8 merge (2026-07-22)
+status: superseded  # retired by kodhama-0014 (2026-07-24); original ratification: PR #8 merge (2026-07-22)
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0010-add-spore]
+superseded_by: [kodhama-0014-retire-spore]
 owner: agent
 updated: 2026-07-22
 provenance: maintainer request 2026-07-22 to package spore as a marketplace plugin, immediately after its admission to the stewards (kodhama-0010). Stated goal — make the skills available to every user on a machine, with the install left to each user.
 ---
 
 # Decision: spore gains a Claude Code plugin delivery channel
+
+> **Superseded by `kodhama-0014-retire-spore` (2026-07-24).** The
+> `spore@kodhama` channel is retired and removed from the family marketplace.
+> This file remains the historical record of that channel.
 
 **Decision.** spore is packaged as the **`spore@kodhama`** Claude Code plugin
 and listed in the `@kodhama` marketplace manifest
