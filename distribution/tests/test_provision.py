@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from typing import Optional
 import unittest
 from unittest import mock
 
@@ -313,8 +314,8 @@ class ProvisionContractTests(unittest.TestCase):
                 value,
             )
 
-    # spec-0002@v1 S27, R40; conformance output-parent TOCTOU finding
-    def test_output_creation_is_relative_to_retained_nofollow_parent_fd(self) -> None:
+    # spec-0002@v3 S31, R40, R44; retained parent identity and crash debris
+    def test_output_creation_rejects_renamed_parent_and_retains_debris(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             temp = Path(raw).resolve()
             parent = temp / "outputs"
@@ -325,29 +326,29 @@ class ProvisionContractTests(unittest.TestCase):
                 "receipt",
             )
             self.assertGreaterEqual(os.fstat(target.parent_fd).st_ino, 1)
-            parent.rename(moved_parent)
-            parent.mkdir()
+            real_ensure_identity = contract.ensure_target_path_identity
+            moved = False
+
+            def move_parent_after_precreate_check(
+                checked_target: contract.OutputTarget,
+                leaf_expected: bool,
+                operation: str = "identity",
+            ) -> None:
+                nonlocal moved
+                real_ensure_identity(checked_target, leaf_expected, operation)
+                if not leaf_expected and not moved:
+                    moved = True
+                    parent.rename(moved_parent)
+                    parent.mkdir()
+
             try:
                 with mock.patch.object(
-                    contract.os,
-                    "open",
-                    wraps=os.open,
-                ) as open_call:
-                    digest = contract.write_once(target, b"sealed")
-                leaf_calls = [
-                    call
-                    for call in open_call.call_args_list
-                    if call.args
-                    and call.args[0] == "receipt.json"
-                    and call.kwargs.get("dir_fd") == target.parent_fd
-                ]
-                self.assertEqual(len(leaf_calls), 1)
-                self.assertTrue(leaf_calls[0].args[1] & os.O_EXCL)
-                self.assertTrue(leaf_calls[0].args[1] & os.O_NOFOLLOW)
-                self.assertEqual(
-                    digest,
-                    hashlib.sha256(b"sealed").hexdigest(),
-                )
+                    contract,
+                    "ensure_target_path_identity",
+                    side_effect=move_parent_after_precreate_check,
+                ):
+                    with self.assertRaises(contract.OutputSealError):
+                        contract.write_once(target, b"sealed")
                 self.assertEqual(
                     (moved_parent / "receipt.json").read_bytes(),
                     b"sealed",
@@ -356,7 +357,7 @@ class ProvisionContractTests(unittest.TestCase):
             finally:
                 target.close()
 
-    # spec-0002@v1 S31, R40, R44; conformance post-work audit failure finding
+    # spec-0002@v3 S31, R40, R44; retained orphan and committed minimal receipt
     def test_post_work_audit_flush_failure_seals_typed_minimal_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             temp = Path(raw).resolve()
@@ -401,9 +402,17 @@ class ProvisionContractTests(unittest.TestCase):
                 value["diagnostics"][0]["code"],
                 "audit-seal-failed",
             )
+            self.assertEqual(
+                value["diagnostics"][0]["causes"][0]["field_path"],
+                "/audit/fsync",
+            )
             self.assertIn("audit-seal-failed", stderr.getvalue())
             self.assertNotIn("receipt-seal-failed", stderr.getvalue())
-            self.assertFalse(audit.exists())
+            self.assertTrue(audit.is_file())
+            self.assertEqual(
+                contract.classify_retained_evidence(ROOT, receipt, audit),
+                "committed-minimal",
+            )
             from distribution.lib import schema_validation
 
             schema_validation.validate_document(
@@ -412,17 +421,15 @@ class ProvisionContractTests(unittest.TestCase):
                 value,
             )
 
-            retry_receipt = temp / "retry-receipt.json"
             retry_exit = contract.execute(
                 ROOT,
                 request,
-                str(retry_receipt),
+                str(receipt),
                 str(audit),
             )
-            self.assertEqual(retry_exit, 3)
-            self.assertTrue(audit.is_file())
+            self.assertEqual(retry_exit, 7)
 
-    # spec-0002@v1 S27, S31, R40, R44; conformance descriptor read-back finding
+    # spec-0002@v3 S27, S31, R40, R44; retained orphan after read-back failure
     def test_audit_readback_failure_uses_fd_and_seals_minimal_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             temp = Path(raw).resolve()
@@ -460,9 +467,13 @@ class ProvisionContractTests(unittest.TestCase):
                 value["diagnostics"][0]["code"],
                 "audit-seal-failed",
             )
-            self.assertFalse(audit.exists())
+            self.assertTrue(audit.is_file())
+            self.assertEqual(
+                contract.classify_retained_evidence(ROOT, receipt, audit),
+                "committed-minimal",
+            )
 
-    # spec-0002@v1 S27, S31, R40, R44; conformance receipt attribution finding
+    # spec-0002@v3 S27, S31, R40, R44; retained-state commitment beats producer failure
     def test_receipt_flush_failure_is_not_misattributed_to_audit(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             temp = Path(raw).resolve()
@@ -475,10 +486,10 @@ class ProvisionContractTests(unittest.TestCase):
             real_fsync = os.fsync
             calls = 0
 
-            def fail_second_fsync(descriptor: int) -> None:
+            def fail_receipt_file_fsync(descriptor: int) -> None:
                 nonlocal calls
                 calls += 1
-                if calls == 2:
+                if calls == 3:
                     raise OSError("forced receipt flush failure")
                 real_fsync(descriptor)
 
@@ -486,7 +497,7 @@ class ProvisionContractTests(unittest.TestCase):
             with mock.patch.object(
                 contract.os,
                 "fsync",
-                side_effect=fail_second_fsync,
+                side_effect=fail_receipt_file_fsync,
             ), redirect_stderr(stderr):
                 exit_code = contract.execute(
                     ROOT,
@@ -497,11 +508,15 @@ class ProvisionContractTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 7)
             self.assertTrue(audit.is_file())
-            self.assertFalse(receipt.exists())
+            self.assertTrue(receipt.is_file())
+            self.assertEqual(
+                contract.classify_retained_evidence(ROOT, receipt, audit),
+                "committed-normal",
+            )
             self.assertIn("receipt-seal-failed", stderr.getvalue())
             self.assertNotIn("audit-seal-failed", stderr.getvalue())
 
-    # spec-0002@v1 S27, S31, R40, R44; conformance receipt read-back finding
+    # spec-0002@v3 S27, S31, R40, R44; retained normal witness after read-back failure
     def test_receipt_is_read_back_from_its_open_descriptor_before_success(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             temp = Path(raw).resolve()
@@ -512,13 +527,20 @@ class ProvisionContractTests(unittest.TestCase):
             audit = temp / "audit.json"
             write_json(request, request_for("codex", state_root))
             real_read = os.read
-            calls = 0
+            failed = False
 
             def fail_receipt_read(descriptor: int, size: int) -> bytes:
-                nonlocal calls
-                calls += 1
-                if calls == 3:
-                    raise OSError("forced receipt read-back failure")
+                nonlocal failed
+                if receipt.exists():
+                    receipt_stat = os.stat(receipt, follow_symlinks=False)
+                    descriptor_stat = os.fstat(descriptor)
+                    if (
+                        not failed
+                        and (descriptor_stat.st_dev, descriptor_stat.st_ino)
+                        == (receipt_stat.st_dev, receipt_stat.st_ino)
+                    ):
+                        failed = True
+                        raise OSError("forced receipt read-back failure")
                 return real_read(descriptor, size)
 
             stderr = io.StringIO()
@@ -535,9 +557,74 @@ class ProvisionContractTests(unittest.TestCase):
                 )
 
             self.assertEqual(exit_code, 7)
-            self.assertFalse(receipt.exists())
+            self.assertTrue(receipt.is_file())
+            self.assertEqual(
+                contract.classify_retained_evidence(ROOT, receipt, audit),
+                "committed-normal",
+            )
             self.assertIn("receipt-seal-failed", stderr.getvalue())
             self.assertNotIn("audit-seal-failed", stderr.getvalue())
+
+    # spec-0002@v3 S27, R40; producer file-and-parent fsync obligations
+    def test_write_once_fsyncs_file_and_retained_parent(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            target = contract.validate_output_leaf(
+                str(temp / "receipt.json"),
+                "receipt",
+            )
+            calls: list[int] = []
+            real_fsync = os.fsync
+
+            def record_fsync(descriptor: int) -> None:
+                calls.append(descriptor)
+                real_fsync(descriptor)
+
+            try:
+                with mock.patch.object(
+                    contract.os,
+                    "fsync",
+                    side_effect=record_fsync,
+                ):
+                    contract.write_once(target, b"sealed")
+                self.assertEqual(len(calls), 2)
+                self.assertEqual(calls[1], target.parent_fd)
+            finally:
+                target.close()
+
+    # spec-0002@v3 S27, R40; retained bytes commit independently of writer history
+    def test_foreign_canonical_pair_is_committed_by_retained_state(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            source_receipt = temp / "source-receipt.json"
+            source_audit = temp / "source-audit.json"
+            write_json(request, request_for("codex", state_root))
+            self.assertEqual(
+                contract.execute(
+                    ROOT,
+                    request,
+                    str(source_receipt),
+                    str(source_audit),
+                ),
+                3,
+            )
+            audit = temp / "foreign-audit.json"
+            receipt = temp / "foreign-receipt.json"
+            audit.write_bytes(source_audit.read_bytes())
+            receipt_value = json.loads(source_receipt.read_text(encoding="utf-8"))
+            receipt_value["write_events_reference"] = str(audit)
+            receipt_value["write_events_sha256"] = hashlib.sha256(
+                audit.read_bytes()
+            ).hexdigest()
+            receipt.write_bytes(contract.canonical_json(receipt_value))
+
+            self.assertEqual(
+                contract.classify_retained_evidence(ROOT, receipt, audit),
+                "committed-normal",
+            )
 
     # spec-0002@v1 bounded implementation disclosure; conformance status finding
     def test_implementation_status_does_not_claim_whole_protocol_conformance(self) -> None:
@@ -782,7 +869,7 @@ class ProvisionContractTests(unittest.TestCase):
                 value,
             )
 
-    # spec-0002@v1 sealing order and output failure rule 3; second review H2
+    # spec-0002@v3 S31, R44; renamed audit parent leaves operator-owned debris
     def test_audit_path_identity_is_revalidated_before_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             temp = Path(raw).resolve()
@@ -797,22 +884,29 @@ class ProvisionContractTests(unittest.TestCase):
             receipt = receipt_parent / "receipt.json"
             audit = audit_parent / "audit.json"
             write_json(request, request_for("codex", state_root))
-            real_write_once = contract.write_once
+            real_seal_output = contract.seal_output
 
             def move_parent_after_audit(
                 target: contract.OutputTarget,
                 raw_bytes: bytes,
-            ) -> str:
-                digest = real_write_once(target, raw_bytes)
+                root: Optional[Path] = None,
+                schema_name: Optional[str] = None,
+            ) -> contract.SealedOutput:
+                sealed = real_seal_output(
+                    target,
+                    raw_bytes,
+                    root,
+                    schema_name,
+                )
                 if target.label == "audit":
                     audit_parent.rename(moved_audit_parent)
                     audit_parent.mkdir()
-                return digest
+                return sealed
 
             stderr = io.StringIO()
             with mock.patch.object(
                 contract,
-                "write_once",
+                "seal_output",
                 side_effect=move_parent_after_audit,
             ), redirect_stderr(stderr):
                 exit_code = contract.execute(
@@ -824,7 +918,7 @@ class ProvisionContractTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 7)
             self.assertFalse(audit.exists())
-            self.assertFalse((moved_audit_parent / "audit.json").exists())
+            self.assertTrue((moved_audit_parent / "audit.json").is_file())
             value = json.loads(receipt.read_text(encoding="utf-8"))
             self.assertEqual(value["overall_outcome"], "output-failure")
             self.assertEqual(value["exit_code"], 7)
@@ -890,6 +984,125 @@ class ProvisionContractTests(unittest.TestCase):
                 "provision-receipt.v1.schema.json",
                 json.loads(receipt.read_text(encoding="utf-8")),
             )
+
+    # spec-0002@v3 S31, R44; invalid pair survives when conditional unlink is unavailable
+    def test_audit_rename_after_recheck_cannot_commit_stale_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            receipt_parent = temp / "receipt-output"
+            audit_parent = temp / "audit-output"
+            moved_audit_parent = temp / "moved-audit-output"
+            state_root.mkdir()
+            receipt_parent.mkdir()
+            audit_parent.mkdir()
+            request = temp / "request.json"
+            receipt = receipt_parent / "receipt.json"
+            audit = audit_parent / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            real_ensure_identity = contract.ensure_target_path_identity
+            audit_leaf_checks = 0
+
+            def rename_after_audit_recheck(
+                target: contract.OutputTarget,
+                leaf_expected: bool,
+                operation: str = "identity",
+            ) -> None:
+                nonlocal audit_leaf_checks
+                real_ensure_identity(target, leaf_expected, operation)
+                if target.label == "audit" and leaf_expected:
+                    audit_leaf_checks += 1
+                if audit_leaf_checks == 2:
+                    audit_leaf_checks += 1
+                    audit_parent.rename(moved_audit_parent)
+                    audit_parent.mkdir()
+
+            stderr = io.StringIO()
+            with mock.patch.object(
+                contract,
+                "ensure_target_path_identity",
+                side_effect=rename_after_audit_recheck,
+            ), redirect_stderr(stderr):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            self.assertFalse(audit.exists())
+            moved_audit = moved_audit_parent / "audit.json"
+            self.assertTrue(moved_audit.is_file())
+            self.assertTrue(receipt.is_file())
+            self.assertEqual(
+                contract.classify_retained_evidence(
+                    ROOT,
+                    receipt,
+                    audit,
+                ),
+                "uncommitted",
+            )
+            self.assertIn("audit-seal-failed", stderr.getvalue())
+
+    # spec-0002@v3 S31, R44; receipt-parent race preserves the orphan audit
+    def test_receipt_parent_rename_after_audit_cannot_commit_elsewhere(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            receipt_parent = temp / "receipt-output"
+            moved_receipt_parent = temp / "moved-receipt-output"
+            audit_parent = temp / "audit-output"
+            state_root.mkdir()
+            receipt_parent.mkdir()
+            audit_parent.mkdir()
+            request = temp / "request.json"
+            receipt = receipt_parent / "receipt.json"
+            audit = audit_parent / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            real_seal_output = contract.seal_output
+
+            def move_receipt_parent_after_audit(
+                target: contract.OutputTarget,
+                raw_bytes: bytes,
+                root: Optional[Path] = None,
+                schema_name: Optional[str] = None,
+            ) -> contract.SealedOutput:
+                sealed = real_seal_output(
+                    target,
+                    raw_bytes,
+                    root,
+                    schema_name,
+                )
+                if target.label == "audit":
+                    receipt_parent.rename(moved_receipt_parent)
+                    receipt_parent.mkdir()
+                return sealed
+
+            stderr = io.StringIO()
+            with mock.patch.object(
+                contract,
+                "seal_output",
+                side_effect=move_receipt_parent_after_audit,
+            ), redirect_stderr(stderr):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            self.assertFalse(receipt.exists())
+            self.assertFalse(
+                (moved_receipt_parent / "receipt.json").exists()
+            )
+            self.assertTrue(audit.is_file())
+            self.assertEqual(
+                contract.classify_retained_evidence(ROOT, receipt, audit),
+                "uncommitted",
+            )
+            self.assertIn("receipt-seal-failed", stderr.getvalue())
 
 
 if __name__ == "__main__":

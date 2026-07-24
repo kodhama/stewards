@@ -16,10 +16,12 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import stat
 import sys
 from typing import Any, Iterable, Optional, Sequence
 import unicodedata
 
+from . import schema_validation
 from .manage import (
     DOT_ID,
     PLUGIN_ID,
@@ -52,7 +54,7 @@ class OutputContractError(ValueError):
 
 
 class OutputSealError(OSError):
-    """One exact create/write/flush/read-back output operation failed."""
+    """One exact create/write/fsync/read-back output operation failed."""
 
     def __init__(self, operation: str, cause: OSError) -> None:
         error_number = cause.errno if cause.errno is not None else errno.EIO
@@ -77,6 +79,7 @@ class OutputTarget:
     leaf: str
     label: str
     case_sensitive: Optional[bool]
+    created_identity: Optional[tuple[int, int]] = None
     closed: bool = False
 
     def close(self) -> None:
@@ -84,6 +87,34 @@ class OutputTarget:
         if not self.closed:
             os.close(self.parent_fd)
             self.closed = True
+
+
+@dataclass
+class SealedOutput:
+    """One invocation-created output retained open through final validation."""
+
+    target: OutputTarget
+    descriptor: int
+    raw: bytes
+    digest: str
+    identity: tuple[int, int]
+    closed: bool = False
+
+    def close(self) -> None:
+        """Close the retained output descriptor once."""
+        if not self.closed:
+            os.close(self.descriptor)
+            self.closed = True
+
+
+@dataclass(frozen=True)
+class RetainedDocument:
+    """One fail-closed observation of an explicit retained output path."""
+
+    state: str
+    value: Optional[dict[str, Any]] = None
+    raw: Optional[bytes] = None
+    digest: Optional[str] = None
 
 
 def timestamp() -> str:
@@ -277,6 +308,7 @@ def output_is_within_state_root(target: OutputTarget, root_path: Path) -> bool:
 def ensure_target_path_identity(
     target: OutputTarget,
     leaf_expected: bool,
+    operation: str = "identity",
 ) -> None:
     """Require the declared path to still name the retained parent/leaf."""
     try:
@@ -286,7 +318,7 @@ def ensure_target_path_identity(
         )
     except OutputContractError as exc:
         raise OutputSealError(
-            "identity",
+            operation,
             OSError(errno.ESTALE, "declared output parent is unavailable"),
         ) from exc
     try:
@@ -297,7 +329,7 @@ def ensure_target_path_identity(
             current_parent.st_ino,
         ):
             raise OutputSealError(
-                "identity",
+                operation,
                 OSError(errno.ESTALE, "declared output parent identity changed"),
             )
         if leaf_expected:
@@ -313,34 +345,134 @@ def ensure_target_path_identity(
                     follow_symlinks=False,
                 )
             except OSError as exc:
-                raise OutputSealError("identity", exc) from exc
+                raise OutputSealError(operation, exc) from exc
             if (retained_leaf.st_dev, retained_leaf.st_ino) != (
                 current_leaf.st_dev,
                 current_leaf.st_ino,
             ):
                 raise OutputSealError(
-                    "identity",
+                    operation,
                     OSError(
                         errno.ESTALE,
                         "declared output leaf identity changed",
                     ),
                 )
+            if target.created_identity is not None and (
+                retained_leaf.st_dev,
+                retained_leaf.st_ino,
+            ) != target.created_identity:
+                raise OutputSealError(
+                    operation,
+                    OSError(
+                        errno.ESTALE,
+                        "declared output leaf is not invocation-created file",
+                    ),
+                )
+        else:
+            try:
+                os.stat(
+                    target.leaf,
+                    dir_fd=current_parent_fd,
+                    follow_symlinks=False,
+                )
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                raise OutputSealError(operation, exc) from exc
+            else:
+                raise OutputSealError(
+                    operation,
+                    OSError(errno.EEXIST, "declared output leaf already exists"),
+                )
     finally:
         os.close(current_parent_fd)
 
 
-def unlink_output(target: OutputTarget) -> None:
-    """Remove one invalid sealed output relative to its retained parent."""
+def canonical_schema_bytes(
+    root: Path,
+    schema_name: str,
+    value: dict[str, Any],
+) -> bytes:
+    """Validate a document before creation and return its canonical bytes."""
     try:
-        os.unlink(target.leaf, dir_fd=target.parent_fd)
-    except FileNotFoundError:
-        return
-    except OSError as exc:
-        raise OutputSealError("cleanup", exc) from exc
+        schema_validation.validate_document(root, schema_name, value)
+    except (OSError, ValueError) as exc:
+        raise OutputSealError(
+            "final-validation",
+            OSError(errno.EINVAL, str(exc)),
+        ) from exc
+    return canonical_json(value)
 
 
-def write_once(target: OutputTarget, raw: bytes) -> str:
-    """Create relative/no-follow and hash read-back bytes from the open leaf."""
+def read_descriptor(descriptor: int) -> bytes:
+    """Read all bytes from a retained regular-file descriptor."""
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    chunks: list[bytes] = []
+    while True:
+        chunk = os.read(descriptor, 1024 * 1024)
+        if not chunk:
+            return b"".join(chunks)
+        chunks.append(chunk)
+
+
+def validate_canonical_document(
+    root: Path,
+    schema_name: str,
+    raw: bytes,
+    where: str,
+) -> dict[str, Any]:
+    """Require exact canonical bytes and the checked-in schema."""
+    value = load_json_bytes(raw, where)
+    if not isinstance(value, dict) or canonical_json(value) != raw:
+        raise ValueError(f"{where}: document is not canonical")
+    schema_validation.validate_document(root, schema_name, value)
+    return value
+
+
+def verify_sealed_output(
+    sealed: SealedOutput,
+    root: Optional[Path] = None,
+    schema_name: Optional[str] = None,
+    operation: str = "final-validation",
+) -> None:
+    """Revalidate retained descriptor bytes, identity, path, and schema."""
+    try:
+        current = os.fstat(sealed.descriptor)
+        if not stat.S_ISREG(current.st_mode):
+            raise OSError(errno.EINVAL, "sealed output is not a regular file")
+        if (current.st_dev, current.st_ino) != sealed.identity:
+            raise OSError(errno.ESTALE, "sealed output descriptor identity changed")
+        read_back = read_descriptor(sealed.descriptor)
+        if read_back != sealed.raw:
+            raise OSError(errno.EIO, "sealed output bytes changed")
+        if root is not None and schema_name is not None:
+            validate_canonical_document(
+                root,
+                schema_name,
+                read_back,
+                str(sealed.target.path),
+            )
+        ensure_target_path_identity(
+            sealed.target,
+            leaf_expected=True,
+            operation=operation,
+        )
+    except OutputSealError:
+        raise
+    except (OSError, ValueError) as exc:
+        cause_error = (
+            exc if isinstance(exc, OSError) else OSError(errno.EINVAL, str(exc))
+        )
+        raise OutputSealError(operation, cause_error) from exc
+
+
+def seal_output(
+    target: OutputTarget,
+    raw: bytes,
+    root: Optional[Path] = None,
+    schema_name: Optional[str] = None,
+) -> SealedOutput:
+    """Exclusively create, durably flush, and retain one output descriptor."""
     flags = (
         os.O_CREAT
         | os.O_EXCL
@@ -350,17 +482,19 @@ def write_once(target: OutputTarget, raw: bytes) -> str:
     )
     descriptor = -1
     operation = "create"
-    failure: Optional[OutputSealError] = None
-    digest: Optional[str] = None
-    created = False
     try:
+        ensure_target_path_identity(target, leaf_expected=False, operation="create")
         descriptor = os.open(
             target.leaf,
             flags,
             0o600,
             dir_fd=target.parent_fd,
         )
-        created = True
+        created_stat = os.fstat(descriptor)
+        if not stat.S_ISREG(created_stat.st_mode):
+            raise OSError(errno.EINVAL, "created output is not a regular file")
+        identity = (created_stat.st_dev, created_stat.st_ino)
+        target.created_identity = identity
         operation = "write"
         written = 0
         while written < len(raw):
@@ -368,44 +502,152 @@ def write_once(target: OutputTarget, raw: bytes) -> str:
             if count <= 0:
                 raise OSError(errno.EIO, "zero-byte output write")
             written += count
-        operation = "flush"
+        operation = "fsync"
         os.fsync(descriptor)
+        os.fsync(target.parent_fd)
         operation = "read-back"
-        os.lseek(descriptor, 0, os.SEEK_SET)
-        chunks = []
-        while True:
-            chunk = os.read(descriptor, 1024 * 1024)
-            if not chunk:
-                break
-            chunks.append(chunk)
-        read_back = b"".join(chunks)
+        read_back = read_descriptor(descriptor)
         if read_back != raw:
             raise OSError(errno.EIO, "output read-back differs from written bytes")
-        digest = hashlib.sha256(read_back).hexdigest()
-    except OSError as exc:
-        failure = OutputSealError(operation, exc)
+        if root is not None and schema_name is not None:
+            validate_canonical_document(
+                root,
+                schema_name,
+                read_back,
+                str(target.path),
+            )
+        sealed = SealedOutput(
+            target,
+            descriptor,
+            read_back,
+            hashlib.sha256(read_back).hexdigest(),
+            identity,
+        )
+        verify_sealed_output(
+            sealed,
+            root,
+            schema_name,
+            operation="read-back",
+        )
+        return sealed
+    except OutputSealError:
+        if descriptor >= 0:
+            os.close(descriptor)
+        raise
+    except (OSError, ValueError) as exc:
+        if descriptor >= 0:
+            os.close(descriptor)
+        cause_error = (
+            exc if isinstance(exc, OSError) else OSError(errno.EINVAL, str(exc))
+        )
+        raise OutputSealError(operation, cause_error) from exc
+
+
+def write_once(target: OutputTarget, raw: bytes) -> str:
+    """Seal one opaque output and close its file descriptor."""
+    sealed = seal_output(target, raw)
+    try:
+        return sealed.digest
+    finally:
+        sealed.close()
+
+
+def read_retained_document(
+    root: Path,
+    path: Path,
+    schema_name: str,
+) -> RetainedDocument:
+    """Observe one exact retained path without following symlinks."""
+    try:
+        path_stat = os.stat(path, follow_symlinks=False)
+    except FileNotFoundError:
+        return RetainedDocument("missing")
+    except OSError:
+        return RetainedDocument("uncertain")
+    if not stat.S_ISREG(path_stat.st_mode):
+        return RetainedDocument("invalid")
+
+    descriptor = -1
+    parent_fd = -1
+    try:
+        parent_fd = open_directory_chain(path.parent, str(path))
+        descriptor = os.open(
+            path.name,
+            os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW,
+            dir_fd=parent_fd,
+        )
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode):
+            return RetainedDocument("invalid")
+        identity = (opened.st_dev, opened.st_ino)
+        if identity != (path_stat.st_dev, path_stat.st_ino):
+            return RetainedDocument("uncertain")
+        raw = read_descriptor(descriptor)
+        final_stat = os.stat(
+            path.name,
+            dir_fd=parent_fd,
+            follow_symlinks=False,
+        )
+        if identity != (final_stat.st_dev, final_stat.st_ino):
+            return RetainedDocument("uncertain")
+        try:
+            value = validate_canonical_document(
+                root,
+                schema_name,
+                raw,
+                str(path),
+            )
+        except (OSError, ValueError):
+            return RetainedDocument("invalid")
+        return RetainedDocument(
+            "valid",
+            value,
+            raw,
+            hashlib.sha256(raw).hexdigest(),
+        )
+    except FileNotFoundError:
+        return RetainedDocument("uncertain")
+    except (OSError, OutputContractError):
+        return RetainedDocument("uncertain")
     finally:
         if descriptor >= 0:
-            try:
-                os.close(descriptor)
-            except OSError as exc:
-                if failure is None:
-                    failure = OutputSealError("flush", exc)
-        if failure is not None and created:
-            try:
-                os.unlink(target.leaf, dir_fd=target.parent_fd)
-            except FileNotFoundError:
-                pass
-            except OSError as exc:
-                failure = OutputSealError("cleanup", exc)
-    if failure is not None:
-        raise failure
-    if digest is None:
-        raise OutputSealError(
-            "read-back",
-            OSError(errno.EIO, "output digest was not produced"),
-        )
-    return digest
+            os.close(descriptor)
+        if parent_fd >= 0:
+            os.close(parent_fd)
+
+
+def classify_retained_evidence(
+    root: Path,
+    receipt_path: Path,
+    audit_path: Path,
+) -> str:
+    """Classify commitment solely from exact retained output state."""
+    receipt = read_retained_document(
+        root,
+        receipt_path,
+        "provision-receipt.v1.schema.json",
+    )
+    if receipt.state == "uncertain":
+        return "uncertain"
+    if receipt.state != "valid" or receipt.value is None:
+        return "uncommitted"
+    if receipt.value.get("overall_outcome") == "output-failure":
+        return "committed-minimal"
+    if receipt.value.get("write_events_reference") != str(audit_path):
+        return "uncommitted"
+
+    audit = read_retained_document(
+        root,
+        audit_path,
+        "provision-write-events.v1.schema.json",
+    )
+    if audit.state == "uncertain":
+        return "uncertain"
+    if audit.state != "valid" or audit.digest is None:
+        return "uncommitted"
+    if receipt.value.get("write_events_sha256") != audit.digest:
+        return "uncommitted"
+    return "committed-normal"
 
 
 def cause(
@@ -1145,6 +1387,7 @@ def build_audit(
 
 
 def seal_minimal_output_failure(
+    root: Path,
     receipt_target: OutputTarget,
     started_at: str,
     code: str,
@@ -1171,7 +1414,87 @@ def seal_minimal_output_failure(
             )
         ],
     }
-    write_once(receipt_target, canonical_json(value))
+    raw = canonical_schema_bytes(
+        root,
+        "provision-receipt.v1.schema.json",
+        value,
+    )
+    sealed = seal_output(
+        receipt_target,
+        raw,
+        root,
+        "provision-receipt.v1.schema.json",
+    )
+    try:
+        verify_sealed_output(
+            sealed,
+            root,
+            "provision-receipt.v1.schema.json",
+        )
+    finally:
+        sealed.close()
+
+
+def recover_audit_output_failure(
+    root: Path,
+    receipt_target: OutputTarget,
+    audit_target: OutputTarget,
+    started_at: str,
+    request_id: Optional[str],
+    provisioner_version: Optional[str],
+    failure: OutputSealError,
+) -> None:
+    """Classify retained state, then seal a minimal receipt only if absent."""
+    print(f"audit-seal-failed: {failure}", file=sys.stderr)
+    retained = classify_retained_evidence(
+        root,
+        receipt_target.path,
+        audit_target.path,
+    )
+    if retained in {"committed-normal", "committed-minimal", "uncertain"}:
+        return
+    receipt = read_retained_document(
+        root,
+        receipt_target.path,
+        "provision-receipt.v1.schema.json",
+    )
+    if receipt.state != "missing":
+        return
+    # R44: POSIX unlink cannot atomically require the recorded file identity.
+    # This implementation therefore leaves every created debris leaf in place.
+    try:
+        ensure_target_path_identity(
+            receipt_target,
+            leaf_expected=False,
+            operation="create",
+        )
+        seal_minimal_output_failure(
+            root,
+            receipt_target,
+            started_at,
+            "audit-seal-failed",
+            f"/audit/{failure.operation}",
+            request_id,
+            provisioner_version,
+        )
+    except OSError as receipt_error:
+        print(f"receipt-seal-failed: {receipt_error}", file=sys.stderr)
+
+
+def recover_receipt_output_failure(
+    root: Path,
+    receipt_target: OutputTarget,
+    audit_target: OutputTarget,
+    failure: OutputSealError,
+) -> None:
+    """Classify and preserve all retained receipt/audit state."""
+    print(f"receipt-seal-failed: {failure}", file=sys.stderr)
+    # R44 forbids cleanup when substitution cannot be prevented through unlink.
+    classify_retained_evidence(
+        root,
+        receipt_target.path,
+        audit_target.path,
+    )
 
 
 def envelope_diagnostic(
@@ -1208,6 +1531,7 @@ def execute(
         print(f"output-parent-invalid: {exc}", file=sys.stderr)
         try:
             seal_minimal_output_failure(
+                root,
                 receipt_target,
                 started,
                 "output-parent-invalid",
@@ -1229,6 +1553,8 @@ def execute(
         receipt_target.close()
         return 7
 
+    audit_sealed: Optional[SealedOutput] = None
+    receipt_sealed: Optional[SealedOutput] = None
     try:
         document: Any = None
         positions: list[dict[str, Any]] = []
@@ -1386,47 +1712,132 @@ def execute(
             document,
             finished,
         )
-        audit_created = False
         try:
-            ensure_target_path_identity(audit_target, leaf_expected=False)
-            audit_digest = write_once(audit_target, canonical_json(audit))
-            audit_created = True
-            ensure_target_path_identity(audit_target, leaf_expected=True)
+            audit_raw = canonical_schema_bytes(
+                root,
+                "provision-write-events.v1.schema.json",
+                audit,
+            )
+            audit_sealed = seal_output(
+                audit_target,
+                audit_raw,
+                root,
+                "provision-write-events.v1.schema.json",
+            )
         except OutputSealError as exc:
-            if audit_created:
-                try:
-                    unlink_output(audit_target)
-                except OutputSealError as cleanup_error:
-                    print(
-                        f"audit-seal-failed: {cleanup_error}",
-                        file=sys.stderr,
-                    )
-            print(f"audit-seal-failed: {exc}", file=sys.stderr)
-            try:
-                seal_minimal_output_failure(
-                    receipt_target,
-                    started,
-                    "audit-seal-failed",
-                    f"/audit/{exc.operation}",
-                    request_id,
-                    provisioner_version,
-                )
-            except OSError as receipt_error:
-                print(
-                    f"receipt-seal-failed: {receipt_error}",
-                    file=sys.stderr,
-                )
+            recover_audit_output_failure(
+                root,
+                receipt_target,
+                audit_target,
+                started,
+                request_id,
+                provisioner_version,
+                exc,
+            )
             return 7
 
         receipt["write_events_reference"] = str(audit_target.path)
-        receipt["write_events_sha256"] = audit_digest
+        receipt["write_events_sha256"] = audit_sealed.digest
         try:
-            write_once(receipt_target, canonical_json(receipt))
+            receipt_raw = canonical_schema_bytes(
+                root,
+                "provision-receipt.v1.schema.json",
+                receipt,
+            )
+            verify_sealed_output(
+                audit_sealed,
+                root,
+                "provision-write-events.v1.schema.json",
+                operation="final-validation",
+            )
         except OutputSealError as exc:
-            print(f"receipt-seal-failed: {exc}", file=sys.stderr)
+            recover_audit_output_failure(
+                root,
+                receipt_target,
+                audit_target,
+                started,
+                request_id,
+                provisioner_version,
+                exc,
+            )
+            return 7
+
+        try:
+            receipt_sealed = seal_output(
+                receipt_target,
+                receipt_raw,
+                root,
+                "provision-receipt.v1.schema.json",
+            )
+        except OutputSealError as exc:
+            recover_receipt_output_failure(
+                root,
+                receipt_target,
+                audit_target,
+                exc,
+            )
+            return 7
+
+        try:
+            verify_sealed_output(
+                audit_sealed,
+                root,
+                "provision-write-events.v1.schema.json",
+                operation="final-validation",
+            )
+        except OutputSealError as exc:
+            recover_audit_output_failure(
+                root,
+                receipt_target,
+                audit_target,
+                started,
+                request_id,
+                provisioner_version,
+                exc,
+            )
+            return 7
+        try:
+            verify_sealed_output(
+                receipt_sealed,
+                root,
+                "provision-receipt.v1.schema.json",
+                operation="final-validation",
+            )
+        except OutputSealError as exc:
+            recover_receipt_output_failure(
+                root,
+                receipt_target,
+                audit_target,
+                exc,
+            )
+            return 7
+        if (
+            classify_retained_evidence(
+                root,
+                receipt_target.path,
+                audit_target.path,
+            )
+            != "committed-normal"
+        ):
+            recover_receipt_output_failure(
+                root,
+                receipt_target,
+                audit_target,
+                OutputSealError(
+                    "final-validation",
+                    OSError(
+                        errno.EIO,
+                        "retained output pair is not committed",
+                    ),
+                ),
+            )
             return 7
         return exit_code
     finally:
+        if receipt_sealed is not None:
+            receipt_sealed.close()
+        if audit_sealed is not None:
+            audit_sealed.close()
         audit_target.close()
         receipt_target.close()
 
