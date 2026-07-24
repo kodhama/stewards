@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-from typing import Optional
+from typing import Any, Optional
 import unittest
 from unittest import mock
 
@@ -626,6 +626,90 @@ class ProvisionContractTests(unittest.TestCase):
                 "committed-normal",
             )
 
+    # spec-0002@v3 S27, S31, R40, R44; same-inode mutation is uncertain
+    def test_retained_classifier_rejects_mutation_after_identity_check(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            self.assertEqual(
+                contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                ),
+                3,
+            )
+            real_stat = os.stat
+            mutated = False
+
+            def mutate_audit_after_identity_check(
+                path: Any,
+                *args: Any,
+                **kwargs: Any,
+            ) -> os.stat_result:
+                nonlocal mutated
+                result = real_stat(path, *args, **kwargs)
+                if (
+                    not mutated
+                    and path == audit.name
+                    and kwargs.get("dir_fd") is not None
+                ):
+                    mutated = True
+                    with audit.open("r+b") as stream:
+                        stream.seek(0)
+                        stream.write(b"x")
+                        stream.truncate()
+                return result
+
+            with mock.patch.object(
+                contract.os,
+                "stat",
+                side_effect=mutate_audit_after_identity_check,
+            ):
+                classification = contract.classify_retained_evidence(
+                    ROOT,
+                    receipt,
+                    audit,
+                )
+
+            self.assertEqual(classification, "uncertain")
+
+    # spec-0002@v3 S31, R44; output-containment uncertainty is exit 7
+    def test_output_containment_traversal_failure_is_output_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+
+            stderr = io.StringIO()
+            with mock.patch.object(
+                contract,
+                "descriptor_is_within",
+                side_effect=OSError("forced ancestry traversal failure"),
+            ), redirect_stderr(stderr):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            self.assertFalse(receipt.exists())
+            self.assertFalse(audit.exists())
+            self.assertIn("receipt-seal-failed", stderr.getvalue())
+            self.assertNotIn("invalid-request", stderr.getvalue())
+
     # spec-0002@v3 S31, R44; normal receipt prevalidation is a receipt failure
     def test_receipt_prevalidation_failure_preserves_orphan_audit(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -744,6 +828,87 @@ class ProvisionContractTests(unittest.TestCase):
             self.assertEqual(exit_code, 7)
             self.assertFalse(receipt.exists())
             self.assertFalse(audit.exists())
+
+    # spec-0002@v3 S21, R32; envelope phase-one errors skip every tuple
+    def test_phase_one_envelope_error_skips_invalid_plugin_position(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request_value = request_for("codex", state_root)
+            request_value["request_id"] = "not-a-uuid"
+            request_value["targets"][0]["plugins"][0]["package_version"] = "latest"
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_value)
+
+            self.assertEqual(
+                contract.execute(ROOT, request, str(receipt), str(audit)),
+                2,
+            )
+            value = json.loads(receipt.read_text(encoding="utf-8"))
+            self.assertEqual(value["diagnostics"][0]["code"], "invalid-request")
+            self.assertEqual(value["results"][0]["outcome"], "skipped")
+            self.assertEqual(
+                value["results"][0]["blocked_by"],
+                {"kind": "request-validation"},
+            )
+
+    # spec-0002@v3 S5, S28, R2, R32, R41; unselected duplicates are envelope causes
+    def test_unselected_phase_three_duplicates_are_envelope_scoped(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            other_root = temp / "other-state"
+            state_root.mkdir()
+            other_root.mkdir()
+            request_value = request_for("codex", state_root)
+            request_value["environment"]["state_roots"].extend(
+                [
+                    {"host": "claude-code", "path": str(other_root)},
+                    {"host": "claude-code", "path": str(other_root)},
+                ]
+            )
+            request_value["environment"]["references"].extend(
+                [
+                    {
+                        "reference_id": "unused.one",
+                        "kind": "runtime-command",
+                        "locator": "/usr/bin/false",
+                    },
+                    {
+                        "reference_id": "unused.two",
+                        "kind": "runtime-command",
+                        "locator": "/usr/bin/false",
+                    },
+                ]
+            )
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_value)
+
+            self.assertEqual(
+                contract.execute(ROOT, request, str(receipt), str(audit)),
+                2,
+            )
+            value = json.loads(receipt.read_text(encoding="utf-8"))
+            causes = value["diagnostics"][0]["causes"]
+            self.assertEqual(
+                [(item["code"], item["field_path"]) for item in causes],
+                [
+                    (
+                        "duplicate-state-root",
+                        "/environment/state_roots/2",
+                    ),
+                    (
+                        "duplicate-reference",
+                        "/environment/references/1",
+                    ),
+                ],
+            )
+            self.assertEqual(value["results"][0]["outcome"], "skipped")
 
     # spec-0002@v1 R7, R20, R43; code-review H3
     def test_repository_authority_failure_is_stewards_owned_not_invalid_request(

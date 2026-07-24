@@ -590,11 +590,14 @@ def read_retained_document(
         )
         if identity != (final_stat.st_dev, final_stat.st_ino):
             return RetainedDocument("uncertain")
+        confirmed_raw = read_descriptor(descriptor)
+        if confirmed_raw != raw:
+            return RetainedDocument("uncertain")
         try:
             value = validate_canonical_document(
                 root,
                 schema_name,
-                raw,
+                confirmed_raw,
                 str(path),
             )
         except (OSError, ValueError):
@@ -602,8 +605,8 @@ def read_retained_document(
         return RetainedDocument(
             "valid",
             value,
-            raw,
-            hashlib.sha256(raw).hexdigest(),
+            confirmed_raw,
+            hashlib.sha256(confirmed_raw).hexdigest(),
         )
     except FileNotFoundError:
         return RetainedDocument("uncertain")
@@ -978,8 +981,9 @@ def phase_two_causes(document: dict[str, Any]) -> list[dict[str, Any]]:
 def phase_three(
     document: dict[str, Any],
     positions: list[dict[str, Any]],
-) -> dict[str, list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], dict[str, list[dict[str, Any]]]]:
     """Validate target, plugin, root, reference, and selection uniqueness."""
+    envelope: list[dict[str, Any]] = []
     assigned: dict[str, list[dict[str, Any]]] = {}
     by_position = {
         (item["target_index"], item["plugin_index"]): item for item in positions
@@ -1031,54 +1035,69 @@ def phase_three(
     root_hosts: dict[str, int] = {}
     for index, row in enumerate(document["environment"]["state_roots"]):
         if row["host"] in root_hosts:
-            for item in positions:
-                if item.get("host") == row["host"]:
-                    current = assigned.setdefault(item["result_id"], [])
-                    if current and current[0]["code"] == "duplicate-target":
-                        continue
-                    current.append(
-                        cause(
-                            "duplicate-state-root",
-                            "request",
-                            f"/environment/state_roots/{index}",
-                        )
-                    )
+            duplicate_cause = cause(
+                "duplicate-state-root",
+                "request",
+                f"/environment/state_roots/{index}",
+            )
+            affected = [
+                item for item in positions if item.get("host") == row["host"]
+            ]
+            if not affected:
+                envelope.append(duplicate_cause)
+            for item in affected:
+                current = assigned.setdefault(item["result_id"], [])
+                if current and current[0]["code"] == "duplicate-target":
+                    continue
+                current.append(duplicate_cause)
         else:
             root_hosts[row["host"]] = index
 
     reference_ids: dict[str, int] = {}
     reference_pairs: dict[tuple[str, str], int] = {}
-    duplicate_ids: set[str] = set()
-    for index, row in enumerate(document["environment"]["references"]):
-        if row["reference_id"] in reference_ids:
-            duplicate_ids.add(row["reference_id"])
+    duplicate_references: list[tuple[int, set[str]]] = []
+    references = document["environment"]["references"]
+    for index, row in enumerate(references):
+        affected_ids: set[str] = set()
+        reference_id = row["reference_id"]
+        if reference_id in reference_ids:
+            affected_ids.add(reference_id)
         else:
-            reference_ids[row["reference_id"]] = index
+            reference_ids[reference_id] = index
         pair = (row["kind"], row["locator"])
         if pair in reference_pairs:
-            duplicate_ids.add(row["reference_id"])
-            duplicate_ids.add(
-                document["environment"]["references"][reference_pairs[pair]][
-                    "reference_id"
-                ]
+            affected_ids.update(
+                {
+                    reference_id,
+                    references[reference_pairs[pair]]["reference_id"],
+                }
             )
         else:
             reference_pairs[pair] = index
-    for target_index, target in enumerate(document["targets"]):
-        if duplicate_ids.intersection(target["environment_ref_ids"]):
-            for plugin_index in range(len(target["plugins"])):
-                item = by_position[(target_index, plugin_index)]
-                current = assigned.setdefault(item["result_id"], [])
-                if current and current[0]["code"] == "duplicate-target":
-                    continue
-                current.append(
-                    cause(
-                        "duplicate-reference",
-                        "request",
-                        f"/targets/{target_index}/environment_ref_ids",
-                        duplicate_ids.intersection(target["environment_ref_ids"]),
-                    )
+        if affected_ids:
+            duplicate_references.append((index, affected_ids))
+
+    for index, affected_ids in duplicate_references:
+        duplicate_cause = cause(
+            "duplicate-reference",
+            "request",
+            f"/environment/references/{index}",
+            affected_ids,
+        )
+        affected_positions: list[dict[str, Any]] = []
+        for target_index, target in enumerate(document["targets"]):
+            if affected_ids.intersection(target["environment_ref_ids"]):
+                affected_positions.extend(
+                    by_position[(target_index, plugin_index)]
+                    for plugin_index in range(len(target["plugins"]))
                 )
+        if not affected_positions:
+            envelope.append(duplicate_cause)
+        for item in affected_positions:
+            current = assigned.setdefault(item["result_id"], [])
+            if current and current[0]["code"] == "duplicate-target":
+                continue
+            current.append(duplicate_cause)
     rank = {
         "duplicate-target": 0,
         "duplicate-plugin": 1,
@@ -1094,7 +1113,15 @@ def phase_three(
                 item["reference_ids"],
             )
         )
-    return assigned
+    envelope.sort(
+        key=lambda item: (
+            rank[item["code"]],
+            item["source"],
+            item["field_path"],
+            item["reference_ids"],
+        )
+    )
+    return envelope, assigned
 
 
 def phase_four(
@@ -1568,9 +1595,15 @@ def execute(
             document = load_json_bytes(request_path.read_bytes(), str(request_path))
             positions = tuple_positions(document)
             if isinstance(document, dict):
-                if isinstance(document.get("request_id"), str):
+                if (
+                    isinstance(document.get("request_id"), str)
+                    and UUID_V4.fullmatch(document["request_id"])
+                ):
                     request_id = document["request_id"]
-                if isinstance(document.get("provisioner_version"), str):
+                if (
+                    isinstance(document.get("provisioner_version"), str)
+                    and SEMVER.fullmatch(document["provisioner_version"])
+                ):
                     provisioner_version = document["provisioner_version"]
             phase_one_envelope, assigned = phase_one(document, positions)
             decoded_roots = []
@@ -1586,21 +1619,27 @@ def execute(
                         if isinstance(row, dict)
                         and absolute_normalized_path(row.get("path"))
                     ]
-            if any(
-                output_is_within_state_root(output_target, state_root)
-                for output_target in (receipt_target, audit_target)
-                for state_root in decoded_roots
-            ):
+            try:
+                output_inside_state = any(
+                    output_is_within_state_root(output_target, state_root)
+                    for output_target in (receipt_target, audit_target)
+                    for state_root in decoded_roots
+                )
+            except OSError as exc:
+                print(f"receipt-seal-failed: {exc}", file=sys.stderr)
+                return 7
+            if output_inside_state:
                 print(
                     "receipt-seal-failed: output path is inside host state",
                     file=sys.stderr,
                 )
                 return 7
-            if phase_one_envelope or assigned:
-                if phase_one_envelope:
-                    envelope_diagnostics.append(
-                        envelope_diagnostic(phase_one_envelope)
-                    )
+            if phase_one_envelope:
+                envelope_diagnostics.append(
+                    envelope_diagnostic(phase_one_envelope)
+                )
+                results = [skip_result(position) for position in positions]
+            elif assigned:
                 results = request_validation_results(positions, assigned)
             else:
                 assert isinstance(document, dict)
@@ -1624,8 +1663,15 @@ def execute(
                     envelope_diagnostics.append(envelope_diagnostic(phase_two))
                     results = [skip_result(position) for position in positions]
                 else:
-                    phase_three_assigned = phase_three(document, positions)
-                    if phase_three_assigned:
+                    phase_three_envelope, phase_three_assigned = phase_three(
+                        document,
+                        positions,
+                    )
+                    if phase_three_envelope or phase_three_assigned:
+                        if phase_three_envelope:
+                            envelope_diagnostics.append(
+                                envelope_diagnostic(phase_three_envelope)
+                            )
                         results = request_validation_results(
                             positions,
                             phase_three_assigned,
