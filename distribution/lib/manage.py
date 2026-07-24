@@ -272,17 +272,31 @@ def validate_subject(value: Any, where: str = "subject") -> dict[str, str]:
     return obj
 
 
+def subject_mismatch_field(
+    value: dict[str, Any],
+    subject: dict[str, str],
+) -> Optional[str]:
+    for field in RELEASE_SUBJECT_FIELDS:
+        if field in value and value[field] != subject[field]:
+            return field
+    return None
+
+
+def subject_fields_match(
+    value: dict[str, Any],
+    subject: dict[str, str],
+) -> bool:
+    return subject_mismatch_field(value, subject) is None
+
+
 def require_subject_fields(
     value: dict[str, Any],
     subject: dict[str, str],
     where: str,
 ) -> None:
-    for field in RELEASE_SUBJECT_FIELDS:
-        if field in value:
-            require(
-                value[field] == subject[field],
-                f"{where}.{field}: declared subject mismatch",
-            )
+    mismatch = subject_mismatch_field(value, subject)
+    if mismatch is not None:
+        reject(f"{where}.{mismatch}: declared subject mismatch")
 
 
 def validate_evidence_binding(value: Any, where: str) -> dict[str, Any]:
@@ -605,15 +619,11 @@ def validate_catalog_row(value: Any, where: str) -> dict[str, Any]:
                 )
             }
             require(
-                clean["subject"] == row_subject,
+                subject_fields_match(clean["subject"], row_subject),
                 f"{where}.clean_install_evidence.subject: catalog identity mismatch",
             )
             require(
-                clean["catalog_key"]
-                == {
-                    "plugin_id": value["plugin_id"],
-                    "surface_id": value["surface_id"],
-                },
+                subject_fields_match(clean["catalog_key"], row_subject),
                 f"{where}.clean_install_evidence.catalog_key: catalog identity mismatch",
             )
             require(
@@ -715,7 +725,10 @@ def validate_clean_install_evidence(value: Any) -> dict[str, Any]:
     validate_slug(obj["evidence_id"], "clean_install_evidence.evidence_id", dotted=True)
     subject = validate_subject(obj["subject"], "clean_install_evidence.subject")
     key = exact_keys(obj["catalog_key"], ("plugin_id", "surface_id"), where="clean_install_evidence.catalog_key")
-    require(key["plugin_id"] == subject["plugin_id"] and key["surface_id"] == subject["surface_id"], "clean_install_evidence.catalog_key: identity mismatch")
+    require(
+        subject_fields_match(key, subject),
+        "clean_install_evidence.catalog_key: identity mismatch",
+    )
     binding = validate_distribution_binding(
         obj["distribution_binding"],
         "clean_install_evidence.distribution_binding",
@@ -734,7 +747,7 @@ def validate_clean_install_evidence(value: Any) -> dict[str, Any]:
     else:
         identity = binding["provisioner_identity"]
         require(
-            all(identity[key] == subject[key] for key in subject),
+            subject_fields_match(identity, subject),
             "clean_install_evidence.distribution_binding: subject identity mismatch",
         )
     environment = exact_keys(
@@ -777,12 +790,22 @@ def validate_clean_install_evidence(value: Any) -> dict[str, Any]:
         "clean_install_evidence.installation.finished_at: precedes started_at",
     )
     require(installation["outcome"] == "installed", "clean_install_evidence.installation.outcome: expected installed")
-    require(validate_subject(installation["discovered_identity"]) == subject, "clean_install_evidence.installation.discovered_identity: mismatch")
+    discovered_identity = validate_subject(
+        installation["discovered_identity"],
+        "clean_install_evidence.installation.discovered_identity",
+    )
+    require(
+        subject_fields_match(discovered_identity, subject),
+        "clean_install_evidence.installation.discovered_identity: mismatch",
+    )
     validate_stable_reference(installation["record_reference"], "clean_install_evidence.installation.record_reference")
     require(isinstance(obj["observations"], list) and bool(obj["observations"]), "clean_install_evidence.observations: expected non-empty array")
     for index, item in enumerate(obj["observations"]):
         binding = validate_evidence_binding(item, f"clean_install_evidence.observations[{index}]")
-        require(all(binding[key] == subject[key] for key in subject), f"clean_install_evidence.observations[{index}]: identity mismatch")
+        require(
+            subject_fields_match(binding, subject),
+            f"clean_install_evidence.observations[{index}]: identity mismatch",
+        )
     return obj
 
 
@@ -1901,12 +1924,16 @@ def effective_factor(
     source_refs: Iterable[dict[str, Any]] = (),
     owners: Iterable[str] = (),
 ) -> dict[str, Any]:
+    unique_source_refs = {
+        canonical_json(item): copy.deepcopy(item)
+        for item in source_refs
+    }
     return {
         "factor": factor,
         "satisfied": satisfied,
         "reason_codes": sorted(set(reason_codes)),
         "source_refs": sorted(
-            (copy.deepcopy(item) for item in source_refs),
+            unique_source_refs.values(),
             key=lambda item: canonical_json(item),
         ),
         "owners": sorted(set(owners)),
@@ -2096,11 +2123,13 @@ def validate_environment_fact(value: Any) -> dict[str, Any]:
         if state == "not-ready":
             required.add("missing_prerequisites")
         obj = exact_keys(value, required, where="effective_facts.environment_assessment")
-        validate_subject(obj["subject"])
+        assessment_subject = validate_subject(obj["subject"])
         validate_stable_reference(obj["source_reference"])
         require(isinstance(obj["evidence"], list) and bool(obj["evidence"]), "effective_facts.environment_assessment.evidence: expected non-empty array")
         for index, evidence in enumerate(obj["evidence"]):
-            validate_evidence_binding(evidence, f"effective_facts.environment_assessment.evidence[{index}]")
+            where = f"effective_facts.environment_assessment.evidence[{index}]"
+            binding = validate_evidence_binding(evidence, where)
+            require_subject_fields(binding, assessment_subject, where)
         if state == "not-ready":
             require(isinstance(obj["missing_prerequisites"], list) and bool(obj["missing_prerequisites"]), "effective_facts.environment_assessment.missing_prerequisites: empty")
     elif state == "missing":
@@ -2182,7 +2211,7 @@ def validate_effective_setup_binding(facts: dict[str, Any]) -> None:
     product = facts["product_contract"]
     setup = facts["product_setup"]
     require(
-        setup["subject"] == subject,
+        subject_fields_match(setup["subject"], subject),
         "effective_facts.product_setup.subject: top-level identity mismatch",
     )
     if setup["state"] not in {"not-required", "complete", "incomplete"}:
@@ -2213,7 +2242,7 @@ def validate_effective_setup_binding(facts: dict[str, Any]) -> None:
     )
     if setup["state"] == "complete":
         require(
-            setup["completion_identity"] == subject,
+            subject_fields_match(setup["completion_identity"], subject),
             "effective_facts.product_setup.completion_identity: "
             "subject mismatch requires typed invalid facts",
         )
@@ -2227,7 +2256,7 @@ def evaluate_effective(value: Any) -> dict[str, Any]:
     product = facts["product_contract"]
     product_ref = product["source_reference"]
     if product["kind"] == "record":
-        product_match = product["subject"] == subject
+        product_match = subject_fields_match(product["subject"], subject)
         supported = product["row"]["status"] == "supported" and product_match
         factors["product_supported"] = effective_factor(
             "product_supported",
@@ -2250,11 +2279,7 @@ def evaluate_effective(value: Any) -> dict[str, Any]:
         record = distribution["record"]
         verified = record["state"] == "verified"
         if verified:
-            distribution_identity = {
-                key: record[key]
-                for key in ("plugin_id", "package_version", "release_tag", "source_commit", "surface_id")
-            }
-            distribution_match = distribution_identity == subject
+            distribution_match = subject_fields_match(record, subject)
         factors["distribution_verified"] = effective_factor(
             "distribution_verified",
             verified and distribution_match,
@@ -2271,7 +2296,7 @@ def evaluate_effective(value: Any) -> dict[str, Any]:
     selection_ref = selection["source_reference"]
     selection_match = False
     if selection["state"] == "selected":
-        selection_match = all(selection[key] == subject[key] for key in ("plugin_id", "package_version", "surface_id"))
+        selection_match = subject_fields_match(selection, subject)
         factors["consumer_selected"] = effective_factor(
             "consumer_selected",
             selection_match,
@@ -2286,7 +2311,10 @@ def evaluate_effective(value: Any) -> dict[str, Any]:
 
     environment = facts["environment_assessment"]
     environment_ref = environment["source_reference"]
-    environment_match = environment.get("subject") == subject
+    environment_match = (
+        "subject" in environment
+        and subject_fields_match(environment["subject"], subject)
+    )
     if environment["state"] == "ready":
         factors["environment_ready"] = effective_factor(
             "environment_ready",
@@ -2303,9 +2331,17 @@ def evaluate_effective(value: Any) -> dict[str, Any]:
         factors["environment_ready"] = effective_factor("environment_ready", False, ("environment-assessment-invalid",), (environment_ref,), ("consumer/environment",))
 
     setup = facts["product_setup"]
-    setup_refs = [setup.get("requirement_reference") or setup.get("source_reference")]
-    setup_refs.extend(item for item in (setup.get("completion_reference"), setup.get("reason_source")) if item)
-    setup_match = setup["subject"] == subject
+    setup_refs = [
+        item
+        for item in (
+            setup.get("requirement_reference") or setup.get("source_reference"),
+            setup.get("contract"),
+            setup.get("completion_reference"),
+            setup.get("reason_source"),
+        )
+        if item
+    ]
+    setup_match = subject_fields_match(setup["subject"], subject)
     if setup["state"] == "not-required":
         setup_ok = setup_match and product["kind"] == "record" and not product["row"]["post_install_setup"]["required"]
         factors["product_setup_complete"] = effective_factor(
@@ -2316,7 +2352,10 @@ def evaluate_effective(value: Any) -> dict[str, Any]:
             () if setup_ok else ("product",),
         )
     elif setup["state"] == "complete":
-        setup_ok = setup_match and setup["completion_identity"] == subject
+        setup_ok = setup_match and subject_fields_match(
+            setup["completion_identity"],
+            subject,
+        )
         factors["product_setup_complete"] = effective_factor(
             "product_setup_complete",
             setup_ok,

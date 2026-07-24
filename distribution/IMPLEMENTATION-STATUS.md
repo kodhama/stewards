@@ -45,6 +45,9 @@ effective-support slice. It does not claim whole-spec conformance.
 - Verified provisioner acquisitions cross-bind to exactly one matching
   verified provisioner row, and effective setup facts bind to their exact
   product requirement row, setup declaration, contract, and identity.
+  Product and environment evidence bind every release-subject field their
+  records expose. Successful setup factors retain canonical, deduplicated
+  references to the product row, setup contract, and completion evidence.
 
 ## Remaining before whole-spec conformance
 

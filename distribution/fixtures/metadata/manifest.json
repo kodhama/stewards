@@ -39,6 +39,12 @@
       "guards": "S8 S12 R12 R20"
     },
     {
+      "name": "environment-evidence-release-identity-binding",
+      "test": "test_environment_evidence_matches_assessment_subject",
+      "expected_exit": "contract-failure",
+      "guards": "S8 S12 S15 R12-R14 R20"
+    },
+    {
       "name": "effective-setup-product-binding",
       "test": "test_effective_setup_complete_binds_product_requirement",
       "expected_exit": "contract-failure-and-success",

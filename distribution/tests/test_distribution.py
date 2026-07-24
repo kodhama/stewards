@@ -568,6 +568,57 @@ class DistributionContractTests(unittest.TestCase):
                 with self.assertRaisesRegex(contract.ContractError, error):
                     contract.validate_product_fact(fact)
 
+    # spec-0001@v1 S8, S12, S15, R12-R14, R20; sixth-review identity finding
+    def test_environment_evidence_matches_assessment_subject(self) -> None:
+        mutations = (
+            (
+                "cross-plugin-and-tag",
+                {
+                    "plugin_id": "other",
+                    "release_tag": "other-v1.2.3",
+                },
+                "plugin_id",
+            ),
+            (
+                "cross-version-and-tag",
+                {
+                    "package_version": "1.2.4",
+                    "release_tag": "example-v1.2.4",
+                },
+                "package_version",
+            ),
+            (
+                "cross-surface",
+                {"surface_id": "codex.local.interactive"},
+                "surface_id",
+            ),
+            (
+                "cross-tag",
+                {"release_tag": "other-v1.2.3"},
+                "release_tag",
+            ),
+            (
+                "cross-commit",
+                {"source_commit": "b" * 40},
+                "source_commit",
+            ),
+        )
+        for label, mutation, field in mutations:
+            with self.subTest(label):
+                evidence = evidence_binding()
+                evidence.update(mutation)
+                assessment = {
+                    "state": "ready",
+                    "subject": subject(),
+                    "evidence": [evidence],
+                    "source_reference": stable_ref("environment.json"),
+                }
+                with self.assertRaisesRegex(
+                    contract.ContractError,
+                    rf"environment_assessment\.evidence\[0\]\.{field}",
+                ):
+                    contract.validate_environment_fact(assessment)
+
     # spec-0001@v1 S8, R23; conformance setup-binding counterexamples
     def test_effective_setup_complete_binds_product_requirement(self) -> None:
         product_reference = stable_ref("surfaces.json")
@@ -630,6 +681,27 @@ class DistributionContractTests(unittest.TestCase):
             if item["factor"] == "product_setup_complete"
         )
         self.assertTrue(setup_factor["satisfied"])
+        completion_reference = facts["product_setup"]["completion_reference"]
+        expected_references = sorted(
+            [product_reference, contract_reference, completion_reference],
+            key=contract.canonical_json,
+        )
+        self.assertEqual(setup_factor["source_refs"], expected_references)
+
+        facts["product_setup"]["completion_reference"] = contract_reference
+        deduplicated = contract.evaluate_effective(facts)
+        deduplicated_factor = next(
+            item
+            for item in deduplicated["factors"]
+            if item["factor"] == "product_setup_complete"
+        )
+        self.assertEqual(
+            deduplicated_factor["source_refs"],
+            sorted(
+                [product_reference, contract_reference],
+                key=contract.canonical_json,
+            ),
+        )
 
     # spec-0001@v1 S9, R15-R16, R24
     def test_legacy_discovery_reads_the_fixed_commit_and_matches_three_keys(self) -> None:
