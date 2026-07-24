@@ -65,10 +65,84 @@
     {
       "required": ["write_events_reference", "write_events_sha256"],
       "properties": {
-        "overall_outcome": {
-          "enum": ["success", "invalid-request", "failed", "partial-failure"]
+        "overall_outcome": { "const": "success" },
+        "exit_code": { "const": 0 },
+        "results": {
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/result" },
+              {
+                "properties": {
+                  "outcome": {
+                    "enum": ["changed", "already-converged"]
+                  }
+                },
+                "required": ["outcome"]
+              }
+            ]
+          }
         },
-        "exit_code": { "enum": [0, 2, 3, 4, 5, 6] }
+        "diagnostics": { "maxItems": 0 }
+      }
+    },
+    {
+      "required": ["write_events_reference", "write_events_sha256"],
+      "properties": {
+        "overall_outcome": { "const": "invalid-request" },
+        "exit_code": { "const": 2 }
+      }
+    },
+    {
+      "required": ["write_events_reference", "write_events_sha256"],
+      "properties": {
+        "overall_outcome": { "const": "failed" },
+        "exit_code": { "enum": [3, 4, 5] },
+        "results": {
+          "minItems": 1,
+          "not": {
+            "contains": {
+              "properties": {
+                "outcome": {
+                  "enum": ["changed", "already-converged"]
+                }
+              },
+              "required": ["outcome"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "required": ["write_events_reference", "write_events_sha256"],
+      "properties": {
+        "overall_outcome": { "const": "partial-failure" },
+        "exit_code": { "const": 6 },
+        "results": {
+          "minItems": 2,
+          "allOf": [
+            {
+              "contains": {
+                "properties": {
+                  "outcome": {
+                    "enum": ["changed", "already-converged"]
+                  }
+                },
+                "required": ["outcome"]
+              },
+              "minContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "outcome": { "enum": ["failed", "skipped"] }
+                },
+                "required": ["outcome"]
+              },
+              "minContains": 1
+            }
+          ]
+        }
       }
     },
     {
@@ -775,7 +849,17 @@
                     "properties": { "phase": { "const": "verification" } },
                     "required": ["phase"]
                   },
-                  "then": { "required": ["verification"] },
+                  "then": {
+                    "required": ["verification"],
+                    "properties": {
+                      "verification": {
+                        "properties": {
+                          "status": { "const": "failed" }
+                        },
+                        "required": ["status"]
+                      }
+                    }
+                  },
                   "else": { "not": { "required": ["verification"] } }
                 }
               ]
@@ -814,7 +898,17 @@
                   "type": "array",
                   "items": { "$ref": "#/$defs/catalog_change" }
                 },
-                "verification": { "$ref": "#/$defs/verification" }
+                "verification": {
+                  "allOf": [
+                    { "$ref": "#/$defs/verification" },
+                    {
+                      "properties": {
+                        "status": { "const": "passed" }
+                      },
+                      "required": ["status"]
+                    }
+                  ]
+                }
               }
             }
           ],

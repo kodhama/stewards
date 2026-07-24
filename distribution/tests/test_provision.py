@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+from contextlib import redirect_stderr
 import hashlib
+import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
+from distribution.lib import provision as contract
 
 ROOT = Path(__file__).resolve().parents[2]
 PROVISION = ROOT / "distribution" / "provision"
@@ -300,6 +305,430 @@ class ProvisionContractTests(unittest.TestCase):
             )
             self.assertNotIn("write_events_reference", value)
             self.assertNotIn("write_events_sha256", value)
+            from distribution.lib import schema_validation
+
+            schema_validation.validate_document(
+                ROOT,
+                "provision-receipt.v1.schema.json",
+                value,
+            )
+
+    # spec-0002@v1 S27, R40; conformance output-parent TOCTOU finding
+    def test_output_creation_is_relative_to_retained_nofollow_parent_fd(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            parent = temp / "outputs"
+            moved_parent = temp / "retained-output-parent"
+            parent.mkdir()
+            target = contract.validate_output_leaf(
+                str(parent / "receipt.json"),
+                "receipt",
+            )
+            self.assertGreaterEqual(os.fstat(target.parent_fd).st_ino, 1)
+            parent.rename(moved_parent)
+            parent.mkdir()
+            try:
+                with mock.patch.object(
+                    contract.os,
+                    "open",
+                    wraps=os.open,
+                ) as open_call:
+                    digest = contract.write_once(target, b"sealed")
+                leaf_calls = [
+                    call
+                    for call in open_call.call_args_list
+                    if call.args
+                    and call.args[0] == "receipt.json"
+                    and call.kwargs.get("dir_fd") == target.parent_fd
+                ]
+                self.assertEqual(len(leaf_calls), 1)
+                self.assertTrue(leaf_calls[0].args[1] & os.O_EXCL)
+                self.assertTrue(leaf_calls[0].args[1] & os.O_NOFOLLOW)
+                self.assertEqual(
+                    digest,
+                    hashlib.sha256(b"sealed").hexdigest(),
+                )
+                self.assertEqual(
+                    (moved_parent / "receipt.json").read_bytes(),
+                    b"sealed",
+                )
+                self.assertFalse((parent / "receipt.json").exists())
+            finally:
+                target.close()
+
+    # spec-0002@v1 S31, R40, R44; conformance post-work audit failure finding
+    def test_post_work_audit_flush_failure_seals_typed_minimal_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            real_fsync = os.fsync
+            calls = 0
+
+            def fail_first_fsync(descriptor: int) -> None:
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    raise OSError("forced audit flush failure")
+                real_fsync(descriptor)
+
+            stderr = io.StringIO()
+            with mock.patch.object(
+                contract.os,
+                "fsync",
+                side_effect=fail_first_fsync,
+            ), redirect_stderr(stderr):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            value = json.loads(receipt.read_text(encoding="utf-8"))
+            self.assertEqual(
+                value["request_id"],
+                request_for("codex", state_root)["request_id"],
+            )
+            self.assertEqual(value["provisioner_version"], PROVISIONER_VERSION)
+            self.assertEqual(value["results"], [])
+            self.assertEqual(
+                value["diagnostics"][0]["code"],
+                "audit-seal-failed",
+            )
+            self.assertIn("audit-seal-failed", stderr.getvalue())
+            self.assertNotIn("receipt-seal-failed", stderr.getvalue())
+            self.assertFalse(audit.exists())
+            from distribution.lib import schema_validation
+
+            schema_validation.validate_document(
+                ROOT,
+                "provision-receipt.v1.schema.json",
+                value,
+            )
+
+            retry_receipt = temp / "retry-receipt.json"
+            retry_exit = contract.execute(
+                ROOT,
+                request,
+                str(retry_receipt),
+                str(audit),
+            )
+            self.assertEqual(retry_exit, 3)
+            self.assertTrue(audit.is_file())
+
+    # spec-0002@v1 S27, S31, R40, R44; conformance descriptor read-back finding
+    def test_audit_readback_failure_uses_fd_and_seals_minimal_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("claude-code", state_root))
+            real_read = os.read
+            calls = 0
+
+            def fail_first_read(descriptor: int, size: int) -> bytes:
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    raise OSError("forced audit read-back failure")
+                return real_read(descriptor, size)
+
+            with mock.patch.object(
+                contract.os,
+                "read",
+                side_effect=fail_first_read,
+            ):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            value = json.loads(receipt.read_text(encoding="utf-8"))
+            self.assertEqual(
+                value["diagnostics"][0]["code"],
+                "audit-seal-failed",
+            )
+            self.assertFalse(audit.exists())
+
+    # spec-0002@v1 S27, S31, R40, R44; conformance receipt attribution finding
+    def test_receipt_flush_failure_is_not_misattributed_to_audit(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            real_fsync = os.fsync
+            calls = 0
+
+            def fail_second_fsync(descriptor: int) -> None:
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("forced receipt flush failure")
+                real_fsync(descriptor)
+
+            stderr = io.StringIO()
+            with mock.patch.object(
+                contract.os,
+                "fsync",
+                side_effect=fail_second_fsync,
+            ), redirect_stderr(stderr):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            self.assertTrue(audit.is_file())
+            self.assertFalse(receipt.exists())
+            self.assertIn("receipt-seal-failed", stderr.getvalue())
+            self.assertNotIn("audit-seal-failed", stderr.getvalue())
+
+    # spec-0002@v1 S27, S31, R40, R44; conformance receipt read-back finding
+    def test_receipt_is_read_back_from_its_open_descriptor_before_success(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            real_read = os.read
+            calls = 0
+
+            def fail_receipt_read(descriptor: int, size: int) -> bytes:
+                nonlocal calls
+                calls += 1
+                if calls == 3:
+                    raise OSError("forced receipt read-back failure")
+                return real_read(descriptor, size)
+
+            stderr = io.StringIO()
+            with mock.patch.object(
+                contract.os,
+                "read",
+                side_effect=fail_receipt_read,
+            ), redirect_stderr(stderr):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            self.assertFalse(receipt.exists())
+            self.assertIn("receipt-seal-failed", stderr.getvalue())
+            self.assertNotIn("audit-seal-failed", stderr.getvalue())
+
+    # spec-0002@v1 bounded implementation disclosure; conformance status finding
+    def test_implementation_status_does_not_claim_whole_protocol_conformance(self) -> None:
+        status = (
+            ROOT / "distribution" / "PROVISIONER-IMPLEMENTATION-STATUS.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("No whole-spec conformance is claimed", status)
+        self.assertIn("descriptor-relative", status.lower())
+        self.assertNotIn(
+            "Host-neutral request decoding, phases 1–4",
+            status,
+        )
+
+    # spec-0002@v1 invocation path safety, R14; code-review H1
+    def test_physical_output_alias_inside_symlinked_state_root_is_not_sealed(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            physical_state = temp / "physical-state"
+            physical_state.mkdir()
+            state_alias = temp / "state-alias"
+            state_alias.symlink_to(physical_state, target_is_directory=True)
+            request = temp / "request.json"
+            receipt = physical_state / "receipt.json"
+            audit = physical_state / "audit.json"
+            write_json(request, request_for("codex", state_alias))
+
+            result = run_provision(PROVISION, request, receipt, audit)
+
+            self.assertEqual(result.returncode, 7)
+            self.assertFalse(receipt.exists())
+            self.assertFalse(audit.exists())
+            self.assertIn("receipt-seal-failed", result.stderr)
+
+    # spec-0002@v1 output path distinctness, S31; code-review H4
+    def test_casefold_alias_is_rejected_before_request_work(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "Result.json"
+            audit = temp / "result.json"
+            write_json(request, request_for("codex", state_root))
+
+            with mock.patch.object(
+                contract,
+                "detect_case_sensitivity",
+                return_value=False,
+            ), mock.patch.object(
+                Path,
+                "read_bytes",
+                side_effect=AssertionError("request work started"),
+            ):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            self.assertFalse(receipt.exists())
+            self.assertFalse(audit.exists())
+
+    # spec-0002@v1 R7, R20, R43; code-review H3
+    def test_repository_authority_failure_is_stewards_owned_not_invalid_request(
+        self,
+    ) -> None:
+        for validator_name in (
+            "validate_surface_registry",
+            "validate_provisioners",
+        ):
+            with self.subTest(validator=validator_name), tempfile.TemporaryDirectory() as raw:
+                temp = Path(raw).resolve()
+                state_root = temp / "state"
+                state_root.mkdir()
+                request = temp / "request.json"
+                receipt = temp / "receipt.json"
+                audit = temp / "audit.json"
+                write_json(request, request_for("codex", state_root))
+
+                with mock.patch.object(
+                    contract,
+                    validator_name,
+                    side_effect=ValueError("forced repository authority failure"),
+                ):
+                    exit_code = contract.execute(
+                        ROOT,
+                        request,
+                        str(receipt),
+                        str(audit),
+                    )
+
+                self.assertEqual(exit_code, 3)
+                value = json.loads(receipt.read_text(encoding="utf-8"))
+                self.assertEqual(value["overall_outcome"], "failed")
+                self.assertEqual(value["diagnostics"], [])
+                result = value["results"][0]
+                self.assertEqual(result["phase"], "identity-resolution")
+                self.assertEqual(result["diagnostic"]["owner"], "stewards")
+                self.assertEqual(
+                    result["diagnostic"]["code"],
+                    "unresolved-release",
+                )
+
+    # spec-0002@v1 authority schemas, S25, S27, R27, R36-R37; code-review M1
+    def test_all_provisioner_fixtures_and_emitted_documents_validate_full_schemas(
+        self,
+    ) -> None:
+        from distribution.lib import schema_validation
+
+        fixture_root = ROOT / "distribution" / "fixtures" / "provisioner"
+        manifest = json.loads(
+            (fixture_root / "manifest.json").read_text(encoding="utf-8")
+        )
+        for row in manifest["fixtures"]:
+            document = json.loads(
+                (fixture_root / row["path"]).read_text(encoding="utf-8")
+            )
+            if row["path"] == "version-range.json":
+                with self.assertRaises(
+                    schema_validation.SchemaValidationError
+                ):
+                    schema_validation.validate_document(
+                        ROOT,
+                        "provision-request.v1.schema.json",
+                        document,
+                    )
+            else:
+                schema_validation.validate_document(
+                    ROOT,
+                    "provision-request.v1.schema.json",
+                    document,
+                )
+            with tempfile.TemporaryDirectory() as raw:
+                temp = Path(raw).resolve()
+                request = temp / "request.json"
+                receipt = temp / "receipt.json"
+                audit = temp / "audit.json"
+                write_json(request, document)
+                result = run_provision(PROVISION, request, receipt, audit)
+                self.assertEqual(
+                    result.returncode,
+                    row["expected_exit"],
+                    result.stderr,
+                )
+                schema_validation.validate_document(
+                    ROOT,
+                    "provision-receipt.v1.schema.json",
+                    json.loads(receipt.read_text(encoding="utf-8")),
+                )
+                schema_validation.validate_document(
+                    ROOT,
+                    "provision-write-events.v1.schema.json",
+                    json.loads(audit.read_text(encoding="utf-8")),
+                )
+
+    # spec-0002@v1 deterministic aggregate result; code-review H5
+    def test_receipt_schema_rejects_contradictory_outcome_and_exit(self) -> None:
+        from distribution.lib import schema_validation
+
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            result = run_provision(PROVISION, request, receipt, audit)
+            self.assertEqual(result.returncode, 3, result.stderr)
+            value = json.loads(receipt.read_text(encoding="utf-8"))
+
+        contradictory = dict(value)
+        contradictory["overall_outcome"] = "success"
+        contradictory["exit_code"] = 6
+        with self.assertRaises(schema_validation.SchemaValidationError):
+            schema_validation.validate_document(
+                ROOT,
+                "provision-receipt.v1.schema.json",
+                contradictory,
+            )
+
+        contradictory = dict(value)
+        contradictory["exit_code"] = 6
+        with self.assertRaises(schema_validation.SchemaValidationError):
+            schema_validation.validate_document(
+                ROOT,
+                "provision-receipt.v1.schema.json",
+                contradictory,
+            )
 
 
 if __name__ == "__main__":

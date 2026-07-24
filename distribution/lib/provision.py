@@ -8,7 +8,9 @@ and receipt boundary without providing a host mutation adapter.
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from datetime import datetime, timezone
+import errno
 import hashlib
 import json
 import os
@@ -16,6 +18,7 @@ from pathlib import Path, PurePosixPath
 import re
 import sys
 from typing import Any, Iterable, Optional, Sequence
+import unicodedata
 
 from .manage import (
     DOT_ID,
@@ -48,6 +51,41 @@ class OutputContractError(ValueError):
     """The two explicit protocol output paths cannot be safely sealed."""
 
 
+class OutputSealError(OSError):
+    """One exact create/write/flush/read-back output operation failed."""
+
+    def __init__(self, operation: str, cause: OSError) -> None:
+        error_number = cause.errno if cause.errno is not None else errno.EIO
+        super().__init__(error_number, str(cause))
+        self.operation = operation
+
+
+class RepositoryAuthorityError(RuntimeError):
+    """A repository-owned registry or availability authority is unusable."""
+
+    def __init__(self, authority: str, cause: Exception) -> None:
+        super().__init__(f"{authority}: {cause}")
+        self.authority = authority
+
+
+@dataclass
+class OutputTarget:
+    """A normalized leaf bound to its retained, no-follow parent descriptor."""
+
+    path: Path
+    parent_fd: int
+    leaf: str
+    label: str
+    case_sensitive: Optional[bool]
+    closed: bool = False
+
+    def close(self) -> None:
+        """Close the retained parent descriptor once."""
+        if not self.closed:
+            os.close(self.parent_fd)
+            self.closed = True
+
+
 def timestamp() -> str:
     """Return an RFC 3339 UTC whole-second timestamp."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -72,39 +110,237 @@ def is_within(path: Path, root: Path) -> bool:
         return False
 
 
-def validate_output_leaf(path_text: str, label: str) -> Path:
-    """Validate a normalized, absent, non-symlinked output leaf and parent."""
+def open_directory_chain(parent: Path, label: str) -> int:
+    """Open every absolute parent component relative/no-follow and retain final."""
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | os.O_NOFOLLOW
+    )
+    descriptor = -1
+    try:
+        descriptor = os.open("/", flags)
+        for component in parent.parts[1:]:
+            next_descriptor = os.open(
+                component,
+                flags,
+                dir_fd=descriptor,
+            )
+            os.close(descriptor)
+            descriptor = next_descriptor
+        return descriptor
+    except OSError as exc:
+        if descriptor >= 0:
+            os.close(descriptor)
+        raise OutputContractError(f"{label}: parent cannot be opened") from exc
+
+
+def alternate_case(value: str) -> Optional[str]:
+    """Return one byte-distinct ASCII case variant when possible."""
+    for index, character in enumerate(value):
+        if "a" <= character <= "z":
+            return value[:index] + character.upper() + value[index + 1 :]
+        if "A" <= character <= "Z":
+            return value[:index] + character.lower() + value[index + 1 :]
+    return None
+
+
+def detect_case_sensitivity(parent_fd: int) -> Optional[bool]:
+    """Read-only detect lookup case behavior in the exact output directory."""
+    try:
+        entries = os.listdir(parent_fd)
+    except OSError:
+        return None
+    for entry in entries:
+        alternate = alternate_case(entry)
+        if alternate is None or alternate == entry:
+            continue
+        try:
+            original_stat = os.stat(
+                entry,
+                dir_fd=parent_fd,
+                follow_symlinks=False,
+            )
+            alternate_stat = os.stat(
+                alternate,
+                dir_fd=parent_fd,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            return True
+        except OSError:
+            continue
+        if (
+            original_stat.st_dev,
+            original_stat.st_ino,
+        ) == (
+            alternate_stat.st_dev,
+            alternate_stat.st_ino,
+        ):
+            return False
+    return None
+
+
+def validate_output_leaf(path_text: str, label: str) -> OutputTarget:
+    """Validate an absent leaf and retain its no-follow parent descriptor."""
     if not absolute_normalized_path(path_text):
         raise OutputContractError(f"{label}: path is not absolute and normalized")
     path = Path(path_text)
     parent = path.parent
+    descriptor = open_directory_chain(parent, label)
     try:
-        resolved_parent = parent.resolve(strict=True)
+        os.stat(path.name, dir_fd=descriptor, follow_symlinks=False)
+    except FileNotFoundError:
+        return OutputTarget(
+            path,
+            descriptor,
+            path.name,
+            label,
+            detect_case_sensitivity(descriptor),
+        )
     except OSError as exc:
-        raise OutputContractError(f"{label}: parent cannot be resolved") from exc
-    if str(resolved_parent) != str(parent):
-        raise OutputContractError(f"{label}: parent contains a symlink")
-    if not parent.is_dir():
-        raise OutputContractError(f"{label}: parent is not a directory")
-    if path.exists() or path.is_symlink():
+        os.close(descriptor)
+        raise OutputContractError(f"{label}: leaf cannot be inspected") from exc
+    else:
+        os.close(descriptor)
         raise OutputContractError(f"{label}: leaf already exists")
-    return path
 
 
-def write_once(path: Path, raw: bytes) -> None:
-    """Exclusively create, write, flush, and close one protocol output."""
-    descriptor = os.open(
-        str(path),
-        os.O_CREAT | os.O_EXCL | os.O_WRONLY,
-        0o600,
-    )
+def outputs_alias(left: OutputTarget, right: OutputTarget) -> bool:
+    """Return whether two absent leaves can resolve to one physical entry."""
+    left_parent = os.fstat(left.parent_fd)
+    right_parent = os.fstat(right.parent_fd)
+    if (left_parent.st_dev, left_parent.st_ino) != (
+        right_parent.st_dev,
+        right_parent.st_ino,
+    ):
+        return False
+    if left.leaf == right.leaf:
+        return True
+    normalized_left = unicodedata.normalize("NFC", left.leaf).casefold()
+    normalized_right = unicodedata.normalize("NFC", right.leaf).casefold()
+    if normalized_left != normalized_right:
+        return False
+    return left.case_sensitive is not True or right.case_sensitive is not True
+
+
+def descriptor_is_within(parent_fd: int, root_path: Path) -> bool:
+    """Compare a retained physical directory ancestry to a state-root alias."""
     try:
+        root_stat = os.stat(root_path, follow_symlinks=True)
+    except OSError:
+        return False
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | os.O_NOFOLLOW
+    )
+    current = os.dup(parent_fd)
+    try:
+        while True:
+            current_stat = os.fstat(current)
+            if (current_stat.st_dev, current_stat.st_ino) == (
+                root_stat.st_dev,
+                root_stat.st_ino,
+            ):
+                return True
+            parent = os.open("..", flags, dir_fd=current)
+            parent_stat = os.fstat(parent)
+            if (parent_stat.st_dev, parent_stat.st_ino) == (
+                current_stat.st_dev,
+                current_stat.st_ino,
+            ):
+                os.close(parent)
+                return False
+            os.close(current)
+            current = parent
+    finally:
+        os.close(current)
+
+
+def output_is_within_state_root(target: OutputTarget, root_path: Path) -> bool:
+    """Check lexical and physical containment, including state-root symlinks."""
+    if is_within(target.path, root_path):
+        return True
+    if descriptor_is_within(target.parent_fd, root_path):
+        return True
+    try:
+        resolved_root = root_path.resolve(strict=False)
+        resolved_output = target.path.resolve(strict=False)
+    except OSError:
+        return False
+    return is_within(resolved_output, resolved_root)
+
+
+def write_once(target: OutputTarget, raw: bytes) -> str:
+    """Create relative/no-follow and hash read-back bytes from the open leaf."""
+    flags = (
+        os.O_CREAT
+        | os.O_EXCL
+        | os.O_RDWR
+        | getattr(os, "O_CLOEXEC", 0)
+        | os.O_NOFOLLOW
+    )
+    descriptor = -1
+    operation = "create"
+    failure: Optional[OutputSealError] = None
+    digest: Optional[str] = None
+    created = False
+    try:
+        descriptor = os.open(
+            target.leaf,
+            flags,
+            0o600,
+            dir_fd=target.parent_fd,
+        )
+        created = True
+        operation = "write"
         written = 0
         while written < len(raw):
-            written += os.write(descriptor, raw[written:])
+            count = os.write(descriptor, raw[written:])
+            if count <= 0:
+                raise OSError(errno.EIO, "zero-byte output write")
+            written += count
+        operation = "flush"
         os.fsync(descriptor)
+        operation = "read-back"
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        chunks = []
+        while True:
+            chunk = os.read(descriptor, 1024 * 1024)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        read_back = b"".join(chunks)
+        if read_back != raw:
+            raise OSError(errno.EIO, "output read-back differs from written bytes")
+        digest = hashlib.sha256(read_back).hexdigest()
+    except OSError as exc:
+        failure = OutputSealError(operation, exc)
     finally:
-        os.close(descriptor)
+        if descriptor >= 0:
+            try:
+                os.close(descriptor)
+            except OSError as exc:
+                if failure is None:
+                    failure = OutputSealError("flush", exc)
+        if failure is not None and created:
+            try:
+                os.unlink(target.leaf, dir_fd=target.parent_fd)
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                failure = OutputSealError("cleanup", exc)
+    if failure is not None:
+        raise failure
+    if digest is None:
+        raise OutputSealError(
+            "read-back",
+            OSError(errno.EIO, "output digest was not produced"),
+        )
+    return digest
 
 
 def cause(
@@ -564,9 +800,12 @@ def phase_four(
     by_position = {
         (item["target_index"], item["plugin_index"]): item for item in positions
     }
-    registry = validate_surface_registry(
-        load_json(root / "distribution" / "surfaces.json")
-    )
+    try:
+        registry = validate_surface_registry(
+            load_json(root / "distribution" / "surfaces.json")
+        )
+    except (OSError, ValueError) as exc:
+        raise RepositoryAuthorityError("surface-registry", exc) from exc
     surfaces = {
         row["surface_id"]: row
         for row in registry["surfaces"]
@@ -643,14 +882,46 @@ def route_failure(
     }
 
 
+def authority_failure_result(
+    position: dict[str, Any],
+    authority: str,
+) -> dict[str, Any]:
+    """Build a Stewards-owned failure for an unusable repository authority."""
+    references = (
+        [position["route_id"]]
+        if isinstance(position.get("route_id"), str)
+        else []
+    )
+    return {
+        **position,
+        "phase": "identity-resolution",
+        "outcome": "failed",
+        "diagnostic": diagnostic(
+            [
+                cause(
+                    "unresolved-release",
+                    "execution",
+                    f"/{authority}",
+                    references,
+                )
+            ],
+            "stewards",
+            "A repository-owned distribution authority is unusable.",
+        ),
+    }
+
+
 def resolve_routes(
     root: Path,
     positions: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Resolve complete availability keys and fail closed before mutation."""
-    provisioners = validate_provisioners(
-        load_json(root / "distribution" / "provisioners.json")
-    )
+    try:
+        provisioners = validate_provisioners(
+            load_json(root / "distribution" / "provisioners.json")
+        )
+    except (OSError, ValueError) as exc:
+        raise RepositoryAuthorityError("provisioners", exc) from exc
     sorted_records = sorted(
         provisioners["records"],
         key=lambda row: (
@@ -807,34 +1078,20 @@ def build_audit(
     }
 
 
-def seal_normal_outputs(
-    receipt_path: Path,
-    audit_path: Path,
-    receipt: dict[str, Any],
-    audit: dict[str, Any],
-) -> None:
-    """Write audit once, hash read-back bytes, then write receipt once."""
-    audit_raw = canonical_json(audit)
-    write_once(audit_path, audit_raw)
-    read_back = audit_path.read_bytes()
-    digest = hashlib.sha256(read_back).hexdigest()
-    receipt["write_events_reference"] = str(audit_path)
-    receipt["write_events_sha256"] = digest
-    write_once(receipt_path, canonical_json(receipt))
-
-
 def seal_minimal_output_failure(
-    receipt_path: Path,
+    receipt_target: OutputTarget,
     started_at: str,
     code: str,
     field_path: str,
+    request_id: Optional[str] = None,
+    provisioner_version: Optional[str] = None,
 ) -> None:
-    """Seal the exact minimal receipt when no request work has started."""
+    """Seal the exact minimal receipt when its retained target remains usable."""
     finished_at = timestamp()
     value = {
         "schema_version": 1,
-        "request_id": None,
-        "provisioner_version": None,
+        "request_id": request_id,
+        "provisioner_version": provisioner_version,
         "started_at": started_at,
         "finished_at": finished_at,
         "overall_outcome": "output-failure",
@@ -848,7 +1105,7 @@ def seal_minimal_output_failure(
             )
         ],
     }
-    write_once(receipt_path, canonical_json(value))
+    write_once(receipt_target, canonical_json(value))
 
 
 def envelope_diagnostic(
@@ -874,148 +1131,226 @@ def execute(
     """Execute the bounded protocol through the available route boundary."""
     started = timestamp()
     try:
-        receipt_path = validate_output_leaf(receipt_text, "receipt")
+        receipt_target = validate_output_leaf(receipt_text, "receipt")
     except OutputContractError as exc:
         print(f"receipt-seal-failed: {exc}", file=sys.stderr)
         return 7
+    audit_target: Optional[OutputTarget] = None
     try:
-        audit_path = validate_output_leaf(audit_text, "audit")
-        if receipt_path == audit_path:
-            raise OutputContractError("receipt and audit paths must be distinct")
+        audit_target = validate_output_leaf(audit_text, "audit")
     except OutputContractError as exc:
         print(f"output-parent-invalid: {exc}", file=sys.stderr)
         try:
             seal_minimal_output_failure(
-                receipt_path,
+                receipt_target,
                 started,
                 "output-parent-invalid",
                 "/audit/parent",
             )
         except OSError as write_error:
             print(f"receipt-seal-failed: {write_error}", file=sys.stderr)
+        finally:
+            if audit_target is not None:
+                audit_target.close()
+            receipt_target.close()
+        return 7
+    if outputs_alias(receipt_target, audit_target):
+        print(
+            "receipt-seal-failed: receipt and audit paths alias",
+            file=sys.stderr,
+        )
+        audit_target.close()
+        receipt_target.close()
         return 7
 
-    document: Any = None
-    positions: list[dict[str, Any]] = []
-    request_id: Optional[str] = None
-    provisioner_version: Optional[str] = None
-    envelope_diagnostics: list[dict[str, Any]] = []
-    results: list[dict[str, Any]] = []
-    exit_code = 2
-    overall = "invalid-request"
     try:
-        document = load_json_bytes(request_path.read_bytes(), str(request_path))
-        positions = tuple_positions(document)
-        if isinstance(document, dict):
-            if isinstance(document.get("request_id"), str):
-                request_id = document["request_id"]
-            if isinstance(document.get("provisioner_version"), str):
-                provisioner_version = document["provisioner_version"]
-        phase_one_envelope, assigned = phase_one(document, positions)
-        if phase_one_envelope or assigned:
-            if phase_one_envelope:
-                envelope_diagnostics.append(
-                    envelope_diagnostic(phase_one_envelope)
-                )
-            results = request_validation_results(positions, assigned)
-        else:
-            assert isinstance(document, dict)
-            phase_two = phase_two_causes(document)
-            state_roots = [
-                Path(row["path"]) for row in document["environment"]["state_roots"]
-            ]
-            for output_path, label in (
-                (receipt_path, "receipt"),
-                (audit_path, "audit"),
+        document: Any = None
+        positions: list[dict[str, Any]] = []
+        request_id: Optional[str] = None
+        provisioner_version: Optional[str] = None
+        envelope_diagnostics: list[dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
+        exit_code = 2
+        overall = "invalid-request"
+        try:
+            document = load_json_bytes(request_path.read_bytes(), str(request_path))
+            positions = tuple_positions(document)
+            if isinstance(document, dict):
+                if isinstance(document.get("request_id"), str):
+                    request_id = document["request_id"]
+                if isinstance(document.get("provisioner_version"), str):
+                    provisioner_version = document["provisioner_version"]
+            phase_one_envelope, assigned = phase_one(document, positions)
+            decoded_roots = []
+            if isinstance(document, dict) and isinstance(
+                document.get("environment"),
+                dict,
             ):
-                if any(is_within(output_path, state_root) for state_root in state_roots):
-                    phase_two.append(
-                        cause("unsafe-path", "outputs", f"/{label}/parent")
+                roots_value = document["environment"].get("state_roots")
+                if isinstance(roots_value, list):
+                    decoded_roots = [
+                        Path(row["path"])
+                        for row in roots_value
+                        if isinstance(row, dict)
+                        and absolute_normalized_path(row.get("path"))
+                    ]
+            if any(
+                output_is_within_state_root(output_target, state_root)
+                for output_target in (receipt_target, audit_target)
+                for state_root in decoded_roots
+            ):
+                print(
+                    "receipt-seal-failed: output path is inside host state",
+                    file=sys.stderr,
+                )
+                return 7
+            if phase_one_envelope or assigned:
+                if phase_one_envelope:
+                    envelope_diagnostics.append(
+                        envelope_diagnostic(phase_one_envelope)
                     )
-            if phase_two:
-                envelope_diagnostics.append(envelope_diagnostic(phase_two))
-                results = [skip_result(position) for position in positions]
+                results = request_validation_results(positions, assigned)
             else:
-                phase_three_assigned = phase_three(document, positions)
-                if phase_three_assigned:
-                    results = request_validation_results(
-                        positions,
-                        phase_three_assigned,
-                    )
+                assert isinstance(document, dict)
+                phase_two = phase_two_causes(document)
+                state_roots = [
+                    Path(row["path"])
+                    for row in document["environment"]["state_roots"]
+                ]
+                for output_target, label in (
+                    (receipt_target, "receipt"),
+                    (audit_target, "audit"),
+                ):
+                    if any(
+                        is_within(output_target.path, state_root)
+                        for state_root in state_roots
+                    ):
+                        phase_two.append(
+                            cause("unsafe-path", "outputs", f"/{label}/parent")
+                        )
+                if phase_two:
+                    envelope_diagnostics.append(envelope_diagnostic(phase_two))
+                    results = [skip_result(position) for position in positions]
                 else:
-                    phase_four_envelope, phase_four_assigned = phase_four(
-                        root,
-                        document,
-                        positions,
-                    )
-                    if phase_four_envelope or phase_four_assigned:
-                        if phase_four_envelope:
-                            envelope_diagnostics.append(
-                                envelope_diagnostic(phase_four_envelope)
-                            )
+                    phase_three_assigned = phase_three(document, positions)
+                    if phase_three_assigned:
                         results = request_validation_results(
                             positions,
-                            phase_four_assigned,
+                            phase_three_assigned,
                         )
                     else:
-                        route_results, resolved = resolve_routes(root, positions)
-                        envelope_diagnostics = unused_reference_diagnostics(document)
-                        if envelope_diagnostics:
-                            resolved_ids = {
-                                position["result_id"] for position in resolved
-                            }
-                            route_results = [
-                                skip_result(position)
-                                if position["result_id"] in resolved_ids
-                                else result
-                                for position, result in zip(
-                                    positions,
-                                    route_results,
+                        phase_four_envelope, phase_four_assigned = phase_four(
+                            root,
+                            document,
+                            positions,
+                        )
+                        if phase_four_envelope or phase_four_assigned:
+                            if phase_four_envelope:
+                                envelope_diagnostics.append(
+                                    envelope_diagnostic(phase_four_envelope)
                                 )
-                            ]
-                            results = route_results
+                            results = request_validation_results(
+                                positions,
+                                phase_four_assigned,
+                            )
                         else:
-                            results = route_results
-                            exit_code = 3
-                            overall = "failed"
-    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
-        envelope_diagnostics = [
-            envelope_diagnostic(
-                [cause("invalid-request", "request", "")],
-            )
-        ]
-        positions = []
-        results = []
-        print(f"invalid-request: {exc}", file=sys.stderr)
+                            route_results, resolved = resolve_routes(
+                                root,
+                                positions,
+                            )
+                            envelope_diagnostics = unused_reference_diagnostics(
+                                document
+                            )
+                            if envelope_diagnostics:
+                                resolved_ids = {
+                                    position["result_id"] for position in resolved
+                                }
+                                route_results = [
+                                    skip_result(position)
+                                    if position["result_id"] in resolved_ids
+                                    else result
+                                    for position, result in zip(
+                                        positions,
+                                        route_results,
+                                    )
+                                ]
+                                results = route_results
+                            else:
+                                results = route_results
+                                exit_code = 3
+                                overall = "failed"
+        except RepositoryAuthorityError as exc:
+            envelope_diagnostics = []
+            results = [
+                authority_failure_result(position, exc.authority)
+                for position in positions
+            ]
+            exit_code = 3
+            overall = "failed"
+            print(f"stewards-authority-failed: {exc}", file=sys.stderr)
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+            envelope_diagnostics = [
+                envelope_diagnostic(
+                    [cause("invalid-request", "request", "")],
+                )
+            ]
+            positions = []
+            results = []
+            print(f"invalid-request: {exc}", file=sys.stderr)
 
-    finished = timestamp()
-    receipt = {
-        "schema_version": 1,
-        "request_id": request_id,
-        "provisioner_version": provisioner_version,
-        "started_at": started,
-        "finished_at": finished,
-        "overall_outcome": overall,
-        "exit_code": exit_code,
-        "results": sorted(
-            results,
-            key=lambda item: (item["target_index"], item["plugin_index"]),
-        ),
-        "diagnostics": envelope_diagnostics,
-    }
-    audit = build_audit(
-        request_id,
-        receipt_path,
-        audit_path,
-        document,
-        finished,
-    )
-    try:
-        seal_normal_outputs(receipt_path, audit_path, receipt, audit)
-    except OSError as exc:
-        print(f"audit-seal-failed: {exc}", file=sys.stderr)
-        return 7
-    return exit_code
+        finished = timestamp()
+        receipt = {
+            "schema_version": 1,
+            "request_id": request_id,
+            "provisioner_version": provisioner_version,
+            "started_at": started,
+            "finished_at": finished,
+            "overall_outcome": overall,
+            "exit_code": exit_code,
+            "results": sorted(
+                results,
+                key=lambda item: (item["target_index"], item["plugin_index"]),
+            ),
+            "diagnostics": envelope_diagnostics,
+        }
+        audit = build_audit(
+            request_id,
+            receipt_target.path,
+            audit_target.path,
+            document,
+            finished,
+        )
+        try:
+            audit_digest = write_once(audit_target, canonical_json(audit))
+        except OutputSealError as exc:
+            print(f"audit-seal-failed: {exc}", file=sys.stderr)
+            try:
+                seal_minimal_output_failure(
+                    receipt_target,
+                    started,
+                    "audit-seal-failed",
+                    f"/audit/{exc.operation}",
+                    request_id,
+                    provisioner_version,
+                )
+            except OSError as receipt_error:
+                print(
+                    f"receipt-seal-failed: {receipt_error}",
+                    file=sys.stderr,
+                )
+            return 7
+
+        receipt["write_events_reference"] = str(audit_target.path)
+        receipt["write_events_sha256"] = audit_digest
+        try:
+            write_once(receipt_target, canonical_json(receipt))
+        except OutputSealError as exc:
+            print(f"receipt-seal-failed: {exc}", file=sys.stderr)
+            return 7
+        return exit_code
+    finally:
+        audit_target.close()
+        receipt_target.close()
 
 
 def build_parser() -> argparse.ArgumentParser:

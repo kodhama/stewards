@@ -15,14 +15,20 @@ This is a bounded implementation of the protocol surface that can be truthful
 with the current merged metadata. `distribution/provisioners.json` contains no
 candidate or verified records, so this change creates no host mutation route
 and makes no installation, idempotency, preservation, or promotion claim.
+**No whole-spec conformance is claimed.**
 
 ## Implemented
 
-- The six versioned request, receipt, retained-state, write-audit,
-  entrypoint, and evidence-bundle schema authorities.
-- Host-neutral request decoding, phases 1–4, complete-key route lookup, global
-  unused-reference phase 6, typed failure receipts, empty process-tree write
-  audits, exclusive output sealing, and fixed aggregate exits.
+- The six checked-in request, receipt, retained-state, write-audit,
+  entrypoint, and evidence-bundle JSON Schema documents; tests validate every
+  current provisioner fixture and emitted receipt/audit document against its
+  complete schema.
+- The request cases exercised by retained fixtures: exact-version rejection,
+  surface/root/reference checks, complete-key route lookup, and global
+  unused-reference precedence.
+- Descriptor-relative no-follow/exclusive creation, same-descriptor read-back
+  hashing, partial-file cleanup, physically disjoint output checks, typed
+  output-failure receipts, and distinct audit/receipt sealing failures.
 - Claude Code and Codex reach the same core and fail at identity resolution
   with `route-not-found` while the availability source has no route.
 - Thin CI and cloud/container entrypoints delegate to the core and contain no
@@ -39,6 +45,8 @@ and makes no installation, idempotency, preservation, or promotion claim.
   mutation, and host discovery adapters.
 - Shared prerequisite execution, selected convergence, rollback, process-tree
   write monitoring during mutation, and successful receipt variants.
+- Unexercised request-attribution combinations outside the retained fixture
+  set; the implemented cases are not a claim of complete six-phase coverage.
 - Clean two-run promotion harnesses and immutable route evidence bundles.
 
 Those behaviors require an exact candidate or verified provisioner record and
