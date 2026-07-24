@@ -1,11 +1,11 @@
 ---
 id: kodhama-0013-family-codex-native-product-support
 type: decision
-status: draft
+status: gated  # author self-check recorded in the lifecycle record below; human approval remains open
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0008-family-inheritance-restate-nothing, kodhama-0012-codex-marketplace-channel]
 owner: agent
 updated: 2026-07-24
-provenance: maintainer request 2026-07-24 to make native Codex support, preferably through plugin distribution, a product-family standard; initial named products trellis, grove, and wisp. Reconciled 2026-07-24 with merged grove#134 (dual-host Grove distribution) and merged stewards#9 / kodhama-0012 (the Grove-first Codex marketplace catalog).
+provenance: maintainer request 2026-07-24 to make native Codex support, preferably through plugin distribution, a product-family standard; initial named products trellis, grove, and wisp. Reconciled 2026-07-24 with merged grove#134 (dual-host Grove distribution) and merged stewards#9 / kodhama-0012 (the Grove-first Codex marketplace catalog). Maintainer merge of PR #11 preserved this record as a draft; the author self-check below promotes it to the execution-ready gate without claiming human approval.
 ---
 
 # Decision: native Codex support becomes a product-family standard
@@ -170,3 +170,13 @@ Spore’s initial-tranche status is resolved as deferred. Its possible
 redefinition or retirement is explicitly parked because it would amend
 `kodhama-0010` and `kodhama-0011`, including their membership and delivery
 consequences, rather than merely refine this delivery decision.
+
+## Lifecycle record
+
+PR #11 explicitly introduced this record as a draft, so its maintainer merge
+is not treated as ratification. On 2026-07-24 the author rechecked the record
+against approved `kodhama-0001`, `kodhama-0002`, `kodhama-0008`, and
+`kodhama-0012`, plus the merged Grove implementation evidence named above.
+Its dependencies are settled, its decided/open/parked state is explicit, and
+its claims remain bounded to the named products and verified host facts.
+That self-check promotes `draft → gated`; human approval remains open.

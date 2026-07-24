@@ -1,11 +1,11 @@
 ---
 id: kodhama-0014-retire-spore
 type: decision
-status: gated
+status: approved  # ratified by maintainer merge of PR #12 on 2026-07-24; this records the requested human-owned ship act
 depends_on: [kodhama-0010-add-spore, kodhama-0011-spore-plugin-channel]
 owner: agent
 updated: 2026-07-24
-provenance: maintainer decision 2026-07-24 to retire Spore after reassessing its narrow macOS Terminal/Claude Remote-Control session-driver purpose; merge requested as the human-owned ship act.
+provenance: maintainer decision 2026-07-24 to retire Spore after reassessing its narrow macOS Terminal/Claude Remote-Control session-driver purpose; maintainer merge of PR #12 performed the requested human-owned ship act.
 ---
 
 # Decision: retire Spore as a steward and delivery channel
@@ -111,3 +111,8 @@ only current family/discovery surfaces owned by this repository, preserves
 source history and existing installations, and makes outside-repository work
 explicit rather than silently performing it. There are no open decision items.
 Promote `draft → gated`; the maintainer’s requested merge is the ship act.
+
+## Lifecycle record
+
+The maintainer merged PR #12 on 2026-07-24. That merge performed the
+human-owned ship act specified above; the `approved` frontmatter records it.
