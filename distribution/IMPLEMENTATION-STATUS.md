@@ -16,10 +16,12 @@ effective-support slice. It does not claim whole-spec conformance.
 
 ## Implemented
 
-- Versioned schemas and common validators for identity, typed references,
+- Versioned schemas and common shape/identity validators for typed references,
   surface, catalog, provisioner-availability, clean-install, effective-facts,
-  legacy-stock, and product-adoption records: S2–S8, S12–S15, S18–S20 and
-  R1–R14, R20, R23, R25–R28, R33–R37.
+  legacy-stock, and product-adoption records. Cross-record checks now bind
+  provisioner acquisitions, product setup declarations, and resolved product
+  adoption decisions; this is not a claim that every referenced product or
+  release artifact is resolved.
 - Exact six-row surface registry, fixed-commit catalog discovery, canonical
   selector fingerprints, immutable baseline/initial stock, removal-only
   transition stock, and `wave-close`: S9, S10, S23 and R15–R17, R24, R40.
@@ -28,14 +30,21 @@ effective-support slice. It does not claim whole-spec conformance.
 - `.github/workflows/distribution-check.yml` runs `distribution/check` on
   pull requests and `main`; the gate covers executable fixtures, door
   validation, generation staleness, Python compilation, annotation coverage,
-  dependency-free lint/format checks, JSON parsing, working/staged diffs, and the committed
-  CI range from the event base SHA.
-- Product pre-tag version extraction/carrier parity and exact expected-tag
-  derivation, plus release-phase peeling of only the computed Git ref: the
-  release-identity subset of S1 and R1–R4.
-- Product-local adoption references for Grove and Trellis. Trellis remains
-  bounded legacy published stock because adoption alone does not establish a
-  conforming product release.
+  dependency-free lint/format checks, JSON parsing, working/staged diffs, and
+  the committed CI range from the event base SHA. CI checks out the exact
+  Grove and Trellis adoption commits and supplies them through the explicit
+  local product-repository resolver contract.
+- The public release phase fails closed. Product pre-tag version
+  extraction/carrier parity and exact expected-tag derivation implement the
+  pre-tag subset of S1 and R1–R4 until the complete history, compatibility,
+  approval, and tag engine below is implemented.
+- Product-local adoption references for Grove and Trellis resolve exact
+  repository/path/commit bytes, digests, and approved decision status through
+  an explicit local resolver. Trellis remains bounded legacy published stock
+  because adoption alone does not establish a conforming product release.
+- Verified provisioner acquisitions cross-bind to exactly one matching
+  verified provisioner row, and effective setup facts bind to their exact
+  product requirement row, setup declaration, contract, and identity.
 
 ## Remaining before whole-spec conformance
 
@@ -43,13 +52,18 @@ effective-support slice. It does not claim whole-spec conformance.
   extractor grammar, public-contract fingerprints, support-derivative
   projection, payload/history completeness, surface change derivation, and
   approval projection/final augmentation.
-- S17, S21, R31–R32, and R38: enforce append-only history against every
-  repository package tag, prior-tag immutability, exact SemVer transition and
-  cumulative prerelease rules, minimum compatibility bumps, and the
-  product-human approval binding.
+- The release portion of S1/R2 plus S17, S21, R31–R32, and R38: resolve the
+  expected tag only as part of the complete engine; enforce append-only
+  history against every package tag, prior-tag immutability, exact SemVer
+  transitions, cumulative prerelease rules, minimum compatibility bumps, and
+  the product-human approval binding.
+- Resolve verified catalog product-contract and release-history references to
+  their exact retained bytes and last release row; current catalog validation
+  covers their typed shape and local identity relations only.
 - R21: run a declared product extension validator. Spec 0001 defines only its
   path; it does not define argv, working directory, environment/network
   boundary, input/output, or exit contract. That protocol requires an
-  upstream spec revision before safe execution.
+  upstream spec revision before safe execution; every declaration currently
+  fails closed in candidate, pre-tag, and release validation.
 
 The historical external dependencies tracked by issue #20 remain unchanged.

@@ -859,6 +859,47 @@ def validate_provisioners(value: Any) -> dict[str, Any]:
     return obj
 
 
+def validate_catalog_provisioner_bindings(
+    catalogs: dict[str, Any],
+    provisioners: dict[str, Any],
+) -> None:
+    verified = [
+        row
+        for row in provisioners["records"]
+        if row["state"] == "verified"
+    ]
+    for row in catalogs["records"]:
+        if row["state"] != "verified":
+            continue
+        binding = row["identity_binding"]
+        if binding["kind"] != "provisioner-acquisition":
+            continue
+        identity = binding["provisioner_identity"]
+        matches = [
+            provisioner
+            for provisioner in verified
+            if all(
+                provisioner[key] == identity[key]
+                for key in (
+                    "route_id",
+                    "surface_id",
+                    "plugin_id",
+                    "package_version",
+                    "provisioner_version",
+                    "release_tag",
+                    "source_commit",
+                )
+            )
+            and provisioner["evidence_bundle"] == binding["evidence_bundle"]
+        ]
+        require(
+            len(matches) == 1,
+            "catalog "
+            f"{(row['plugin_id'], row['surface_id'])}: "
+            "provisioner acquisition has no exact verified provisioner",
+        )
+
+
 def validate_surface_registry(value: Any) -> dict[str, Any]:
     obj = exact_keys(value, ("schema_version", "registry_version", "surfaces"), where="surface_registry")
     require(obj["schema_version"] == 1 and type(obj["registry_version"]) is int and obj["registry_version"] > 0, "surface_registry: invalid version")
@@ -1001,6 +1042,10 @@ def validate_release_metadata(value: Any, phase: str) -> dict[str, Any]:
             require(isinstance(extension, dict), f"release_metadata.extensions.{key}: expected object")
             if "validator" in extension:
                 normalized_path(extension["validator"], f"release_metadata.extensions.{key}.validator")
+                reject(
+                    "release_metadata.extensions."
+                    f"{key}.validator: extension validator protocol is not implemented"
+                )
     return obj
 
 
@@ -1157,6 +1202,10 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
         )
         if row["manifest_kind"] == "other-declared-host":
             normalized_path(row.get("extension_validator"), f"{where}.extension_validator")
+            reject(
+                f"{where}.extension_validator: "
+                "extension validator protocol is not implemented"
+            )
         else:
             require(
                 "extension_validator" not in row,
@@ -1324,6 +1373,10 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
 
 
 def validate_product(root: Path, metadata_path: str, phase: str) -> dict[str, Any]:
+    require(
+        phase == "pre-tag",
+        "release engine is not implemented; release phase fails closed",
+    )
     root = root.resolve()
     metadata_file = (root / metadata_path).resolve()
     require(root in metadata_file.parents, "release_metadata: outside package root")
@@ -1368,18 +1421,6 @@ def validate_product(root: Path, metadata_path: str, phase: str) -> dict[str, An
 
     expected_tag = f"{metadata['plugin_id']}-v{version}"
     result: dict[str, Any] = {"package_version": version, "expected_tag": expected_tag}
-    if phase == "release":
-        ref = f"refs/tags/{expected_tag}"
-        git = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", f"{ref}^{{commit}}"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=False,
-        )
-        require(git.returncode == 0 and COMMIT.fullmatch(git.stdout.strip()) is not None, f"release tag missing: {ref}")
-        result["release_tag"] = expected_tag
-        result["source_commit"] = git.stdout.strip()
     return result
 
 
@@ -1455,7 +1496,117 @@ def compare_precedence(left: tuple[Any, ...], right: tuple[Any, ...]) -> int:
     return (len(left_pre) > len(right_pre)) - (len(left_pre) < len(right_pre))
 
 
-def validate_product_adoptions(value: Any) -> dict[str, Any]:
+def github_repository_from_remote(remote: str) -> Optional[str]:
+    prefixes = (
+        "https://github.com/",
+        "ssh://git@github.com/",
+        "git@github.com:",
+    )
+    for prefix in prefixes:
+        if remote.startswith(prefix):
+            repository = remote[len(prefix) :].rstrip("/")
+            if repository.endswith(".git"):
+                repository = repository[:-4]
+            return repository
+    return None
+
+
+def artifact_frontmatter_field(raw: bytes, field: str, where: str) -> str:
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ContractError(f"{where}: invalid UTF-8") from exc
+    require(text.startswith("---\n"), f"{where}: missing frontmatter")
+    parts = text.split("---\n", 2)
+    require(len(parts) == 3, f"{where}: unterminated frontmatter")
+    values = []
+    for line in parts[1].splitlines():
+        if line.startswith(field + ":"):
+            values.append(line.split(":", 1)[1].split("#", 1)[0].strip())
+    require(len(values) == 1 and bool(values[0]), f"{where}: missing {field}")
+    return values[0]
+
+
+def resolve_product_adoption(
+    reference: dict[str, Any],
+    repository_roots: dict[str, Path],
+    where: str,
+) -> bytes:
+    repository = reference["repository"]
+    require(
+        repository in repository_roots,
+        f"{where}: no explicit local resolver for {repository}",
+    )
+    root = repository_roots[repository].resolve()
+    require((root / ".git").exists(), f"{where}: resolver is not a Git checkout")
+    remote = subprocess.run(
+        ["git", "-C", str(root), "remote", "get-url", "origin"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    require(
+        remote.returncode == 0
+        and github_repository_from_remote(remote.stdout.strip()) == repository,
+        f"{where}: resolver repository does not match {repository}",
+    )
+    object_type = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(root),
+            "cat-file",
+            "-t",
+            reference["source_commit"],
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    require(
+        object_type.returncode == 0
+        and object_type.stdout.strip() == "commit",
+        f"{where}: source_commit is not a commit",
+    )
+    resolved = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(root),
+            "show",
+            f"{reference['source_commit']}:{reference['path']}",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    require(
+        resolved.returncode == 0,
+        f"{where}: commit/path is unresolvable",
+    )
+    require(
+        hashlib.sha256(resolved.stdout).hexdigest() == reference["sha256"],
+        f"{where}: resolved digest mismatch",
+    )
+    require(
+        artifact_frontmatter_field(resolved.stdout, "type", where)
+        in {"decision", "adr"},
+        f"{where}: resolved artifact is not a decision",
+    )
+    require(
+        artifact_frontmatter_field(resolved.stdout, "status", where)
+        == "approved",
+        f"{where}: resolved decision is not approved",
+    )
+    return resolved.stdout
+
+
+def validate_product_adoptions(
+    value: Any,
+    repository_roots: Optional[dict[str, Path]] = None,
+) -> dict[str, Any]:
     obj = exact_keys(value, ("schema_version", "products"), where="product_adoptions")
     require(obj["schema_version"] == 1, "product_adoptions.schema_version: expected 1")
     require(isinstance(obj["products"], list), "product_adoptions.products: expected array")
@@ -1484,7 +1635,27 @@ def validate_product_adoptions(value: Any) -> dict[str, Any]:
                 f"{where}.{key}: expected sorted unique strings",
             )
         if row["state"] == "complete":
-            validate_stable_reference(row.get("adoption_decision"), f"{where}.adoption_decision")
+            reference = validate_stable_reference(
+                row.get("adoption_decision"),
+                f"{where}.adoption_decision",
+            )
+            require(
+                reference["kind"] == "repo-path",
+                f"{where}.adoption_decision: expected repo-path",
+            )
+            require(
+                reference["repository"] == row["repository"],
+                f"{where}.adoption_decision.repository: product mismatch",
+            )
+            require(
+                repository_roots is not None,
+                f"{where}.adoption_decision: resolver is required",
+            )
+            resolve_product_adoption(
+                reference,
+                repository_roots,
+                f"{where}.adoption_decision",
+            )
         else:
             require("adoption_decision" not in row, f"{where}.adoption_decision: forbidden while required")
     return obj
@@ -1747,6 +1918,7 @@ def validate_effective_facts(value: Any) -> dict[str, Any]:
     validate_selection_fact(obj["consumer_selection"])
     validate_environment_fact(obj["environment_assessment"])
     validate_setup_fact(obj["product_setup"])
+    validate_effective_setup_binding(obj)
     return obj
 
 
@@ -1963,6 +2135,48 @@ def validate_setup_fact(value: Any) -> dict[str, Any]:
         reject("effective_facts.product_setup.state: invalid")
     validate_subject(obj["subject"], "effective_facts.product_setup.subject")
     return value
+
+
+def validate_effective_setup_binding(facts: dict[str, Any]) -> None:
+    subject = facts["subject"]
+    product = facts["product_contract"]
+    setup = facts["product_setup"]
+    require(
+        setup["subject"] == subject,
+        "effective_facts.product_setup.subject: top-level identity mismatch",
+    )
+    if setup["state"] not in {"not-required", "complete", "incomplete"}:
+        return
+    require(
+        product["kind"] == "record",
+        "effective_facts.product_setup: product requirement row is unavailable",
+    )
+    declaration = product["row"]["post_install_setup"]
+    require(
+        setup["requirement_reference"] == product["source_reference"],
+        "effective_facts.product_setup.requirement_reference: "
+        "does not identify the product row",
+    )
+    if setup["state"] == "not-required":
+        require(
+            not declaration["required"] and declaration["contract"] is None,
+            "effective_facts.product_setup: product row requires setup",
+        )
+        return
+    require(
+        declaration["required"],
+        "effective_facts.product_setup: product row does not require setup",
+    )
+    require(
+        setup["contract"] == declaration["contract"],
+        "effective_facts.product_setup.contract: product contract mismatch",
+    )
+    if setup["state"] == "complete":
+        require(
+            setup["completion_identity"] == subject,
+            "effective_facts.product_setup.completion_identity: "
+            "subject mismatch requires typed invalid facts",
+        )
 
 
 def evaluate_effective(value: Any) -> dict[str, Any]:
@@ -2305,6 +2519,36 @@ def validate_catalog_cross_refs(
         )
 
 
+def configured_product_repository_roots(root: Path) -> dict[str, Path]:
+    raw = os.environ.get("STEWARDS_PRODUCT_REPOSITORIES")
+    require(
+        isinstance(raw, str) and bool(raw),
+        "product adoption resolver: STEWARDS_PRODUCT_REPOSITORIES is required",
+    )
+    try:
+        configured = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ContractError(
+            "product adoption resolver: invalid JSON mapping"
+        ) from exc
+    require(
+        isinstance(configured, dict),
+        "product adoption resolver: expected repository-to-path object",
+    )
+    roots: dict[str, Path] = {}
+    for repository, path in configured.items():
+        validate_repository(repository, "product adoption resolver repository")
+        require(
+            isinstance(path, str) and bool(path),
+            f"product adoption resolver {repository}: expected path string",
+        )
+        candidate = Path(path)
+        if not candidate.is_absolute():
+            candidate = root / candidate
+        roots[repository] = candidate.resolve()
+    return roots
+
+
 def validate_door(root: Path) -> None:
     registry = validate_surface_registry(load_json(root / "distribution" / "surfaces.json"))
     require(
@@ -2320,12 +2564,18 @@ def validate_door(root: Path) -> None:
         "surface_registry: version 1 rows must be active",
     )
     catalogs = validate_catalog(load_json(root / "distribution" / "catalogs.json"))
-    validate_provisioners(load_json(root / "distribution" / "provisioners.json"))
+    provisioners = validate_provisioners(
+        load_json(root / "distribution" / "provisioners.json")
+    )
+    validate_catalog_provisioner_bindings(catalogs, provisioners)
     baseline = validate_baseline(load_json(root / "distribution" / "legacy-baseline.json"))
     discovered = legacy_discover(root, BASELINE_COMMIT)
     require(discovered == baseline, "legacy_baseline: fixed-commit discovery mismatch")
     _, stock = validate_initial_stock(root, baseline)
-    adoptions = validate_product_adoptions(load_json(root / "distribution" / "product-adoptions.json"))
+    adoptions = validate_product_adoptions(
+        load_json(root / "distribution" / "product-adoptions.json"),
+        configured_product_repository_roots(root),
+    )
     validate_catalog_cross_refs(catalogs, baseline, stock, adoptions)
     host_catalogs = build_host_catalogs(catalogs)
     for row in catalogs["records"]:
@@ -2408,7 +2658,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             )
             sys.stdout.buffer.write(canonical_json(result, newline=True))
         elif args.command == "validate-document":
-            DOCUMENT_VALIDATORS[args.schema](load_json(Path(args.path)))
+            document = load_json(Path(args.path))
+            if args.schema == "product-adoptions":
+                validate_product_adoptions(
+                    document,
+                    configured_product_repository_roots(root),
+                )
+            else:
+                DOCUMENT_VALIDATORS[args.schema](document)
         elif args.command == "validate-door":
             validate_door(root)
         elif args.command == "generate":

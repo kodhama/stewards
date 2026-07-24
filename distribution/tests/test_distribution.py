@@ -289,6 +289,42 @@ class DistributionContractTests(unittest.TestCase):
                 {"package_version": "1.2.3", "expected_tag": "example-v1.2.3"},
             )
 
+            subprocess.run(["git", "init", "-q"], cwd=package, check=True)
+            subprocess.run(
+                ["git", "config", "user.name", "Fixture"],
+                cwd=package,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.email", "fixture@example.invalid"],
+                cwd=package,
+                check=True,
+            )
+            subprocess.run(["git", "add", "."], cwd=package, check=True)
+            subprocess.run(
+                ["git", "commit", "-q", "-m", "fixture release"],
+                cwd=package,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "tag", "example-v1.2.3"],
+                cwd=package,
+                check=True,
+            )
+            metadata["release_approval"] = stable_ref("approval.json")
+            write_json(package / "release.json", metadata)
+            release = run_manage(
+                "validate-product",
+                "--phase",
+                "release",
+                "--package-root",
+                str(package),
+                "--release-metadata",
+                "release.json",
+            )
+            self.assertNotEqual(release.returncode, 0)
+            self.assertIn("release engine is not implemented", release.stderr)
+
             (package / "VERSION").write_bytes(b"\xef\xbb\xbf1.2.3\n")
             rejected = run_manage(
                 "validate-product",
@@ -464,6 +500,69 @@ class DistributionContractTests(unittest.TestCase):
             self.assertNotEqual(rejected.returncode, 0)
             self.assertEqual(rejected.stdout, "")
 
+    # spec-0001@v1 S8, R23; conformance setup-binding counterexamples
+    def test_effective_setup_complete_binds_product_requirement(self) -> None:
+        product_reference = stable_ref("surfaces.json")
+        contract_reference = stable_ref("setup-contract.json", "b")
+        row = supported_surface_row()
+        facts = {
+            "schema_version": 1,
+            "subject": subject(),
+            "product_contract": {
+                "kind": "record",
+                "source_reference": product_reference,
+                "subject": subject(),
+                "row": row,
+            },
+            "distribution_record": {
+                "kind": "record",
+                "source_reference": stable_ref("distribution/catalogs.json"),
+                "record_type": "catalog",
+                "record": verified_catalog()["records"][0],
+            },
+            "consumer_selection": {
+                "state": "selected",
+                "request_id": "request.example",
+                "plugin_id": "example",
+                "package_version": "1.2.3",
+                "surface_id": "claude-code.local.interactive",
+                "route_id": "catalog.claude",
+                "source_reference": stable_ref("selection.json"),
+            },
+            "environment_assessment": {
+                "state": "ready",
+                "subject": subject(),
+                "evidence": [evidence_binding()],
+                "source_reference": stable_ref("environment.json"),
+            },
+            "product_setup": {
+                "subject": subject(),
+                "state": "complete",
+                "requirement_reference": stable_ref("unrelated-row.json"),
+                "contract": contract_reference,
+                "completion_reference": stable_ref("setup-completion.json"),
+                "completion_identity": subject(),
+            },
+        }
+        with self.assertRaisesRegex(
+            contract.ContractError,
+            "product_setup",
+        ):
+            contract.evaluate_effective(facts)
+
+        row["post_install_setup"] = {
+            "required": True,
+            "contract": contract_reference,
+        }
+        facts["product_setup"]["requirement_reference"] = product_reference
+        result = contract.evaluate_effective(facts)
+        setup_factor = next(
+            item
+            for item in result["factors"]
+            if item["factor"] == "product_setup_complete"
+        )
+        self.assertTrue(setup_factor["satisfied"])
+
     # spec-0001@v1 S9, R15-R16, R24
     def test_legacy_discovery_reads_the_fixed_commit_and_matches_three_keys(self) -> None:
         result = run_manage("legacy-discover", "--baseline-commit", BASELINE_COMMIT)
@@ -491,6 +590,174 @@ class DistributionContractTests(unittest.TestCase):
         wave = run_manage("wave-close")
         self.assertNotEqual(wave.returncode, 0)
         self.assertIn("legacy-stock.json", wave.stderr)
+
+    # spec-0001@v1 S19, R35; conformance adoption-resolution counterexamples
+    def test_complete_adoption_requires_resolved_approved_decision(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repository = Path(raw) / "product"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=repository, check=True)
+            subprocess.run(
+                ["git", "config", "user.name", "Fixture"],
+                cwd=repository,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.email", "fixture@example.invalid"],
+                cwd=repository,
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "remote",
+                    "add",
+                    "origin",
+                    "https://github.com/kodhama/example.git",
+                ],
+                cwd=repository,
+                check=True,
+            )
+            decision = repository / "decisions" / "0001-adopt.md"
+            decision.parent.mkdir()
+            decision.write_text(
+                "---\n"
+                "id: example-0001-adopt\n"
+                "type: decision\n"
+                "status: approved\n"
+                "depends_on: []\n"
+                "owner: agent\n"
+                "---\n\n"
+                "# Adopt\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "."], cwd=repository, check=True)
+            subprocess.run(
+                ["git", "commit", "-q", "-m", "adopt"],
+                cwd=repository,
+                check=True,
+            )
+            source_commit = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repository,
+                text=True,
+                stdout=subprocess.PIPE,
+                check=True,
+            ).stdout.strip()
+            document = {
+                "schema_version": 1,
+                "products": [
+                    {
+                        "plugin_id": "example",
+                        "repository": "kodhama/example",
+                        "state": "complete",
+                        "standing_decisions_to_reconcile": [],
+                        "ownership_changes": ["release contract adopted"],
+                        "adoption_decision": {
+                            "kind": "repo-path",
+                            "repository": "kodhama/example",
+                            "source_commit": source_commit,
+                            "path": "decisions/0001-adopt.md",
+                            "sha256": hashlib.sha256(
+                                decision.read_bytes()
+                            ).hexdigest(),
+                        },
+                    }
+                ],
+            }
+            with self.assertRaisesRegex(
+                contract.ContractError,
+                "resolver",
+            ):
+                contract.validate_product_adoptions(document)
+            contract.validate_product_adoptions(
+                document,
+                {"kodhama/example": repository},
+            )
+            document_path = Path(raw) / "product-adoptions.json"
+            write_json(document_path, document)
+            resolved = subprocess.run(
+                [
+                    str(ROOT / "distribution" / "manage"),
+                    "validate-document",
+                    "--schema",
+                    "product-adoptions",
+                    str(document_path),
+                ],
+                cwd=ROOT,
+                env={
+                    **os.environ,
+                    "STEWARDS_PRODUCT_REPOSITORIES": json.dumps(
+                        {"kodhama/example": str(repository)}
+                    ),
+                },
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(resolved.returncode, 0, resolved.stderr)
+            non_commit = json.loads(json.dumps(document))
+            non_commit["products"][0]["adoption_decision"][
+                "source_commit"
+            ] = subprocess.run(
+                ["git", "rev-parse", "HEAD^{tree}"],
+                cwd=repository,
+                text=True,
+                stdout=subprocess.PIPE,
+                check=True,
+            ).stdout.strip()
+            with self.assertRaisesRegex(
+                contract.ContractError,
+                "not a commit",
+            ):
+                contract.validate_product_adoptions(
+                    non_commit,
+                    {"kodhama/example": repository},
+                )
+            fabricated = json.loads(json.dumps(document))
+            fabricated["products"][0]["adoption_decision"]["sha256"] = "f" * 64
+            with self.assertRaisesRegex(
+                contract.ContractError,
+                "digest",
+            ):
+                contract.validate_product_adoptions(
+                    fabricated,
+                    {"kodhama/example": repository},
+                )
+            decision.write_text(
+                decision.read_text(encoding="utf-8").replace(
+                    "status: approved",
+                    "status: draft",
+                ),
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "."], cwd=repository, check=True)
+            subprocess.run(
+                ["git", "commit", "-q", "-m", "draft replacement"],
+                cwd=repository,
+                check=True,
+            )
+            draft = json.loads(json.dumps(document))
+            draft_reference = draft["products"][0]["adoption_decision"]
+            draft_reference["source_commit"] = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repository,
+                text=True,
+                stdout=subprocess.PIPE,
+                check=True,
+            ).stdout.strip()
+            draft_reference["sha256"] = hashlib.sha256(
+                decision.read_bytes()
+            ).hexdigest()
+            with self.assertRaisesRegex(
+                contract.ContractError,
+                "not approved",
+            ):
+                contract.validate_product_adoptions(
+                    draft,
+                    {"kodhama/example": repository},
+                )
 
     # spec-0001@v1 S11, R18-R19
     def test_generate_check_names_all_stale_derivatives_without_writing(self) -> None:
@@ -595,6 +862,124 @@ class DistributionContractTests(unittest.TestCase):
             )
             self.assertNotEqual(rejected.returncode, 0)
             self.assertIn("identity_binding", rejected.stderr)
+
+    # spec-0001@v1 S5, R10; conformance provisioner-binding counterexamples
+    def test_verified_acquisition_requires_matching_provisioner(self) -> None:
+        catalogs = verified_catalog()
+        row = catalogs["records"][0]
+        bundle = stable_ref("evidence/provisioner.json", "b")
+        identity = {
+            "route_id": "claude.local",
+            "surface_id": row["surface_id"],
+            "plugin_id": row["plugin_id"],
+            "package_version": row["package_version"],
+            "provisioner_version": "2.0.0",
+            "release_tag": row["release_tag"],
+            "source_commit": row["source_commit"],
+        }
+        binding = {
+            "kind": "provisioner-acquisition",
+            "provisioner_identity": identity,
+            "evidence_bundle": bundle,
+        }
+        row["identity_binding"] = binding
+        row["clean_install_evidence"]["distribution_binding"] = binding
+        contract.validate_catalog(catalogs)
+        with self.assertRaisesRegex(
+            contract.ContractError,
+            "verified provisioner",
+        ):
+            contract.validate_catalog_provisioner_bindings(
+                catalogs,
+                {"schema_version": 1, "records": []},
+            )
+
+        provisioners = {
+            "schema_version": 1,
+            "records": [
+                {
+                    **identity,
+                    "state": "verified",
+                    "adapter_path": "distribution/adapters/claude",
+                    "prerequisites": [],
+                    "evidence_bundle": bundle,
+                }
+            ],
+        }
+        contract.validate_provisioners(provisioners)
+        contract.validate_catalog_provisioner_bindings(catalogs, provisioners)
+        provisioners["records"][0]["evidence_bundle"] = stable_ref(
+            "evidence/other.json",
+            "c",
+        )
+        with self.assertRaisesRegex(
+            contract.ContractError,
+            "verified provisioner",
+        ):
+            contract.validate_catalog_provisioner_bindings(
+                catalogs,
+                provisioners,
+            )
+
+    # spec-0001@v1 R21; conformance unresolved-extension counterexamples
+    def test_declared_extension_validators_fail_closed(self) -> None:
+        metadata = {
+            "schema_version": 1,
+            "family_contract_version": 1,
+            "plugin_id": "example",
+            "version_authority": {
+                "path": "VERSION",
+                "format": "plain-text",
+            },
+            "version_carriers": [
+                {
+                    "carrier_id": "package.version",
+                    "role": "package-manifest",
+                    "path": "VERSION",
+                    "format": "plain-text",
+                }
+            ],
+            "surface_contract": "surfaces.json",
+            "release_inventory": "release-inventory.json",
+            "release_history": "release-history.json",
+            "inventory_provider": "inventory",
+            "extensions": {
+                "example": {
+                    "validator": "validate-extension",
+                }
+            },
+        }
+        with self.assertRaisesRegex(
+            contract.ContractError,
+            "extension validator protocol is not implemented",
+        ):
+            contract.validate_release_metadata(metadata, "pre-tag")
+
+        inventory = {
+            "schema_version": 1,
+            "host_manifests": [
+                {
+                    "host": "example-host",
+                    "path": "manifest.json",
+                    "manifest_kind": "other-declared-host",
+                    "extension_validator": "validate-host",
+                    "version_extractor": {
+                        "path": "manifest.json",
+                        "format": "json",
+                        "selector": "/version",
+                    },
+                    "package_version": "1.2.3",
+                }
+            ],
+            "payload_identities": [],
+            "public_contract_items": [],
+            "support_derivatives": [],
+        }
+        with self.assertRaisesRegex(
+            contract.ContractError,
+            "extension validator protocol is not implemented",
+        ):
+            contract.validate_release_inventory(inventory)
 
     # spec-0001@v1 S13, R25; code-review baseline-key schema finding
     def test_transition_baseline_key_schema_is_closed_without_ref_composition(self) -> None:
@@ -879,6 +1264,15 @@ class DistributionContractTests(unittest.TestCase):
         self.assertIn("STEWARDS_BASE_SHA", workflow)
         self.assertIn("github.event.pull_request.base.sha", workflow)
         self.assertIn("github.event.before", workflow)
+        self.assertIn("STEWARDS_PRODUCT_REPOSITORIES", workflow)
+        self.assertIn(
+            "db650fe5855a197eb65375b50e3e81b1065ebddb",
+            workflow,
+        )
+        self.assertIn(
+            "4062120cea71737bd28cb171785a2dcdd6192deb",
+            workflow,
+        )
 
     # spec-0001@v1 complete-inventory provider; third-review escaped-session finding
     def test_provider_capture_returns_with_setsid_descendant(self) -> None:
@@ -1099,6 +1493,8 @@ class DistributionContractTests(unittest.TestCase):
             ROOT / "distribution" / "IMPLEMENTATION-STATUS.md"
         ).read_text(encoding="utf-8")
         self.assertIn("annotation coverage", status)
+        self.assertIn("release phase fails closed", status)
+        self.assertNotIn("release-phase peeling", status)
         with tempfile.TemporaryDirectory() as raw:
             bad = Path(raw) / "bad.py"
             bad.write_text("from os import *  \n", encoding="utf-8")

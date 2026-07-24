@@ -15,10 +15,22 @@
       "guards": "S10 S11 S18 S19 S23 R17-R19 R33-R36 R40"
     },
     {
+      "name": "resolved-approved-product-adoption",
+      "test": "test_complete_adoption_requires_resolved_approved_decision",
+      "expected_exit": "contract-failure-and-success",
+      "guards": "S19 R35"
+    },
+    {
       "name": "typed-negative-effective-facts",
       "test": "test_effective_support_is_derived_from_typed_facts",
       "expected_exit": "success-false-and-malformed-rejection",
       "guards": "S8 S14 S15 S20 R12-R14 R23 R27-R28 R37"
+    },
+    {
+      "name": "effective-setup-product-binding",
+      "test": "test_effective_setup_complete_binds_product_requirement",
+      "expected_exit": "contract-failure-and-success",
+      "guards": "S8 R23"
     },
     {
       "name": "stale-derived-no-write",
@@ -97,6 +109,18 @@
       "test": "test_verified_catalog_binds_row_binding_and_clean_subject",
       "expected_exit": "success-and-contract-failure",
       "guards": "S5 S12 R10 R20"
+    },
+    {
+      "name": "verified-provisioner-acquisition-binding",
+      "test": "test_verified_acquisition_requires_matching_provisioner",
+      "expected_exit": "contract-failure-and-success",
+      "guards": "S5 R10"
+    },
+    {
+      "name": "unresolved-extension-validator",
+      "test": "test_declared_extension_validators_fail_closed",
+      "expected_exit": "contract-failure",
+      "guards": "R21"
     },
     {
       "name": "portable-cache-and-committed-ci-range",
