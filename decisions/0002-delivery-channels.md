@@ -189,3 +189,12 @@ every consequential choice (org marketplace as canonical, trellis alias,
 espalier no-npx, LP pass/fail guard) is stated, not implied; ACs give a
 pass/fail "done". Promote `draft → gated`. `approved` = human merge of
 the ratification PR.
+
+## Forward annotation — kodhama-0016 (2026-07-24)
+
+Approved `kodhama-0016-distribution-availability-and-effective-support`
+supersedes only this decision's “no build logic” install-door boundary enough
+to permit versioned distribution metadata, validators, and bounded pre-agent
+provisioner adapters. The canonical thin repository, product-owned package
+content, and independent product release cadence stand. This annotation does
+not normalize the historical external-reference defect tracked in issue #20.

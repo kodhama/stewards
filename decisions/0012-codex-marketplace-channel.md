@@ -60,3 +60,13 @@ The maintainer approved implementation on 2026-07-23. This decision remains
 
 The maintainer merged PR #9 on 2026-07-24. That merge performed the
 human-owned ship act specified above; the `approved` frontmatter records it.
+
+## Forward annotation — kodhama-0016 (2026-07-24)
+
+Approved `kodhama-0016-distribution-availability-and-effective-support`
+supersedes only this decision's rule that catalog admission requires an
+already supported product surface. A valid package may be published for
+staged testing while product support remains candidate, unsupported, or
+absent; catalog presence still creates no behavioral or effective-support
+claim. The one-repository, host-native, thin-catalog, and product-owned
+package boundaries stand.
