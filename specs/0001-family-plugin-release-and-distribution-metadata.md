@@ -1,7 +1,7 @@
 ---
 id: kodhama-spec-0001-family-plugin-release-and-distribution-metadata
 type: spec
-status: gated  # v2 author self-check passed; independent v2 review/ratification remains due
+status: approved  # Maintainer-authorized merge records v2 approval after independent gates passed
 version: 2
 depends_on: [kodhama-0015-family-plugin-release-and-surface-contract, kodhama-0016-distribution-availability-and-effective-support]
 implements: [kodhama-0015-family-plugin-release-and-surface-contract, kodhama-0016-distribution-availability-and-effective-support]
@@ -1823,5 +1823,8 @@ Self-check used the local contract-author rules, `specs/README.md`,
 ## Gate record
 
 The maintainer's 2026-07-24 act approved v1 after spec-adversary and
-conformance review. This v2 amendment passed the author self-check above and
-is `gated`; the prior v1 act is not reused as approval of S24–S28 or R41–R49.
+conformance review. On 2026-07-24, the maintainer authorized this wave to
+merge when its independent gates passed. V2 then received
+`APPROVE-READY` from the spec-adversary, `PASS` from the conformance reviewer,
+and a change-scoped corpus `PASS`; recording `approved` here records that
+maintainer act for S24–S28 and R41–R49 rather than reusing the v1 approval.
