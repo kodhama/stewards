@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kodhama/stewards/distribution/schemas/legacy-baseline.v1.schema.json",
+  "title": "Immutable adoption baseline v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "baseline_source_commit",
+    "fingerprint_algorithm",
+    "rows"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "baseline_source_commit": {
+      "const": "8b9007dd4f4559cf2a83976391c71392a4628730"
+    },
+    "fingerprint_algorithm": {
+      "const": "kodhama-selector-v1-sha256"
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/baseline_row" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "baseline_row": {
+      "type": "object",
+      "required": [
+        "plugin_id",
+        "surface_id",
+        "manifest_path",
+        "kind",
+        "repository",
+        "path",
+        "ref",
+        "selector_fingerprint"
+      ],
+      "properties": {
+        "plugin_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/plugin_id"
+        },
+        "surface_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        },
+        "manifest_path": {
+          "enum": [
+            ".claude-plugin/marketplace.json",
+            ".agents/plugins/marketplace.json"
+          ]
+        },
+        "kind": { "enum": ["mutable", "immutable"] },
+        "repository": {
+          "$ref": "common-types.v1.schema.json#/$defs/repository"
+        },
+        "path": {
+          "$ref": "common-types.v1.schema.json#/$defs/relative_or_root_path"
+        },
+        "ref": { "type": "string" },
+        "selector_fingerprint": {
+          "$ref": "common-types.v1.schema.json#/$defs/sha256"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

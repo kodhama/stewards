@@ -8,9 +8,16 @@ operational role formerly held by `kodhama/kodhama`, relocated here per
 THREE things live here and nothing else: **cross-collective decisions**
 (`decisions/`), the **conductor seat** (`conductor/` — wave briefs and
 ledgers for work that spans the collective's repos), and the **install
-door** (host-native marketplace manifests under `.claude-plugin/` and
-`.agents/plugins/`, both named `kodhama`: the collective's canonical
-install repository per `kodhama-0002` and `kodhama-0012`).
+door** (the collective's canonical install repository per `kodhama-0002`,
+`kodhama-0012`, and `kodhama-0016`).
+
+<!-- distribution-scope:begin -->
+The install door includes host-native catalogs, distribution metadata and
+schemas, deterministic validators and generators, and bounded pre-agent
+provisioner adapters. It excludes product builds or content, copied product
+contracts, a shared runtime, automatic plugin selection, and release
+coordination.
+<!-- distribution-scope:end -->
 
 Decisions made here keep the `kodhama-NNNN` id namespace — they are kodhama
 decisions made at the collective (steward) layer; spirit/org-level decisions

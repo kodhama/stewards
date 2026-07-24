@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "initial_stock_reference": {
+    "kind": "repo-path",
+    "repository": "kodhama/stewards",
+    "source_commit": "9aa8f7844fd3bb145ebe55b88a54a56b2b006204",
+    "path": "distribution/legacy-stock-initial.json",
+    "sha256": "90b3ce099cfffa7aae17f24231c258f02f9d018d7300012f3133225b56d55aab"
+  },
+  "rows": [
+    {
+      "plugin_id": "trellis",
+      "surface_id": "claude-code.local.interactive",
+      "manifest_path": ".claude-plugin/marketplace.json",
+      "selector_fingerprint": "745f6add88a16f31f6c5ffbd784f696c9a9c4c1862465c6cc376ba7967b825fc",
+      "missing_contract_elements": [
+        "canonical-semver-authority",
+        "immutable-release-tag",
+        "product-adoption-decision",
+        "version-bound-surface-contract"
+      ],
+      "disclosure": "legacy published stock",
+      "terminal_action": "adopt-or-delist"
+    }
+  ]
+}

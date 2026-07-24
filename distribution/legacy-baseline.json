@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "baseline_source_commit": "8b9007dd4f4559cf2a83976391c71392a4628730",
+  "fingerprint_algorithm": "kodhama-selector-v1-sha256",
+  "rows": [
+    {
+      "kind": "mutable",
+      "manifest_path": ".claude-plugin/marketplace.json",
+      "path": "plugins/grove",
+      "plugin_id": "grove",
+      "ref": "",
+      "repository": "kodhama/grove",
+      "surface_id": "claude-code.local.interactive",
+      "selector_fingerprint": "f6e90ac480f3be1d0f49cd7645d6e5d44f0b4ab2c5742a64e49cec813442cf62"
+    },
+    {
+      "kind": "mutable",
+      "manifest_path": ".claude-plugin/marketplace.json",
+      "path": "plugins/trellis",
+      "plugin_id": "trellis",
+      "ref": "",
+      "repository": "kodhama/trellis",
+      "surface_id": "claude-code.local.interactive",
+      "selector_fingerprint": "745f6add88a16f31f6c5ffbd784f696c9a9c4c1862465c6cc376ba7967b825fc"
+    },
+    {
+      "kind": "mutable",
+      "manifest_path": ".agents/plugins/marketplace.json",
+      "path": "plugins/grove",
+      "plugin_id": "grove",
+      "ref": "",
+      "repository": "kodhama/grove",
+      "surface_id": "codex.local.interactive",
+      "selector_fingerprint": "896bb33f7d656b9d3379a52ddbcb4d391dbb4c9e8a4a519f7e943ad8c321ea24"
+    }
+  ]
+}

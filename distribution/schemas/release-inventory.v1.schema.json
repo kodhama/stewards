@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kodhama/stewards/distribution/schemas/release-inventory.v1.schema.json",
+  "title": "Complete product release inventory v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "host_manifests",
+    "payload_identities",
+    "public_contract_items",
+    "support_derivatives"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "host_manifests": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/host_manifest" }
+    },
+    "payload_identities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/payload_identity" }
+    },
+    "public_contract_items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/public_contract_item" }
+    },
+    "support_derivatives": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/support_derivative" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "extractor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "path"],
+          "properties": {
+            "kind": { "const": "file-bytes" },
+            "path": {
+              "$ref": "common-types.v1.schema.json#/$defs/relative_path"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "path", "line"],
+          "properties": {
+            "kind": { "const": "text-line" },
+            "path": {
+              "$ref": "common-types.v1.schema.json#/$defs/relative_path"
+            },
+            "line": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "path", "pointer"],
+          "properties": {
+            "kind": { "const": "json-pointer" },
+            "path": {
+              "$ref": "common-types.v1.schema.json#/$defs/relative_path"
+            },
+            "pointer": {
+              "type": "string",
+              "pattern": "^(?:|/(?:[^~/]|~[01])*)$"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "host_manifest": {
+      "type": "object",
+      "required": [
+        "host",
+        "path",
+        "manifest_kind",
+        "version_extractor",
+        "package_version"
+      ],
+      "properties": {
+        "host": { "type": "string", "minLength": 1 },
+        "path": {
+          "$ref": "common-types.v1.schema.json#/$defs/relative_path"
+        },
+        "manifest_kind": {
+          "enum": [
+            "claude-plugin",
+            "codex-plugin",
+            "npm-package",
+            "other-declared-host"
+          ]
+        },
+        "version_extractor": {
+          "$ref": "common-types.v1.schema.json#/$defs/version_extractor"
+        },
+        "package_version": {
+          "$ref": "common-types.v1.schema.json#/$defs/semver"
+        },
+        "extension_validator": {
+          "$ref": "common-types.v1.schema.json#/$defs/relative_path"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "manifest_kind": { "const": "other-declared-host" }
+            }
+          },
+          "then": { "required": ["extension_validator"] },
+          "else": { "not": { "required": ["extension_validator"] } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "payload_identity": {
+      "type": "object",
+      "required": [
+        "payload_id",
+        "source_path",
+        "extractor",
+        "kind",
+        "value",
+        "consumer_acted"
+      ],
+      "properties": {
+        "payload_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        },
+        "source_path": {
+          "$ref": "common-types.v1.schema.json#/$defs/relative_path"
+        },
+        "extractor": { "$ref": "#/$defs/extractor" },
+        "kind": {
+          "anyOf": [
+            { "enum": ["content-hash", "version-stamp"] },
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*:[a-z][a-z0-9-]*$"
+            }
+          ]
+        },
+        "value": { "type": "string", "minLength": 1 },
+        "consumer_acted": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "public_contract_item": {
+      "type": "object",
+      "required": [
+        "contract_id",
+        "category",
+        "source",
+        "extractor",
+        "fingerprint",
+        "compatibility"
+      ],
+      "properties": {
+        "contract_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        },
+        "category": {
+          "enum": [
+            "installation-coordinate",
+            "installation-input",
+            "host-visible-entrypoint",
+            "configuration",
+            "managed-state",
+            "runtime-requirement",
+            "surface-support",
+            "consumed-output-protocol"
+          ]
+        },
+        "source": {
+          "$ref": "common-types.v1.schema.json#/$defs/stable_reference"
+        },
+        "extractor": { "$ref": "#/$defs/extractor" },
+        "fingerprint": {
+          "$ref": "common-types.v1.schema.json#/$defs/sha256"
+        },
+        "compatibility": {
+          "enum": [
+            "initial",
+            "unchanged",
+            "backward-compatible-fix",
+            "backward-compatible-capability",
+            "supported-surface-addition",
+            "breaking-change",
+            "false-claim-correction",
+            "supported-surface-withdrawal"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "support_derivative": {
+      "type": "object",
+      "required": [
+        "derivative_id",
+        "kind",
+        "path",
+        "extractor",
+        "surface_projection"
+      ],
+      "properties": {
+        "derivative_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        },
+        "kind": {
+          "enum": ["public-support-table", "host-manifest-claim"]
+        },
+        "path": {
+          "$ref": "common-types.v1.schema.json#/$defs/relative_path"
+        },
+        "extractor": { "$ref": "#/$defs/extractor" },
+        "surface_projection": {
+          "type": "array",
+          "items": {
+            "$ref": "surface-contract.v1.schema.json#/$defs/surface_row"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
