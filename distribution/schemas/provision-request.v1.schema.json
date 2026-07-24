@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kodhama/stewards/distribution/schemas/provision-request.v1.schema.json",
+  "title": "Bounded provision request v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_id",
+    "provisioner_version",
+    "targets",
+    "environment"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "request_id": { "$ref": "#/$defs/uuid_v4" },
+    "provisioner_version": {
+      "$ref": "common-types.v1.schema.json#/$defs/semver"
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/target" }
+    },
+    "environment": { "$ref": "#/$defs/environment" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "uuid_v4": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "absolute_path": {
+      "type": "string",
+      "pattern": "^/(?!$)(?!.*//)(?!.*(?:^|/)(?:\\.|\\.\\.)(?:/|$))(?!.*\\u0000)(?:[^/]+/)*[^/]+$"
+    },
+    "plugin": {
+      "type": "object",
+      "required": ["plugin_id", "package_version", "route_id"],
+      "properties": {
+        "plugin_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/plugin_id"
+        },
+        "package_version": {
+          "$ref": "common-types.v1.schema.json#/$defs/semver"
+        },
+        "route_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "host",
+        "surface_id",
+        "environment_ref_ids",
+        "plugins"
+      ],
+      "properties": {
+        "host": { "enum": ["claude-code", "codex"] },
+        "surface_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        },
+        "environment_ref_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+          }
+        },
+        "plugins": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/plugin" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "state_root": {
+      "type": "object",
+      "required": ["host", "path"],
+      "properties": {
+        "host": { "enum": ["claude-code", "codex"] },
+        "path": { "$ref": "#/$defs/absolute_path" }
+      },
+      "additionalProperties": false
+    },
+    "reference": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["reference_id", "kind", "locator"],
+          "properties": {
+            "reference_id": {
+              "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+            },
+            "kind": { "const": "authentication-env" },
+            "locator": {
+              "type": "string",
+              "pattern": "^[A-Z_][A-Z0-9_]*$"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["reference_id", "kind", "locator"],
+          "properties": {
+            "reference_id": {
+              "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+            },
+            "kind": {
+              "enum": [
+                "mounted-configuration",
+                "trust-store",
+                "runtime-command",
+                "writable-state"
+              ]
+            },
+            "locator": { "$ref": "#/$defs/absolute_path" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "environment": {
+      "type": "object",
+      "required": ["state_roots", "references"],
+      "properties": {
+        "state_roots": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/state_root" }
+        },
+        "references": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/reference" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -74,9 +74,11 @@ def main() -> int:
                 "-m",
                 "py_compile",
                 "distribution/manage",
+                "distribution/provision",
                 "distribution/check",
                 "distribution/python-lint",
                 "distribution/lib/manage.py",
+                "distribution/lib/provision.py",
             ],
             env,
         )
