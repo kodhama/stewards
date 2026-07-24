@@ -18,6 +18,7 @@ MAX_LINE_LENGTH = 250
 def default_paths() -> list[Path]:
     paths = [
         ROOT / "distribution" / "manage",
+        ROOT / "distribution" / "provision",
         ROOT / "distribution" / "check",
         ROOT / "distribution" / "python-lint",
     ]

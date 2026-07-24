@@ -1,0 +1,1017 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kodhama/stewards/distribution/schemas/provision-receipt.v1.schema.json",
+  "title": "Bounded provision receipt v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_id",
+    "provisioner_version",
+    "started_at",
+    "finished_at",
+    "overall_outcome",
+    "exit_code",
+    "results",
+    "diagnostics"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "request_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        { "type": "null" }
+      ]
+    },
+    "provisioner_version": {
+      "oneOf": [
+        { "$ref": "common-types.v1.schema.json#/$defs/semver" },
+        { "type": "null" }
+      ]
+    },
+    "started_at": {
+      "$ref": "common-types.v1.schema.json#/$defs/timestamp"
+    },
+    "finished_at": {
+      "$ref": "common-types.v1.schema.json#/$defs/timestamp"
+    },
+    "overall_outcome": {
+      "enum": [
+        "success",
+        "invalid-request",
+        "failed",
+        "partial-failure",
+        "output-failure"
+      ]
+    },
+    "exit_code": { "enum": [0, 2, 3, 4, 5, 6, 7] },
+    "results": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/result" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    },
+    "write_events_reference": { "$ref": "#/$defs/absolute_path" },
+    "write_events_sha256": {
+      "$ref": "common-types.v1.schema.json#/$defs/sha256"
+    }
+  },
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "required": ["write_events_reference", "write_events_sha256"],
+      "properties": {
+        "overall_outcome": { "const": "success" },
+        "exit_code": { "const": 0 },
+        "results": {
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/result" },
+              {
+                "properties": {
+                  "outcome": {
+                    "enum": ["changed", "already-converged"]
+                  }
+                },
+                "required": ["outcome"]
+              }
+            ]
+          }
+        },
+        "diagnostics": { "maxItems": 0 }
+      }
+    },
+    {
+      "required": ["write_events_reference", "write_events_sha256"],
+      "properties": {
+        "overall_outcome": { "const": "invalid-request" },
+        "exit_code": { "const": 2 },
+        "results": {
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/result" },
+              {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "phase": { "const": "request-validation" },
+                      "outcome": { "enum": ["failed", "skipped"] }
+                    },
+                    "required": ["phase", "outcome"]
+                  },
+                  {
+                    "properties": {
+                      "phase": { "const": "identity-resolution" },
+                      "outcome": { "const": "failed" }
+                    },
+                    "required": ["phase", "outcome"]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "diagnostics": {
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/diagnostic" },
+              {
+                "properties": {
+                  "code": {
+                    "enum": [
+                      "invalid-request",
+                      "unsafe-path",
+                      "duplicate-state-root",
+                      "duplicate-reference",
+                      "unused-reference"
+                    ]
+                  },
+                  "owner": { "const": "consumer/environment" }
+                },
+                "required": ["code", "owner"]
+              }
+            ]
+          }
+        }
+      },
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "properties": {
+                "diagnostics": { "minItems": 1 }
+              },
+              "required": ["diagnostics"]
+            },
+            {
+              "properties": {
+                "results": {
+                  "contains": {
+                    "properties": {
+                      "phase": { "const": "request-validation" },
+                      "outcome": { "const": "failed" }
+                    },
+                    "required": ["phase", "outcome"]
+                  },
+                  "minContains": 1
+                }
+              },
+              "required": ["results"]
+            }
+          ]
+        },
+        {
+          "if": {
+            "properties": {
+              "results": {
+                "contains": {
+                  "properties": {
+                    "phase": { "const": "identity-resolution" },
+                    "outcome": { "const": "failed" }
+                  },
+                  "required": ["phase", "outcome"]
+                },
+                "minContains": 1
+              }
+            },
+            "required": ["results"]
+          },
+          "then": {
+            "properties": {
+              "diagnostics": { "minItems": 1 }
+            },
+            "required": ["diagnostics"]
+          }
+        }
+      ]
+    },
+    {
+      "required": ["write_events_reference", "write_events_sha256"],
+      "properties": {
+        "overall_outcome": { "const": "failed" },
+        "exit_code": { "enum": [3, 4, 5] },
+        "results": {
+          "minItems": 1,
+          "not": {
+            "contains": {
+              "properties": {
+                "outcome": {
+                  "enum": ["changed", "already-converged"]
+                }
+              },
+              "required": ["outcome"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "required": ["write_events_reference", "write_events_sha256"],
+      "properties": {
+        "overall_outcome": { "const": "partial-failure" },
+        "exit_code": { "const": 6 },
+        "results": {
+          "minItems": 2,
+          "allOf": [
+            {
+              "contains": {
+                "properties": {
+                  "outcome": {
+                    "enum": ["changed", "already-converged"]
+                  }
+                },
+                "required": ["outcome"]
+              },
+              "minContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "outcome": { "enum": ["failed", "skipped"] }
+                },
+                "required": ["outcome"]
+              },
+              "minContains": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "overall_outcome": { "const": "output-failure" },
+        "exit_code": { "const": 7 },
+        "results": { "maxItems": 0 },
+        "diagnostics": {
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/diagnostic" },
+              {
+                "properties": {
+                  "code": {
+                    "enum": [
+                      "output-parent-invalid",
+                      "audit-seal-failed"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["write_events_reference"] },
+          { "required": ["write_events_sha256"] }
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "absolute_path": {
+      "type": "string",
+      "pattern": "^/(?!$)(?!.*//)(?!.*(?:^|/)(?:\\.|\\.\\.)(?:/|$))(?!.*\\u0000)(?:[^/]+/)*[^/]+$"
+    },
+    "result_id": {
+      "type": "string",
+      "pattern": "^t(?:0|[1-9][0-9]*)\\.p(?:0|[1-9][0-9]*)$"
+    },
+    "cause": {
+      "type": "object",
+      "required": ["code", "source", "field_path", "reference_ids"],
+      "properties": {
+        "code": { "$ref": "#/$defs/diagnostic_code" },
+        "source": {
+          "enum": [
+            "request",
+            "provisioners",
+            "execution",
+            "state",
+            "result",
+            "outputs"
+          ]
+        },
+        "field_path": {
+          "type": "string",
+          "pattern": "^(?:|/(?:[^~/]|~0|~1)*(?:/(?:[^~/]|~0|~1)*)*)$"
+        },
+        "reference_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "owner",
+        "retryable",
+        "reference_ids",
+        "causes"
+      ],
+      "properties": {
+        "code": { "$ref": "#/$defs/diagnostic_code" },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^[^\\r\\n]+$"
+        },
+        "owner": { "enum": ["stewards", "consumer/environment"] },
+        "retryable": { "type": "boolean" },
+        "reference_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+          },
+          "uniqueItems": true
+        },
+        "causes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/cause" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic_code": {
+      "enum": [
+        "invalid-request",
+        "duplicate-target",
+        "duplicate-plugin",
+        "duplicate-state-root",
+        "duplicate-reference",
+        "unsafe-path",
+        "missing-state-root",
+        "unused-reference",
+        "host-surface-mismatch",
+        "wrong-reference-kind",
+        "route-not-found",
+        "route-unavailable",
+        "route-version-mismatch",
+        "route-ambiguous",
+        "unresolved-release",
+        "identity-mismatch",
+        "missing-authentication",
+        "missing-trust",
+        "missing-runtime",
+        "missing-configuration",
+        "unwritable-state",
+        "acquisition-failed",
+        "catalog-registration-failed",
+        "preservation-conflict",
+        "preservation-breach",
+        "rollback-failed",
+        "installation-failed",
+        "verification-failed",
+        "blocked-by-shared-prerequisite",
+        "output-parent-invalid",
+        "audit-seal-failed",
+        "receipt-seal-failed"
+      ]
+    },
+    "result_base": {
+      "type": "object",
+      "required": [
+        "result_id",
+        "target_index",
+        "plugin_index",
+        "phase",
+        "outcome"
+      ],
+      "properties": {
+        "result_id": { "$ref": "#/$defs/result_id" },
+        "target_index": { "type": "integer", "minimum": 0 },
+        "plugin_index": { "type": "integer", "minimum": 0 },
+        "host": { "enum": ["claude-code", "codex"] },
+        "surface_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        },
+        "plugin_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/plugin_id"
+        },
+        "package_version": { "type": "string" },
+        "route_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        },
+        "phase": {
+          "enum": [
+            "request-validation",
+            "identity-resolution",
+            "prerequisite-check",
+            "acquisition",
+            "catalog-registration",
+            "installation",
+            "verification"
+          ]
+        },
+        "outcome": {
+          "enum": ["changed", "already-converged", "failed", "skipped"]
+        }
+      }
+    },
+    "blocked_by": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": { "kind": { "const": "request-validation" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "result_id"],
+          "properties": {
+            "kind": { "const": "result" },
+            "result_id": { "$ref": "#/$defs/result_id" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "prerequisite_id", "owner_result_id"],
+          "properties": {
+            "kind": { "const": "prerequisite" },
+            "prerequisite_id": {
+              "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+            },
+            "owner_result_id": { "$ref": "#/$defs/result_id" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "resolved_identity": {
+      "type": "object",
+      "required": ["package_version", "release_tag", "source_commit"],
+      "properties": {
+        "package_version": {
+          "$ref": "common-types.v1.schema.json#/$defs/semver"
+        },
+        "release_tag": {
+          "$ref": "common-types.v1.schema.json#/$defs/release_tag"
+        },
+        "source_commit": {
+          "$ref": "common-types.v1.schema.json#/$defs/source_commit"
+        }
+      },
+      "additionalProperties": false
+    },
+    "acquisition_route": {
+      "type": "object",
+      "required": [
+        "route_id",
+        "record_key",
+        "provisioner_version",
+        "kind",
+        "resolved_ref",
+        "record_reference"
+      ],
+      "properties": {
+        "route_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        },
+        "record_key": {
+          "type": "object",
+          "required": [
+            "route_id",
+            "surface_id",
+            "plugin_id",
+            "package_version"
+          ],
+          "properties": {
+            "route_id": {
+              "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+            },
+            "surface_id": {
+              "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+            },
+            "plugin_id": {
+              "$ref": "common-types.v1.schema.json#/$defs/plugin_id"
+            },
+            "package_version": {
+              "$ref": "common-types.v1.schema.json#/$defs/semver"
+            }
+          },
+          "additionalProperties": false
+        },
+        "provisioner_version": {
+          "$ref": "common-types.v1.schema.json#/$defs/semver"
+        },
+        "kind": {
+          "enum": ["catalog-selector", "direct-tag", "direct-commit"]
+        },
+        "resolved_ref": { "type": "string", "minLength": 1 },
+        "record_reference": {
+          "$ref": "common-types.v1.schema.json#/$defs/stable_reference"
+        }
+      },
+      "additionalProperties": false
+    },
+    "host_adapter": {
+      "type": "object",
+      "required": [
+        "host",
+        "adapter_path",
+        "adapter_version",
+        "sha256",
+        "launch_entrypoints"
+      ],
+      "properties": {
+        "host": { "enum": ["claude-code", "codex"] },
+        "adapter_path": {
+          "$ref": "common-types.v1.schema.json#/$defs/relative_path"
+        },
+        "adapter_version": {
+          "$ref": "common-types.v1.schema.json#/$defs/semver"
+        },
+        "sha256": {
+          "$ref": "common-types.v1.schema.json#/$defs/sha256"
+        },
+        "launch_entrypoints": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["entrypoint_id", "command_name"],
+            "properties": {
+              "entrypoint_id": {
+                "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+              },
+              "command_name": {
+                "$ref": "common-types.v1.schema.json#/$defs/plugin_id"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "discovery_found": {
+      "type": "object",
+      "required": ["status", "host", "surface_id", "plugin_id"],
+      "properties": {
+        "status": { "const": "found" },
+        "host": { "enum": ["claude-code", "codex"] },
+        "surface_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+        },
+        "plugin_id": {
+          "$ref": "common-types.v1.schema.json#/$defs/plugin_id"
+        }
+      },
+      "additionalProperties": false
+    },
+    "verification": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "status",
+            "discovery",
+            "installed_identity",
+            "catalog_selector",
+            "unselected_state_before_sha256",
+            "unselected_state_after_sha256",
+            "allowed_write_set_sha256",
+            "write_events_reference",
+            "write_events_sha256",
+            "preservation"
+          ],
+          "properties": {
+            "status": { "const": "passed" },
+            "discovery": { "$ref": "#/$defs/discovery_found" },
+            "installed_identity": {
+              "$ref": "#/$defs/resolved_identity"
+            },
+            "catalog_selector": {
+              "$ref": "common-types.v1.schema.json#/$defs/source_selector"
+            },
+            "unselected_state_before_sha256": {
+              "$ref": "common-types.v1.schema.json#/$defs/sha256"
+            },
+            "unselected_state_after_sha256": {
+              "$ref": "common-types.v1.schema.json#/$defs/sha256"
+            },
+            "allowed_write_set_sha256": {
+              "$ref": "common-types.v1.schema.json#/$defs/sha256"
+            },
+            "write_events_reference": { "$ref": "#/$defs/absolute_path" },
+            "write_events_sha256": {
+              "$ref": "common-types.v1.schema.json#/$defs/sha256"
+            },
+            "preservation": { "const": "preserved" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "status",
+            "discovery",
+            "unselected_state_before_sha256",
+            "unselected_state_after_sha256",
+            "allowed_write_set_sha256",
+            "write_events_reference",
+            "write_events_sha256",
+            "failure_codes"
+          ],
+          "properties": {
+            "status": { "const": "failed" },
+            "discovery": {
+              "oneOf": [
+                { "$ref": "#/$defs/discovery_found" },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "enum": ["absent", "ambiguous"] }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "installed_identity": {
+              "$ref": "#/$defs/resolved_identity"
+            },
+            "catalog_selector": {
+              "$ref": "common-types.v1.schema.json#/$defs/source_selector"
+            },
+            "unselected_state_before_sha256": {
+              "$ref": "common-types.v1.schema.json#/$defs/sha256"
+            },
+            "unselected_state_after_sha256": {
+              "$ref": "common-types.v1.schema.json#/$defs/sha256"
+            },
+            "allowed_write_set_sha256": {
+              "$ref": "common-types.v1.schema.json#/$defs/sha256"
+            },
+            "write_events_reference": { "$ref": "#/$defs/absolute_path" },
+            "write_events_sha256": {
+              "$ref": "common-types.v1.schema.json#/$defs/sha256"
+            },
+            "failure_codes": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "host-not-discovered",
+                  "host-discovery-ambiguous",
+                  "installed-identity-mismatch",
+                  "catalog-selector-mismatch",
+                  "unselected-state-changed",
+                  "outside-allowed-write"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "discovery": {
+                    "properties": { "status": { "const": "found" } },
+                    "required": ["status"]
+                  }
+                },
+                "required": ["discovery"]
+              },
+              "then": {
+                "required": ["installed_identity", "catalog_selector"]
+              },
+              "else": {
+                "not": {
+                  "anyOf": [
+                    { "required": ["installed_identity"] },
+                    { "required": ["catalog_selector"] }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "catalog_change": {
+      "type": "object",
+      "required": [
+        "operation",
+        "before",
+        "after",
+        "unselected_before_sha256",
+        "unselected_after_sha256",
+        "rollback_status"
+      ],
+      "properties": {
+        "operation": { "enum": ["add", "update", "remove", "restore"] },
+        "before": {
+          "$ref": "provision-state.v1.schema.json#/$defs/catalog_state"
+        },
+        "after": {
+          "$ref": "provision-state.v1.schema.json#/$defs/catalog_state"
+        },
+        "unselected_before_sha256": {
+          "$ref": "common-types.v1.schema.json#/$defs/sha256"
+        },
+        "unselected_after_sha256": {
+          "$ref": "common-types.v1.schema.json#/$defs/sha256"
+        },
+        "rollback_status": {
+          "enum": ["not-needed", "restored", "restore-failed"]
+        },
+        "rollback_diagnostic": { "$ref": "#/$defs/diagnostic" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "rollback_status": { "const": "restore-failed" }
+            },
+            "required": ["rollback_status"]
+          },
+          "then": { "required": ["rollback_diagnostic"] },
+          "else": { "not": { "required": ["rollback_diagnostic"] } }
+        }
+      ]
+    },
+    "result": {
+      "oneOf": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/result_base" },
+            {
+              "required": ["diagnostic"],
+              "properties": {
+                "phase": { "const": "request-validation" },
+                "outcome": { "const": "failed" },
+                "diagnostic": { "$ref": "#/$defs/diagnostic" }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/result_base" },
+            {
+              "required": ["diagnostic"],
+              "properties": {
+                "phase": { "const": "identity-resolution" },
+                "outcome": { "const": "failed" },
+                "diagnostic": { "$ref": "#/$defs/diagnostic" }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/result_base" },
+            {
+              "required": [
+                "resolved_identity",
+                "acquisition_route",
+                "host_adapter",
+                "diagnostic"
+              ],
+              "properties": {
+                "phase": { "const": "prerequisite-check" },
+                "outcome": { "const": "failed" },
+                "resolved_identity": { "$ref": "#/$defs/resolved_identity" },
+                "acquisition_route": { "$ref": "#/$defs/acquisition_route" },
+                "host_adapter": { "$ref": "#/$defs/host_adapter" },
+                "diagnostic": { "$ref": "#/$defs/diagnostic" }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/result_base" },
+            {
+              "required": ["diagnostic", "blocked_by"],
+              "properties": {
+                "phase": { "const": "request-validation" },
+                "outcome": { "const": "skipped" },
+                "diagnostic": { "$ref": "#/$defs/diagnostic" },
+                "blocked_by": {
+                  "type": "object",
+                  "required": ["kind"],
+                  "properties": {
+                    "kind": { "const": "request-validation" }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/result_base" },
+            {
+              "required": [
+                "diagnostic",
+                "blocked_by",
+                "resolved_identity",
+                "acquisition_route",
+                "host_adapter"
+              ],
+              "properties": {
+                "phase": { "const": "prerequisite-check" },
+                "outcome": { "const": "skipped" },
+                "diagnostic": { "$ref": "#/$defs/diagnostic" },
+                "blocked_by": {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "prerequisite_id",
+                    "owner_result_id"
+                  ],
+                  "properties": {
+                    "kind": { "const": "prerequisite" },
+                    "prerequisite_id": {
+                      "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+                    },
+                    "owner_result_id": { "$ref": "#/$defs/result_id" }
+                  },
+                  "additionalProperties": false
+                },
+                "resolved_identity": { "$ref": "#/$defs/resolved_identity" },
+                "acquisition_route": { "$ref": "#/$defs/acquisition_route" },
+                "host_adapter": { "$ref": "#/$defs/host_adapter" }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/result_base" },
+            {
+              "required": [
+                "diagnostic",
+                "blocked_by",
+                "resolved_identity",
+                "acquisition_route",
+                "host_adapter",
+                "prior_state"
+              ],
+              "properties": {
+                "phase": { "const": "acquisition" },
+                "outcome": { "const": "skipped" },
+                "diagnostic": { "$ref": "#/$defs/diagnostic" },
+                "blocked_by": {
+                  "type": "object",
+                  "required": ["kind", "result_id"],
+                  "properties": {
+                    "kind": { "const": "result" },
+                    "result_id": { "$ref": "#/$defs/result_id" }
+                  },
+                  "additionalProperties": false
+                },
+                "resolved_identity": { "$ref": "#/$defs/resolved_identity" },
+                "acquisition_route": { "$ref": "#/$defs/acquisition_route" },
+                "host_adapter": { "$ref": "#/$defs/host_adapter" },
+                "prior_state": {
+                  "$ref": "provision-state.v1.schema.json#/$defs/state_body"
+                }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/result_base" },
+            {
+              "required": [
+                "resolved_identity",
+                "acquisition_route",
+                "host_adapter",
+                "prior_state",
+                "final_state",
+                "shared_catalog_changes",
+                "diagnostic"
+              ],
+              "properties": {
+                "phase": {
+                  "enum": [
+                    "acquisition",
+                    "catalog-registration",
+                    "installation",
+                    "verification"
+                  ]
+                },
+                "outcome": { "const": "failed" },
+                "resolved_identity": { "$ref": "#/$defs/resolved_identity" },
+                "acquisition_route": { "$ref": "#/$defs/acquisition_route" },
+                "host_adapter": { "$ref": "#/$defs/host_adapter" },
+                "prior_state": {
+                  "$ref": "provision-state.v1.schema.json#/$defs/state_body"
+                },
+                "final_state": {
+                  "$ref": "provision-state.v1.schema.json#/$defs/state_body"
+                },
+                "shared_catalog_changes": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/catalog_change" }
+                },
+                "verification": { "$ref": "#/$defs/verification" },
+                "diagnostic": { "$ref": "#/$defs/diagnostic" }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": { "phase": { "const": "verification" } },
+                    "required": ["phase"]
+                  },
+                  "then": {
+                    "required": ["verification"],
+                    "properties": {
+                      "verification": {
+                        "properties": {
+                          "status": { "const": "failed" }
+                        },
+                        "required": ["status"]
+                      }
+                    }
+                  },
+                  "else": { "not": { "required": ["verification"] } }
+                }
+              ]
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/result_base" },
+            {
+              "required": [
+                "resolved_identity",
+                "acquisition_route",
+                "host_adapter",
+                "prior_state",
+                "final_state",
+                "shared_catalog_changes",
+                "verification"
+              ],
+              "properties": {
+                "phase": { "const": "verification" },
+                "outcome": {
+                  "enum": ["changed", "already-converged"]
+                },
+                "resolved_identity": { "$ref": "#/$defs/resolved_identity" },
+                "acquisition_route": { "$ref": "#/$defs/acquisition_route" },
+                "host_adapter": { "$ref": "#/$defs/host_adapter" },
+                "prior_state": {
+                  "$ref": "provision-state.v1.schema.json#/$defs/state_body"
+                },
+                "final_state": {
+                  "$ref": "provision-state.v1.schema.json#/$defs/state_body"
+                },
+                "shared_catalog_changes": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/catalog_change" }
+                },
+                "verification": {
+                  "allOf": [
+                    { "$ref": "#/$defs/verification" },
+                    {
+                      "properties": {
+                        "status": { "const": "passed" }
+                      },
+                      "required": ["status"]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        }
+      ]
+    }
+  }
+}

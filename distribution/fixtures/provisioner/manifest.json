@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {
+      "path": "claude-route-not-found.json",
+      "expected_exit": 3,
+      "guards": ["spec-0002@v1 S1", "spec-0002@v1 S30"]
+    },
+    {
+      "path": "codex-route-not-found.json",
+      "expected_exit": 3,
+      "guards": ["spec-0002@v1 S2", "spec-0002@v1 S30"]
+    },
+    {
+      "path": "unused-reference.json",
+      "expected_exit": 2,
+      "guards": ["spec-0002@v1 S30", "spec-0002@v1 R43"]
+    },
+    {
+      "path": "version-range.json",
+      "expected_exit": 2,
+      "guards": ["spec-0002@v1 S5", "spec-0002@v1 S8"]
+    }
+  ]
+}

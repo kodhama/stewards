@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+ADAPTER_REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+exec "$ADAPTER_REPO_ROOT/distribution/provision" "$@"
