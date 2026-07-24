@@ -23,8 +23,13 @@ materializes; it is not a substitute for `depends_on`.
 
 | Spec | Version | Status | Subject |
 |---|---:|---|---|
-| [`kodhama-spec-0001-family-plugin-release-and-distribution-metadata`](0001-family-plugin-release-and-distribution-metadata.md) | 2 | approved | Family release/surface schemas, surface registry, availability records, validation, generation, and legacy-stock transition |
-| [`kodhama-spec-0002-bounded-pre-agent-provisioner`](0002-bounded-pre-agent-provisioner.md) | 3 | approved | Explicit, idempotent Claude/Codex provisioning before local, CI, or cloud/container agent launch |
+| [`kodhama-spec-0001-family-plugin-release-and-distribution-metadata`](0001-family-plugin-release-and-distribution-metadata.md) | 2 | superseded | Historical family release-certification contract; retired by `kodhama-0017` |
+| [`kodhama-spec-0002-bounded-pre-agent-provisioner`](0002-bounded-pre-agent-provisioner.md) | 3 | superseded | Historical universal provisioner contract; retired by `kodhama-0017` |
+
+Both retained specs are historical records, not implementation inputs. A
+future contract for marketplace-tested metadata or a generic CI
+marketplace-setup skill starts from
+`kodhama-0017-retire-family-release-certification`.
 
 ## Validation disclosure
 

@@ -1,15 +1,21 @@
 ---
 id: kodhama-0016-distribution-availability-and-effective-support
 type: decision
-status: approved  # maintainer intent act: authorized Stewards-owned family provisioning and merge after independent review; decision-adversary SOUND preceded this recording
+status: superseded  # retired in full by kodhama-0017 (2026-07-24); original approval record remains in this file
 depends_on: [kodhama-0002-delivery-channels, kodhama-0012-codex-marketplace-channel, kodhama-0015-family-plugin-release-and-surface-contract]
 informed_by: [grove/adr-0029-non-interactive-loading, grove/adr-0031-multi-host-distribution, kodhama-0013-family-codex-native-product-support]
+superseded_by: [kodhama-0017-retire-family-release-certification]
 owner: agent
 updated: 2026-07-24
 provenance: maintainer direction on 2026-07-24 to make Stewards responsible for family marketplace availability and reusable headless/cloud provisioning while products retain their own surface contracts; artifact approval remains at the human ship gate
 ---
 
 # Decision: Stewards owns distribution availability; effective support is derived, never declared by a catalog
+
+> **Superseded by `kodhama-0017-retire-family-release-certification`
+> (2026-07-24).** The shared availability, effective-support, cross-repository,
+> and universal provisioner architecture is retired. This file remains the
+> historical record of the earlier decision.
 
 ## Decision state
 

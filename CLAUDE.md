@@ -9,14 +9,17 @@ THREE things live here and nothing else: **cross-collective decisions**
 (`decisions/`), the **conductor seat** (`conductor/` — wave briefs and
 ledgers for work that spans the collective's repos), and the **install
 door** (the collective's canonical install repository per `kodhama-0002`,
-`kodhama-0012`, and `kodhama-0016`).
+`kodhama-0012`, and `kodhama-0017`).
 
 <!-- distribution-scope:begin -->
-The install door includes host-native catalogs, distribution metadata and
-schemas, deterministic validators and generators, and bounded pre-agent
-provisioner adapters. It excludes product builds or content, copied product
-contracts, a shared runtime, automatic plugin selection, and release
-coordination.
+The install door includes the host-native Claude and Codex catalogs. Its
+future distribution scope is deliberately narrow: metadata that records which
+marketplace a test exercised, and a generic Stewards skill that adds
+caller-selected Claude/Codex marketplace setup to CI. It does not certify
+product releases or support and owns no universal version, tag, release-history,
+approval, runtime-sandbox, cross-repository-resolution, or effective-support
+machinery. The superseded implementation remains temporarily pending its
+separate removal change.
 <!-- distribution-scope:end -->
 
 Decisions made here keep the `kodhama-NNNN` id namespace — they are kodhama
@@ -54,7 +57,9 @@ Rules (the collective's):
   liftable; until then the trellis overlay alone is owed — if the
   `trellis` CLI is available run `trellis setup`, otherwise record the
   debt in `conductor/` loudly.
-- **Distribution quality gate:** changes under the install door run
+- **Legacy distribution quality gate (temporary until the superseded
+  implementation is removed):** changes under the existing `distribution/`
+  tree still run
   `distribution/check`. It executes the spec-anchored tests, door validation,
   generated-file staleness check, Python compilation, annotation coverage,
   dependency-free Python lint/format checks, JSON parsing, and both working-tree

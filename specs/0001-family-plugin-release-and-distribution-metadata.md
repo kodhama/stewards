@@ -1,15 +1,21 @@
 ---
 id: kodhama-spec-0001-family-plugin-release-and-distribution-metadata
 type: spec
-status: approved  # Maintainer-authorized merge records v2 approval after independent gates passed
+status: superseded  # retired by kodhama-0017 (2026-07-24); historical v2 contract only
 version: 2
 depends_on: [kodhama-0015-family-plugin-release-and-surface-contract, kodhama-0016-distribution-availability-and-effective-support]
 implements: [kodhama-0015-family-plugin-release-and-surface-contract, kodhama-0016-distribution-availability-and-effective-support]
+superseded_by: [kodhama-0017-retire-family-release-certification]
 owner: agent
 updated: 2026-07-24
 ---
 
 # Family plugin release and distribution metadata
+
+> **Superseded by `kodhama-0017-retire-family-release-certification`
+> (2026-07-24).** This spec is no longer implementation input. Its release,
+> surface, availability, resolver, runtime-sandbox, and effective-support
+> contracts remain here only as historical design.
 
 > **Amended 2026-07-24 — whole-spec completion protocol.**
 > **WHAT:** Defined the product extension-validator process protocol,

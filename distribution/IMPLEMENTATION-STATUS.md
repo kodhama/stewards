@@ -1,15 +1,23 @@
 ---
 id: stewards-distribution-implementation-status-0001
 type: implementation-status
-status: gated
+status: superseded  # historical implementation snapshot; retired by kodhama-0017 (2026-07-24)
 depends_on:
   - kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2
   - kodhama-spec-0002-bounded-pre-agent-provisioner@v3
+superseded_by: [kodhama-0017-retire-family-release-certification]
 owner: agent
 updated: 2026-07-24
 ---
 
 # Distribution implementation status
+
+> **Superseded by `kodhama-0017-retire-family-release-certification`
+> (2026-07-24).** This file is a historical snapshot of the implementation
+> built against retired specs 0001 and 0002. Its “remaining” sections are not a
+> roadmap and authorize no further conformance work. The legacy implementation
+> remains temporarily only until the separate removal change recorded in
+> decision 0017.
 
 ## Spec 0001 landed slice
 

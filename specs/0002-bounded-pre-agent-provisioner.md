@@ -1,15 +1,21 @@
 ---
 id: kodhama-spec-0002-bounded-pre-agent-provisioner
 type: spec
-status: approved  # Maintainer-authorized merge records v3 approval after independent gates passed
+status: superseded  # retired by kodhama-0017 (2026-07-24); historical v3 contract only
 version: 3
 depends_on: [kodhama-0016-distribution-availability-and-effective-support, kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2]
 implements: [kodhama-0016-distribution-availability-and-effective-support]
+superseded_by: [kodhama-0017-retire-family-release-certification]
 owner: agent
 updated: 2026-07-24
 ---
 
 # Bounded pre-agent provisioner
+
+> **Superseded by `kodhama-0017-retire-family-release-certification`
+> (2026-07-24).** This universal pre-agent provisioner contract is no longer
+> implementation input. It remains here only as historical design; any future
+> CI marketplace-setup skill starts from a new narrow contract.
 
 > **Amended 2026-07-24 — v3 two-output commit and bounded cleanup.**
 > **WHAT:** Defined committed evidence solely from retained regular-file

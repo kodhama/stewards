@@ -1,5 +1,8 @@
-The install door includes host-native catalogs, distribution metadata and
-schemas, deterministic validators and generators, and bounded pre-agent
-provisioner adapters. It excludes product builds or content, copied product
-contracts, a shared runtime, automatic plugin selection, and release
-coordination.
+The install door includes the host-native Claude and Codex catalogs. Its
+future distribution scope is deliberately narrow: metadata that records which
+marketplace a test exercised, and a generic Stewards skill that adds
+caller-selected Claude/Codex marketplace setup to CI. It does not certify
+product releases or support and owns no universal version, tag, release-history,
+approval, runtime-sandbox, cross-repository-resolution, or effective-support
+machinery. The superseded implementation remains temporarily pending its
+separate removal change.
