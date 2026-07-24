@@ -1,15 +1,21 @@
 ---
 id: stewards-provisioner-implementation-status-0001
 type: implementation-status
-status: gated
+status: superseded  # historical implementation snapshot; retired by kodhama-0017 (2026-07-24)
 depends_on:
   - kodhama-spec-0002-bounded-pre-agent-provisioner@v3
   - kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2
+superseded_by: [kodhama-0017-retire-family-release-certification]
 owner: agent
 updated: 2026-07-24
 ---
 
 # Spec 0002 implementation status
+
+> **Superseded by `kodhama-0017-retire-family-release-certification`
+> (2026-07-24).** This file is a historical snapshot, not an active
+> provisioner roadmap. The implementation it describes remains temporarily
+> pending the separate removal change recorded in decision 0017.
 
 This is a bounded implementation of the protocol surface that can be truthful
 with the current merged metadata. `distribution/provisioners.json` contains no

@@ -3,6 +3,7 @@ id: stewards-distribution-tests-deps
 type: test-dependencies
 status: gated
 depends_on:
+  - kodhama-0017-retire-family-release-certification
   - kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2
   - kodhama-spec-0002-bounded-pre-agent-provisioner@v3
   - kodhama-0015-family-plugin-release-and-surface-contract
@@ -13,10 +14,17 @@ updated: 2026-07-24
 
 # Distribution test dependencies
 
+> **Temporary legacy map after
+> `kodhama-0017-retire-family-release-certification` (2026-07-24).** These
+> references preserve provenance for the still-running legacy tests until the
+> separate implementation-removal change. The superseded specs and decisions
+> are no longer implementation inputs, and this map authorizes no new
+> conformance work.
+
 The `distribution/tests` package guards
 `kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2` and
-`kodhama-spec-0002-bounded-pre-agent-provisioner@v3`. Those specs derive from
-approved decisions
+`kodhama-spec-0002-bounded-pre-agent-provisioner@v3`. Those specs derived from
+the now-superseded decisions
 `kodhama-0015-family-plugin-release-and-surface-contract` and
 `kodhama-0016-distribution-availability-and-effective-support`.
 

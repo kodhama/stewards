@@ -198,3 +198,14 @@ to permit versioned distribution metadata, validators, and bounded pre-agent
 provisioner adapters. The canonical thin repository, product-owned package
 content, and independent product release cadence stand. This annotation does
 not normalize the historical external-reference defect tracked in issue #20.
+
+## Forward annotation — kodhama-0017 (2026-07-24)
+
+Gated `kodhama-0017-retire-family-release-certification` supersedes
+`kodhama-0016` in full and retracts the release-certification, validator, and
+universal provisioner expansion described immediately above. This decision's
+thin install-door boundary stands, with only the narrower future exception
+authorized by `kodhama-0017`: descriptive marketplace-tested metadata and a
+generic skill that adds caller-selected Claude/Codex marketplace setup to CI.
+That exception owns no product content, release policy, runtime, plugin
+selection, or support judgment.

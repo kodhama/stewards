@@ -70,3 +70,12 @@ staged testing while product support remains candidate, unsupported, or
 absent; catalog presence still creates no behavioral or effective-support
 claim. The one-repository, host-native, thin-catalog, and product-owned
 package boundaries stand.
+
+## Forward annotation — kodhama-0017 (2026-07-24)
+
+Gated `kodhama-0017-retire-family-release-certification` supersedes
+`kodhama-0016` in full. Its staged-testing admission exception and its
+availability/effective-support model are therefore retired; this decision's
+catalog-admission and thin-catalog boundaries stand again. The narrow
+marketplace-tested metadata authorized by `kodhama-0017` records which
+marketplace a test exercised and creates no admission or support exception.

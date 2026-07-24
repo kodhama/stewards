@@ -1,15 +1,21 @@
 ---
 id: kodhama-0015-family-plugin-release-and-surface-contract
 type: decision
-status: approved  # maintainer intent act: authorized the family-wide rollout and merge after independent review; decision-adversary SOUND preceded this recording
+status: superseded  # retired in full by kodhama-0017 (2026-07-24); original approval record remains in this file
 depends_on: [kodhama-0002-delivery-channels]
 informed_by: [grove/adr-0028-plugin-release-tagging, grove/adr-0031-multi-host-distribution, trellis/decision-0036, kodhama-0013-family-codex-native-product-support]
+superseded_by: [kodhama-0017-retire-family-release-certification]
 owner: agent
 updated: 2026-07-24
 provenance: maintainer direction on 2026-07-24 to make one family SemVer and surface-contract strategy, while preserving product-owned implementation and release cadence; artifact approval remains at the human ship gate
 ---
 
 # Decision: one family plugin release and surface contract, independently applied by every product
+
+> **Superseded by `kodhama-0017-retire-family-release-certification`
+> (2026-07-24).** The family SemVer, tag, release-identity, surface-contract,
+> and certification architecture is retired. This file remains the historical
+> record of the earlier decision.
 
 ## Decision state
 
