@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.machinery
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -538,6 +541,12 @@ class DistributionContractTests(unittest.TestCase):
         self.assertEqual(len(fixture_tests), len(set(fixture_tests)))
         for test_name in fixture_tests:
             self.assertTrue(callable(getattr(self, test_name, None)), test_name)
+        suite_tests = {
+            name
+            for name in dir(self)
+            if name.startswith("test_") and callable(getattr(self, name))
+        }
+        self.assertEqual(set(fixture_tests), suite_tests)
 
     # spec-0001@v1 S5, S12, R10, R20; code-review identity-binding finding
     def test_verified_catalog_binds_row_binding_and_clean_subject(self) -> None:
@@ -845,6 +854,191 @@ class DistributionContractTests(unittest.TestCase):
             check=False,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    # spec-0001@v1 validation/generation interface; second-review portability/range finding
+    def test_quality_gate_uses_portable_cache_and_committed_ci_range(self) -> None:
+        gate = ROOT / "distribution" / "check"
+        source = gate.read_text(encoding="utf-8")
+        self.assertNotIn("/private/tmp", source)
+        module = importlib.machinery.SourceFileLoader(
+            "distribution_quality_gate",
+            str(gate),
+        ).load_module()
+        self.assertEqual(
+            module.diff_check_commands("a" * 40),
+            [
+                ["git", "diff", "--check"],
+                ["git", "diff", "--cached", "--check"],
+                ["git", "diff", "--check", "a" * 40 + "..HEAD"],
+            ],
+        )
+        workflow = (
+            ROOT / ".github" / "workflows" / "distribution-check.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("STEWARDS_BASE_SHA", workflow)
+        self.assertIn("github.event.pull_request.base.sha", workflow)
+        self.assertIn("github.event.before", workflow)
+
+    # spec-0001@v1 complete-inventory provider; second-review pipe containment finding
+    def test_provider_kills_pipe_holding_child_with_bounded_join(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            provider = root / "pipe-provider"
+            provider.write_text(
+                "#!/bin/sh\n"
+                "(sleep 3) &\n"
+                "exit 0\n",
+                encoding="utf-8",
+            )
+            provider.chmod(0o755)
+            started = time.monotonic()
+            with mock.patch.object(
+                contract,
+                "PROVIDER_READER_JOIN_SECONDS",
+                0.05,
+            ):
+                with self.assertRaisesRegex(
+                    contract.ContractError,
+                    "pipe",
+                ):
+                    contract.run_bounded_process(
+                        [str(provider)],
+                        cwd=root,
+                        env={"PATH": os.environ.get("PATH", "")},
+                    )
+            self.assertLess(time.monotonic() - started, 1.0)
+
+    # spec-0001@v1 S22, R39; second-review manifest-kind type finding
+    def test_release_inventory_manifest_kind_type_fails_deterministically(
+        self,
+    ) -> None:
+        inventory = {
+            "schema_version": 1,
+            "host_manifests": [
+                {
+                    "host": "claude-code",
+                    "path": "plugin.json",
+                    "manifest_kind": {"not": "hashable"},
+                    "version_extractor": {
+                        "path": "plugin.json",
+                        "format": "json",
+                        "selector": "/version",
+                    },
+                    "package_version": "1.2.3",
+                }
+            ],
+            "payload_identities": [],
+            "public_contract_items": [],
+            "support_derivatives": [],
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "inventory.json"
+            write_json(path, inventory)
+            result = run_manage(
+                "validate-document",
+                "--schema",
+                "release-inventory",
+                str(path),
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("manifest_kind", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    # spec-0001@v1 clean-install evidence; second-review interval finding
+    def test_clean_install_finished_at_precedes_started_at_is_rejected(
+        self,
+    ) -> None:
+        evidence = clean_install_evidence()
+        evidence["installation"]["started_at"] = "2026-07-24T12:00:02Z"
+        evidence["installation"]["finished_at"] = "2026-07-24T12:00:01Z"
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "evidence.json"
+            write_json(path, evidence)
+            result = run_manage(
+                "validate-document",
+                "--schema",
+                "clean-install-evidence",
+                str(path),
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("finished_at", result.stderr)
+
+    # spec-0001@v1 S11, R18; second-review catalog projection ambiguity finding
+    def test_catalog_validator_rejects_duplicate_per_host_projection(
+        self,
+    ) -> None:
+        base = verified_catalog()["records"][0]
+        for key in (
+            "package_version",
+            "release_tag",
+            "source_commit",
+            "identity_binding",
+            "clean_install_evidence",
+            "release_history_reference",
+        ):
+            base.pop(key)
+        base["state"] = "published"
+        local = json.loads(json.dumps(base))
+        ci = json.loads(json.dumps(base))
+        ci["surface_id"] = "claude-code.ci.headless"
+        document = {"schema_version": 1, "records": [ci, local]}
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "catalog.json"
+            write_json(path, document)
+            result = run_manage(
+                "validate-document",
+                "--schema",
+                "catalog-availability",
+                str(path),
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("duplicate", result.stderr)
+
+    # spec-0001@v1 version/inventory extractor grammar; second-review pointer finding
+    def test_json_pointer_schemas_allow_nested_segments_like_runtime(self) -> None:
+        common = json.loads(
+            (
+                ROOT / "distribution" / "schemas" / "common-types.v1.schema.json"
+            ).read_text(encoding="utf-8")
+        )
+        version_pattern = common["$defs"]["version_extractor"]["oneOf"][1][
+            "properties"
+        ]["selector"]["pattern"]
+        inventory = json.loads(
+            (
+                ROOT
+                / "distribution"
+                / "schemas"
+                / "release-inventory.v1.schema.json"
+            ).read_text(encoding="utf-8")
+        )
+        pointer_pattern = inventory["$defs"]["extractor"]["oneOf"][2][
+            "properties"
+        ]["pointer"]["pattern"]
+        for pattern in (version_pattern, pointer_pattern):
+            self.assertIsNotNone(re.fullmatch(pattern, "/version/nested~1key"))
+            self.assertIsNone(re.fullmatch(pattern, "/invalid~2escape"))
+
+    # spec-0001@v1 repository quality; second-review Python lint finding
+    def test_python_lint_gate_is_real_and_rejects_bad_source(self) -> None:
+        lint = ROOT / "distribution" / "python-lint"
+        self.assertTrue(lint.is_file())
+        check_source = (ROOT / "distribution" / "check").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("distribution/python-lint", check_source)
+        with tempfile.TemporaryDirectory() as raw:
+            bad = Path(raw) / "bad.py"
+            bad.write_text("from os import *  \n", encoding="utf-8")
+            result = subprocess.run(
+                [str(lint), str(bad)],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        self.assertNotEqual(result.returncode, 0)
 
 
 if __name__ == "__main__":

@@ -97,6 +97,48 @@
       "test": "test_verified_catalog_binds_row_binding_and_clean_subject",
       "expected_exit": "success-and-contract-failure",
       "guards": "S5 S12 R10 R20"
+    },
+    {
+      "name": "portable-cache-and-committed-ci-range",
+      "test": "test_quality_gate_uses_portable_cache_and_committed_ci_range",
+      "expected_exit": "success",
+      "guards": "repository quality gate"
+    },
+    {
+      "name": "provider-pipe-child-containment",
+      "test": "test_provider_kills_pipe_holding_child_with_bounded_join",
+      "expected_exit": "contract-failure-bounded-time",
+      "guards": "complete product release inventory"
+    },
+    {
+      "name": "manifest-kind-type",
+      "test": "test_release_inventory_manifest_kind_type_fails_deterministically",
+      "expected_exit": "contract-failure",
+      "guards": "S22 R39 schema shape only"
+    },
+    {
+      "name": "clean-install-time-interval",
+      "test": "test_clean_install_finished_at_precedes_started_at_is_rejected",
+      "expected_exit": "contract-failure",
+      "guards": "clean-install evidence"
+    },
+    {
+      "name": "duplicate-catalog-host-projection",
+      "test": "test_catalog_validator_rejects_duplicate_per_host_projection",
+      "expected_exit": "contract-failure",
+      "guards": "S11 R18"
+    },
+    {
+      "name": "nested-json-pointer-schema",
+      "test": "test_json_pointer_schemas_allow_nested_segments_like_runtime",
+      "expected_exit": "success",
+      "guards": "S1 S22 R1 R39"
+    },
+    {
+      "name": "dependency-free-python-lint",
+      "test": "test_python_lint_gate_is_real_and_rejects_bad_source",
+      "expected_exit": "success-and-contract-failure",
+      "guards": "repository quality gate"
     }
   ]
 }

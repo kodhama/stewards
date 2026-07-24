@@ -54,6 +54,13 @@ Rules (the collective's):
   liftable; until then the trellis overlay alone is owed — if the
   `trellis` CLI is available run `trellis setup`, otherwise record the
   debt in `conductor/` loudly.
+- **Distribution quality gate:** changes under the install door run
+  `distribution/check`. It executes the spec-anchored tests, door validation,
+  generated-file staleness check, Python compilation/typecheck, dependency-free
+  Python lint/format checks, JSON parsing, and both working-tree and committed
+  CI-range whitespace checks. This project-owned rule supersedes the managed
+  block's older “no test/typecheck gates” description for distribution files;
+  the next Grove refresh should update that adapter projection.
 
 <!-- grove:begin (managed by grove — edit .claude/agents/, not this block) -->
 This repo is **grove-managed**: conductor work items run as

@@ -19,6 +19,7 @@ import signal
 import subprocess
 import sys
 import threading
+import time
 from typing import Any, Callable, Iterable, Optional, Sequence
 import unicodedata
 from urllib.parse import urlsplit
@@ -67,6 +68,7 @@ FACTOR_ORDER = (
 PROVIDER_TIMEOUT_SECONDS = 10
 PROVIDER_OUTPUT_LIMIT = 1024 * 1024
 PROVIDER_STDERR_LIMIT = 64 * 1024
+PROVIDER_READER_JOIN_SECONDS = 1
 
 
 class ContractError(ValueError):
@@ -587,6 +589,7 @@ def validate_catalog(value: Any) -> dict[str, Any]:
     require(obj["schema_version"] == 1, "catalog_availability.schema_version: expected 1")
     require(isinstance(obj["records"], list), "catalog_availability.records: expected array")
     keys = set()
+    projections = set()
     prior = None
     for index, row in enumerate(obj["records"]):
         validate_catalog_row(row, f"catalog_availability.records[{index}]")
@@ -595,6 +598,16 @@ def validate_catalog(value: Any) -> dict[str, Any]:
         require(prior is None or prior < key, "catalog_availability.records: records are not in key order")
         keys.add(key)
         prior = key
+        if row["state"] != "absent":
+            projection = (
+                row["host_projection"]["host"],
+                row["host_projection"]["entry_name"],
+            )
+            require(
+                projection not in projections,
+                "catalog_availability.records: duplicate per-host plugin projection",
+            )
+            projections.add(projection)
     return obj
 
 
@@ -695,6 +708,18 @@ def validate_clean_install_evidence(value: Any) -> dict[str, Any]:
     )
     validate_timestamp(installation["started_at"], "clean_install_evidence.installation.started_at")
     validate_timestamp(installation["finished_at"], "clean_install_evidence.installation.finished_at")
+    started_at = datetime.strptime(
+        installation["started_at"],
+        "%Y-%m-%dT%H:%M:%SZ",
+    )
+    finished_at = datetime.strptime(
+        installation["finished_at"],
+        "%Y-%m-%dT%H:%M:%SZ",
+    )
+    require(
+        finished_at >= started_at,
+        "clean_install_evidence.installation.finished_at: precedes started_at",
+    )
     require(installation["outcome"] == "installed", "clean_install_evidence.installation.outcome: expected installed")
     require(validate_subject(installation["discovered_identity"]) == subject, "clean_install_evidence.installation.discovered_identity: mismatch")
     validate_stable_reference(installation["record_reference"], "clean_install_evidence.installation.record_reference")
@@ -951,19 +976,34 @@ def run_bounded_process(
         "stderr": (process.stderr, PROVIDER_STDERR_LIMIT),
     }
     output: dict[str, bytes] = {}
+    reader_errors: list[Exception] = []
 
-    def kill_process() -> None:
-        if process.poll() is None:
+    def kill_process_group() -> None:
+        try:
             os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
     def close_streams() -> None:
         for stream, _ in streams.values():
-            stream.close()
+            try:
+                stream.close()
+            except OSError as exc:
+                reader_errors.append(exc)
 
     def read_stream(name: str, stream: Any, limit: int) -> None:
-        output[name] = stream.read(limit + 1)
-        if len(output[name]) > limit:
-            kill_process()
+        try:
+            output[name] = stream.read(limit + 1)
+            if len(output[name]) > limit:
+                kill_process_group()
+        except (OSError, ValueError) as exc:
+            reader_errors.append(exc)
+
+    def join_readers() -> bool:
+        deadline = time.monotonic() + PROVIDER_READER_JOIN_SECONDS
+        for reader in readers:
+            reader.join(max(0.0, deadline - time.monotonic()))
+        return all(not reader.is_alive() for reader in readers)
 
     readers = [
         threading.Thread(
@@ -978,17 +1018,29 @@ def run_bounded_process(
     try:
         returncode = process.wait(timeout=PROVIDER_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired as exc:
-        kill_process()
+        kill_process_group()
         process.wait()
-        for reader in readers:
-            reader.join()
+        joined = join_readers()
         close_streams()
+        require(joined, "inventory_provider: pipe readers did not terminate")
         raise ContractError(
             f"inventory_provider: timed out after {PROVIDER_TIMEOUT_SECONDS}s"
         ) from exc
-    for reader in readers:
-        reader.join()
+    joined = join_readers()
+    held_pipes_open = not joined
+    if not joined:
+        kill_process_group()
+        joined = join_readers()
+    if not joined:
+        close_streams()
+        join_readers()
+        reject("inventory_provider: pipe readers did not terminate")
     close_streams()
+    require(
+        not held_pipes_open,
+        "inventory_provider: child process held output pipe open",
+    )
+    require(not reader_errors, "inventory_provider: failed while reading output pipes")
     stdout = output.get("stdout", b"")
     stderr = output.get("stderr", b"")
     require(
@@ -1071,7 +1123,17 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
         where = f"release_inventory.host_manifests[{index}]"
         exact_keys(row, ("host", "path", "manifest_kind", "version_extractor", "package_version"), ("extension_validator",), where)
         normalized_path(row["path"], f"{where}.path")
-        require(row["manifest_kind"] in {"claude-plugin", "codex-plugin", "npm-package", "other-declared-host"}, f"{where}.manifest_kind: invalid")
+        require(
+            isinstance(row["manifest_kind"], str)
+            and row["manifest_kind"]
+            in {
+                "claude-plugin",
+                "codex-plugin",
+                "npm-package",
+                "other-declared-host",
+            },
+            f"{where}.manifest_kind: invalid",
+        )
         if row["manifest_kind"] == "other-declared-host":
             normalized_path(row.get("extension_validator"), f"{where}.extension_validator")
         else:
