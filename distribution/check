@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Repository quality gate for the implemented spec-0001 slice."""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def run(command: list[str], env: dict[str, str]) -> None:
+    result = subprocess.run(
+        command,
+        cwd=ROOT,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if result.stdout:
+        sys.stdout.write(result.stdout)
+    if result.returncode:
+        raise SystemExit(result.returncode)
+
+
+def main() -> int:
+    env = os.environ.copy()
+    env["STEWARDS_CHECK_INNER"] = "1"
+    env["PYTHONPYCACHEPREFIX"] = "/private/tmp/stewards-distribution-pycache"
+
+    run(
+        [sys.executable, "-m", "unittest", "discover", "-s", "distribution/tests", "-v"],
+        env,
+    )
+    run(["distribution/manage", "validate-door"], env)
+    run(["distribution/manage", "generate", "--check"], env)
+    run(
+        [
+            sys.executable,
+            "-m",
+            "py_compile",
+            "distribution/manage",
+            "distribution/check",
+            "distribution/lib/manage.py",
+        ],
+        env,
+    )
+
+    for path in sorted((ROOT / "distribution").rglob("*.json")):
+        try:
+            json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            print(f"{path.relative_to(ROOT)}: {exc}", file=sys.stderr)
+            return 1
+
+    run(["git", "diff", "--check"], env)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

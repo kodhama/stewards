@@ -9,13 +9,16 @@ from __future__ import annotations
 
 import argparse
 import copy
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import signal
 import subprocess
 import sys
+import threading
 from typing import Any, Callable, Iterable, Optional, Sequence
 import unicodedata
 from urllib.parse import urlsplit
@@ -61,6 +64,9 @@ FACTOR_ORDER = (
     "environment_ready",
     "product_setup_complete",
 )
+PROVIDER_TIMEOUT_SECONDS = 10
+PROVIDER_OUTPUT_LIMIT = 1024 * 1024
+PROVIDER_STDERR_LIMIT = 64 * 1024
 
 
 class ContractError(ValueError):
@@ -159,6 +165,16 @@ def validate_timestamp(value: Any, where: str) -> str:
     require(
         isinstance(value, str) and TIMESTAMP.fullmatch(value) is not None,
         f"{where}: expected RFC 3339 UTC whole-second timestamp",
+    )
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc
+        )
+    except ValueError as exc:
+        raise ContractError(f"{where}: invalid calendar timestamp") from exc
+    require(
+        parsed.strftime("%Y-%m-%dT%H:%M:%SZ") == value,
+        f"{where}: invalid calendar timestamp",
     )
     return value
 
@@ -452,11 +468,16 @@ def validate_transition_exception(value: Any, where: str) -> dict[str, Any]:
     )
     exact_keys(obj["baseline_key"], ("plugin_id", "surface_id"), where=f"{where}.baseline_key")
     require(isinstance(obj["selector_fingerprint"], str) and SHA256.fullmatch(obj["selector_fingerprint"]), f"{where}.selector_fingerprint: invalid")
+    elements = obj["missing_contract_elements"]
     require(
-        isinstance(obj["missing_contract_elements"], list)
-        and bool(obj["missing_contract_elements"])
-        and obj["missing_contract_elements"] == sorted(set(obj["missing_contract_elements"])),
-        f"{where}.missing_contract_elements: must be non-empty sorted unique",
+        isinstance(elements, list)
+        and bool(elements)
+        and all(isinstance(item, str) and bool(item) for item in elements),
+        f"{where}.missing_contract_elements: must contain non-empty strings",
+    )
+    require(
+        elements == sorted(set(elements)),
+        f"{where}.missing_contract_elements: must be sorted and unique",
     )
     require(obj["disclosure"] == "legacy published stock", f"{where}.disclosure: invalid")
     require(obj["terminal_action"] == "adopt-or-delist", f"{where}.terminal_action: invalid")
@@ -520,8 +541,39 @@ def validate_catalog_row(value: Any, where: str) -> dict[str, Any]:
             expected = value["release_tag"] if ref["kind"] == "tag" else value["source_commit"]
             require(ref["value"] == expected, f"{where}.source_selector: immutable ref does not bind subject")
             validate_stable_reference(value["release_history_reference"], f"{where}.release_history_reference")
-            validate_distribution_binding(value["identity_binding"], f"{where}.identity_binding")
-            validate_clean_install_evidence(value["clean_install_evidence"])
+            binding = validate_distribution_binding(value["identity_binding"], f"{where}.identity_binding")
+            clean = validate_clean_install_evidence(value["clean_install_evidence"])
+            row_subject = {
+                key: value[key]
+                for key in (
+                    "plugin_id",
+                    "package_version",
+                    "release_tag",
+                    "source_commit",
+                    "surface_id",
+                )
+            }
+            require(
+                clean["subject"] == row_subject,
+                f"{where}.clean_install_evidence.subject: catalog identity mismatch",
+            )
+            require(
+                clean["catalog_key"]
+                == {
+                    "plugin_id": value["plugin_id"],
+                    "surface_id": value["surface_id"],
+                },
+                f"{where}.clean_install_evidence.catalog_key: catalog identity mismatch",
+            )
+            require(
+                binding == clean["distribution_binding"],
+                f"{where}.identity_binding: clean-install binding mismatch",
+            )
+            if binding["kind"] == "catalog-selector":
+                require(
+                    binding["selector"] == selector,
+                    f"{where}.identity_binding.selector: catalog selector mismatch",
+                )
     else:
         reject(f"{where}.state: invalid")
     validate_slug(value["plugin_id"], f"{where}.plugin_id")
@@ -599,7 +651,27 @@ def validate_clean_install_evidence(value: Any) -> dict[str, Any]:
     subject = validate_subject(obj["subject"], "clean_install_evidence.subject")
     key = exact_keys(obj["catalog_key"], ("plugin_id", "surface_id"), where="clean_install_evidence.catalog_key")
     require(key["plugin_id"] == subject["plugin_id"] and key["surface_id"] == subject["surface_id"], "clean_install_evidence.catalog_key: identity mismatch")
-    validate_distribution_binding(obj["distribution_binding"], "clean_install_evidence.distribution_binding")
+    binding = validate_distribution_binding(
+        obj["distribution_binding"],
+        "clean_install_evidence.distribution_binding",
+    )
+    if binding["kind"] == "catalog-selector":
+        ref = binding["selector"]["ref"]
+        expected_ref = (
+            subject["release_tag"]
+            if ref["kind"] == "tag"
+            else subject["source_commit"]
+        )
+        require(
+            ref["value"] == expected_ref,
+            "clean_install_evidence.distribution_binding: subject release mismatch",
+        )
+    else:
+        identity = binding["provisioner_identity"]
+        require(
+            all(identity[key] == subject[key] for key in subject),
+            "clean_install_evidence.distribution_binding: subject identity mismatch",
+        )
     environment = exact_keys(
         obj["clean_environment"],
         ("host", "host_version", "environment", "mode", "snapshot_kind", "snapshot_id", "sha256"),
@@ -860,6 +932,76 @@ def tree_snapshot(root: Path) -> dict[str, str]:
     return snapshot
 
 
+def run_bounded_process(
+    command: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str],
+) -> subprocess.CompletedProcess[bytes]:
+    process = subprocess.Popen(
+        command,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+    streams = {
+        "stdout": (process.stdout, PROVIDER_OUTPUT_LIMIT),
+        "stderr": (process.stderr, PROVIDER_STDERR_LIMIT),
+    }
+    output: dict[str, bytes] = {}
+
+    def kill_process() -> None:
+        if process.poll() is None:
+            os.killpg(process.pid, signal.SIGKILL)
+
+    def close_streams() -> None:
+        for stream, _ in streams.values():
+            stream.close()
+
+    def read_stream(name: str, stream: Any, limit: int) -> None:
+        output[name] = stream.read(limit + 1)
+        if len(output[name]) > limit:
+            kill_process()
+
+    readers = [
+        threading.Thread(
+            target=read_stream,
+            args=(name, stream, limit),
+            daemon=True,
+        )
+        for name, (stream, limit) in streams.items()
+    ]
+    for reader in readers:
+        reader.start()
+    try:
+        returncode = process.wait(timeout=PROVIDER_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired as exc:
+        kill_process()
+        process.wait()
+        for reader in readers:
+            reader.join()
+        close_streams()
+        raise ContractError(
+            f"inventory_provider: timed out after {PROVIDER_TIMEOUT_SECONDS}s"
+        ) from exc
+    for reader in readers:
+        reader.join()
+    close_streams()
+    stdout = output.get("stdout", b"")
+    stderr = output.get("stderr", b"")
+    require(
+        len(stdout) <= PROVIDER_OUTPUT_LIMIT,
+        f"inventory_provider: stdout exceeds {PROVIDER_OUTPUT_LIMIT} bytes",
+    )
+    require(
+        len(stderr) <= PROVIDER_STDERR_LIMIT,
+        f"inventory_provider: stderr exceeds {PROVIDER_STDERR_LIMIT} bytes",
+    )
+    return subprocess.CompletedProcess(command, returncode, stdout, stderr)
+
+
 def run_inventory_provider(root: Path, provider_path: str) -> bytes:
     provider = root / provider_path
     require(provider.is_file() and os.access(provider, os.X_OK), "release_metadata.inventory_provider: not executable")
@@ -877,14 +1019,7 @@ def run_inventory_provider(root: Path, provider_path: str) -> bytes:
     before = tree_snapshot(root)
     outputs = []
     for _ in range(2):
-        result = subprocess.run(
-            command,
-            cwd=root,
-            env=safe_env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
+        result = run_bounded_process(command, cwd=root, env=safe_env)
         require(result.returncode == 0, f"inventory_provider: exited {result.returncode}")
         lowered = result.stderr.lower()
         require(not any(term in lowered for term in (b"token", b"password", b"secret", b"credential", b"authorization")), "inventory_provider: stderr contains credential term")
@@ -893,6 +1028,32 @@ def run_inventory_provider(root: Path, provider_path: str) -> bytes:
         require(tree_snapshot(root) == before, "inventory_provider: mutated package filesystem")
     require(outputs[0] == outputs[1], "inventory_provider: nondeterministic stdout")
     return outputs[0]
+
+
+def validate_inventory_extractor(value: Any, where: str) -> dict[str, Any]:
+    require(isinstance(value, dict), f"{where}: expected object")
+    kind = value.get("kind")
+    if kind == "file-bytes":
+        obj = exact_keys(value, ("kind", "path"), where=where)
+    elif kind == "text-line":
+        obj = exact_keys(value, ("kind", "path", "line"), where=where)
+        require(
+            type(obj["line"]) is int and obj["line"] >= 0,
+            f"{where}.line: expected non-negative integer",
+        )
+    elif kind == "json-pointer":
+        obj = exact_keys(value, ("kind", "path", "pointer"), where=where)
+        pointer = obj["pointer"]
+        require(
+            isinstance(pointer, str)
+            and (pointer == "" or pointer.startswith("/"))
+            and re.search(r"~(?:[^01]|$)", pointer) is None,
+            f"{where}.pointer: invalid RFC 6901 JSON Pointer",
+        )
+    else:
+        reject(f"{where}.kind: invalid inventory extractor")
+    normalized_path(obj["path"], f"{where}.path")
+    return obj
 
 
 def validate_release_inventory(value: Any, package_version: Optional[str] = None) -> dict[str, Any]:
@@ -905,6 +1066,7 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
     for key in ("host_manifests", "payload_identities", "public_contract_items", "support_derivatives"):
         require(isinstance(obj[key], list), f"release_inventory.{key}: expected array")
     hosts = set()
+    prior_host = None
     for index, row in enumerate(obj["host_manifests"]):
         where = f"release_inventory.host_manifests[{index}]"
         exact_keys(row, ("host", "path", "manifest_kind", "version_extractor", "package_version"), ("extension_validator",), where)
@@ -912,26 +1074,164 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
         require(row["manifest_kind"] in {"claude-plugin", "codex-plugin", "npm-package", "other-declared-host"}, f"{where}.manifest_kind: invalid")
         if row["manifest_kind"] == "other-declared-host":
             normalized_path(row.get("extension_validator"), f"{where}.extension_validator")
+        else:
+            require(
+                "extension_validator" not in row,
+                f"{where}.extension_validator: forbidden for standard manifest kind",
+            )
         validate_extractor(row["version_extractor"], f"{where}.version_extractor")
+        require(
+            row["version_extractor"]["path"] == row["path"],
+            f"{where}.version_extractor.path: manifest path mismatch",
+        )
         validate_semver(row["package_version"], f"{where}.package_version")
         if package_version is not None:
             require(row["package_version"] == package_version, f"{where}.package_version: carrier mismatch")
         key = (row["host"], row["path"])
         require(key not in hosts, "release_inventory.host_manifests: duplicate row")
+        require(
+            prior_host is None or prior_host < key,
+            "release_inventory.host_manifests: rows are not in identity order",
+        )
         hosts.add(key)
-    for array, identity in (
-        ("payload_identities", "payload_id"),
-        ("public_contract_items", "contract_id"),
-        ("support_derivatives", "derivative_id"),
-    ):
-        seen = set()
-        for index, row in enumerate(obj[array]):
-            where = f"release_inventory.{array}[{index}]"
-            require(isinstance(row, dict), f"{where}: expected object")
-            require(identity in row, f"{where}: missing {identity}")
-            validate_slug(row[identity], f"{where}.{identity}", dotted=True)
-            require(row[identity] not in seen, f"release_inventory.{array}: duplicate {identity}")
-            seen.add(row[identity])
+        prior_host = key
+
+    seen = set()
+    prior_id = None
+    for index, row in enumerate(obj["payload_identities"]):
+        where = f"release_inventory.payload_identities[{index}]"
+        exact_keys(
+            row,
+            (
+                "payload_id",
+                "source_path",
+                "extractor",
+                "kind",
+                "value",
+                "consumer_acted",
+            ),
+            where=where,
+        )
+        payload_id = validate_slug(row["payload_id"], f"{where}.payload_id", dotted=True)
+        normalized_path(row["source_path"], f"{where}.source_path")
+        extractor = validate_inventory_extractor(row["extractor"], f"{where}.extractor")
+        require(
+            extractor["path"] == row["source_path"],
+            f"{where}.extractor.path: source_path mismatch",
+        )
+        kind = row["kind"]
+        require(
+            kind in {"content-hash", "version-stamp"}
+            or (
+                isinstance(kind, str)
+                and re.fullmatch(
+                    r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*:[a-z][a-z0-9-]*",
+                    kind,
+                )
+                is not None
+            ),
+            f"{where}.kind: invalid",
+        )
+        require(isinstance(row["value"], str) and bool(row["value"]), f"{where}.value: empty")
+        require(type(row["consumer_acted"]) is bool, f"{where}.consumer_acted: expected boolean")
+        require(payload_id not in seen, "release_inventory.payload_identities: duplicate payload_id")
+        require(prior_id is None or prior_id < payload_id, "release_inventory.payload_identities: rows are not in identity order")
+        seen.add(payload_id)
+        prior_id = payload_id
+
+    categories = {
+        "installation-coordinate",
+        "installation-input",
+        "host-visible-entrypoint",
+        "configuration",
+        "managed-state",
+        "runtime-requirement",
+        "surface-support",
+        "consumed-output-protocol",
+    }
+    compatibilities = {
+        "initial",
+        "unchanged",
+        "backward-compatible-fix",
+        "backward-compatible-capability",
+        "supported-surface-addition",
+        "breaking-change",
+        "false-claim-correction",
+        "supported-surface-withdrawal",
+    }
+    seen = set()
+    prior_id = None
+    for index, row in enumerate(obj["public_contract_items"]):
+        where = f"release_inventory.public_contract_items[{index}]"
+        exact_keys(
+            row,
+            (
+                "contract_id",
+                "category",
+                "source",
+                "extractor",
+                "fingerprint",
+                "compatibility",
+            ),
+            where=where,
+        )
+        contract_id = validate_slug(row["contract_id"], f"{where}.contract_id", dotted=True)
+        require(row["category"] in categories, f"{where}.category: invalid")
+        validate_stable_reference(row["source"], f"{where}.source")
+        validate_inventory_extractor(row["extractor"], f"{where}.extractor")
+        require(
+            isinstance(row["fingerprint"], str)
+            and SHA256.fullmatch(row["fingerprint"]),
+            f"{where}.fingerprint: invalid",
+        )
+        require(row["compatibility"] in compatibilities, f"{where}.compatibility: invalid")
+        require(contract_id not in seen, "release_inventory.public_contract_items: duplicate contract_id")
+        require(prior_id is None or prior_id < contract_id, "release_inventory.public_contract_items: rows are not in identity order")
+        seen.add(contract_id)
+        prior_id = contract_id
+
+    seen = set()
+    prior_id = None
+    for index, row in enumerate(obj["support_derivatives"]):
+        where = f"release_inventory.support_derivatives[{index}]"
+        exact_keys(
+            row,
+            ("derivative_id", "kind", "path", "extractor", "surface_projection"),
+            where=where,
+        )
+        derivative_id = validate_slug(row["derivative_id"], f"{where}.derivative_id", dotted=True)
+        require(
+            row["kind"] in {"public-support-table", "host-manifest-claim"},
+            f"{where}.kind: invalid",
+        )
+        normalized_path(row["path"], f"{where}.path")
+        extractor = validate_inventory_extractor(row["extractor"], f"{where}.extractor")
+        require(extractor["path"] == row["path"], f"{where}.extractor.path: path mismatch")
+        require(isinstance(row["surface_projection"], list), f"{where}.surface_projection: expected array")
+        surfaces = set()
+        for surface_index, surface_row in enumerate(row["surface_projection"]):
+            candidate_version = package_version
+            if candidate_version is None and isinstance(surface_row, dict):
+                support = surface_row.get("support_record")
+                evidence = surface_row.get("evidence", [])
+                if isinstance(support, dict):
+                    candidate_version = support.get("package_version")
+                elif isinstance(evidence, list) and evidence and isinstance(evidence[0], dict):
+                    candidate_version = evidence[0].get("package_version")
+            if not isinstance(candidate_version, str) or not SEMVER.fullmatch(candidate_version):
+                candidate_version = "0.0.0"
+            validate_surface_row(
+                surface_row,
+                candidate_version,
+                f"{where}.surface_projection[{surface_index}]",
+            )
+            surface_id = surface_row["surface_id"]
+            require(surface_id not in surfaces, f"{where}.surface_projection: duplicate surface_id")
+            surfaces.add(surface_id)
+        require(derivative_id not in seen, "release_inventory.support_derivatives: duplicate derivative_id")
+        require(prior_id is None or prior_id < derivative_id, "release_inventory.support_derivatives: rows are not in identity order")
+        seen.add(derivative_id)
+        prior_id = derivative_id
     return obj
 
 
@@ -1189,10 +1489,16 @@ def host_entries_from_manifest(manifest_path: str, document: dict[str, Any]) -> 
     require(isinstance(document, dict) and isinstance(document.get("plugins"), list), f"{manifest_path}: invalid host manifest")
     surface_id = "claude-code.local.interactive" if manifest_path.startswith(".claude") else "codex.local.interactive"
     rows = []
+    plugin_ids = set()
     for index, plugin in enumerate(document["plugins"]):
         require(isinstance(plugin, dict), f"{manifest_path}.plugins[{index}]: invalid")
         name = plugin.get("name")
         validate_slug(name, f"{manifest_path}.plugins[{index}].name")
+        require(
+            name not in plugin_ids,
+            f"{manifest_path}.plugins: duplicate plugin entry {name}",
+        )
+        plugin_ids.add(name)
         source = plugin.get("source")
         require(
             isinstance(source, dict)
@@ -1665,12 +1971,23 @@ def build_host_catalogs(catalogs: dict[str, Any]) -> dict[str, bytes]:
     )
     claude_plugins = []
     codex_plugins = []
+    host_entries: dict[str, set[str]] = {
+        "claude-code": set(),
+        "codex": set(),
+    }
     for row in records:
         fields = copy.deepcopy(row["host_projection"]["fields"])
-        entry = {"name": row["host_projection"]["entry_name"], **fields}
-        if row["host_projection"]["host"] == "claude-code":
+        host = row["host_projection"]["host"]
+        entry_name = row["host_projection"]["entry_name"]
+        require(
+            entry_name not in host_entries[host],
+            f"host projection: duplicate {host} plugin entry {entry_name}",
+        )
+        host_entries[host].add(entry_name)
+        entry = {"name": entry_name, **fields}
+        if host == "claude-code":
             claude_plugins.append(entry)
-        elif row["host_projection"]["host"] == "codex":
+        elif host == "codex":
             codex_plugins.append(entry)
     return {
         ".claude-plugin/marketplace.json": canonical_json(

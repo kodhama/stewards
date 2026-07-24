@@ -48,10 +48,17 @@
       ],
       "properties": {
         "baseline_key": {
-          "allOf": [
-            { "$ref": "#/$defs/key" },
-            { "additionalProperties": false }
-          ]
+          "type": "object",
+          "required": ["plugin_id", "surface_id"],
+          "properties": {
+            "plugin_id": {
+              "$ref": "common-types.v1.schema.json#/$defs/plugin_id"
+            },
+            "surface_id": {
+              "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+            }
+          },
+          "additionalProperties": false
         },
         "selector_fingerprint": {
           "$ref": "common-types.v1.schema.json#/$defs/sha256"

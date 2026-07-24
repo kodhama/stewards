@@ -10,6 +10,9 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
+
+from distribution.lib import manage as contract
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -100,6 +103,101 @@ def supported_surface_row() -> dict[str, object]:
             "package_version": "1.2.3",
             "surface_id": "claude-code.local.interactive",
         },
+    }
+
+
+def clean_install_evidence() -> dict[str, object]:
+    identity = subject()
+    return {
+        "schema_version": 1,
+        "evidence_id": "example.clean-install",
+        "subject": identity,
+        "catalog_key": {
+            "plugin_id": identity["plugin_id"],
+            "surface_id": identity["surface_id"],
+        },
+        "distribution_binding": {
+            "kind": "catalog-selector",
+            "selector": {
+                "kind": "immutable",
+                "repository": "kodhama/example",
+                "path": "plugins/example",
+                "ref": {"kind": "tag", "value": identity["release_tag"]},
+            },
+        },
+        "clean_environment": {
+            "host": "claude-code",
+            "host_version": "1.0.0",
+            "environment": "local",
+            "mode": "interactive",
+            "snapshot_kind": "machine-snapshot",
+            "snapshot_id": "snapshot-1",
+            "sha256": "b" * 64,
+        },
+        "installation": {
+            "started_at": "2026-07-24T12:00:00Z",
+            "finished_at": "2026-07-24T12:00:01Z",
+            "outcome": "installed",
+            "discovered_identity": identity,
+            "record_reference": stable_ref("install/record.json", "b"),
+        },
+        "observations": [evidence_binding()],
+    }
+
+
+def verified_catalog() -> dict[str, object]:
+    identity = subject()
+    selector = {
+        "kind": "immutable",
+        "repository": "kodhama/example",
+        "path": "plugins/example",
+        "ref": {"kind": "tag", "value": identity["release_tag"]},
+    }
+    return {
+        "schema_version": 1,
+        "records": [
+            {
+                "plugin_id": identity["plugin_id"],
+                "surface_id": identity["surface_id"],
+                "state": "verified",
+                "manifest_path": ".claude-plugin/marketplace.json",
+                "source_selector": selector,
+                "publication_evidence": {
+                    "stable_reference": stable_ref(
+                        ".claude-plugin/marketplace.json"
+                    ),
+                    "manifest_path": ".claude-plugin/marketplace.json",
+                    "manifest_sha256": "a" * 64,
+                    "observed_at": "2026-07-24T12:00:00Z",
+                },
+                "host_projection": {
+                    "host": "claude-code",
+                    "entry_name": identity["plugin_id"],
+                    "fields": {
+                        "description": "Example.",
+                        "source": {
+                            "source": "git-subdir",
+                            "url": "kodhama/example",
+                            "path": "plugins/example",
+                        },
+                    },
+                },
+                "release_metadata_path": "plugins/example/release.json",
+                "surface_contract_path": "plugins/example/surfaces.json",
+                "product_contract_version": 1,
+                "package_version": identity["package_version"],
+                "release_tag": identity["release_tag"],
+                "source_commit": identity["source_commit"],
+                "identity_binding": {
+                    "kind": "catalog-selector",
+                    "selector": selector,
+                },
+                "clean_install_evidence": clean_install_evidence(),
+                "release_history_reference": stable_ref(
+                    "release-history.json"
+                ),
+            }
+        ],
     }
 
 
@@ -436,11 +534,317 @@ class DistributionContractTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        names = {fixture["name"] for fixture in manifest["fixtures"]}
-        self.assertIn("positive/plain-authority-json-carriers", names)
-        self.assertIn("positive/complete-release-inventory", names)
-        self.assertIn("negative/legacy-stock-initial-drift", names)
-        self.assertIn("negative/stale-derived", names)
+        fixture_tests = [fixture["test"] for fixture in manifest["fixtures"]]
+        self.assertEqual(len(fixture_tests), len(set(fixture_tests)))
+        for test_name in fixture_tests:
+            self.assertTrue(callable(getattr(self, test_name, None)), test_name)
+
+    # spec-0001@v1 S5, S12, R10, R20; code-review identity-binding finding
+    def test_verified_catalog_binds_row_binding_and_clean_subject(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "catalog.json"
+            document = verified_catalog()
+            write_json(path, document)
+            accepted = run_manage(
+                "validate-document", "--schema", "catalog-availability", str(path)
+            )
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+
+            wrong_subject = json.loads(json.dumps(document))
+            clean = wrong_subject["records"][0]["clean_install_evidence"]
+            other = dict(clean["subject"])
+            other["plugin_id"] = "other"
+            other["release_tag"] = "other-v1.2.3"
+            clean["subject"] = other
+            clean["catalog_key"]["plugin_id"] = "other"
+            clean["installation"]["discovered_identity"] = other
+            clean["distribution_binding"]["selector"]["repository"] = (
+                "kodhama/other"
+            )
+            clean["distribution_binding"]["selector"]["ref"]["value"] = (
+                "other-v1.2.3"
+            )
+            for observation in clean["observations"]:
+                observation["plugin_id"] = "other"
+                observation["release_tag"] = "other-v1.2.3"
+            write_json(path, wrong_subject)
+            rejected = run_manage(
+                "validate-document", "--schema", "catalog-availability", str(path)
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("clean_install_evidence", rejected.stderr)
+
+            wrong_binding = json.loads(json.dumps(document))
+            binding_ref = wrong_binding["records"][0]["identity_binding"]["selector"][
+                "ref"
+            ]
+            binding_ref["value"] = "other-v1.2.3"
+            write_json(path, wrong_binding)
+            rejected = run_manage(
+                "validate-document", "--schema", "catalog-availability", str(path)
+            )
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("identity_binding", rejected.stderr)
+
+    # spec-0001@v1 S13, R25; code-review baseline-key schema finding
+    def test_transition_baseline_key_schema_is_closed_without_ref_composition(self) -> None:
+        schema = json.loads(
+            (
+                ROOT
+                / "distribution"
+                / "schemas"
+                / "catalog-availability.v1.schema.json"
+            ).read_text(encoding="utf-8")
+        )
+        baseline_key = schema["$defs"]["transition_exception"]["properties"][
+            "baseline_key"
+        ]
+        self.assertEqual(
+            baseline_key["required"], ["plugin_id", "surface_id"]
+        )
+        self.assertEqual(
+            set(baseline_key["properties"]), {"plugin_id", "surface_id"}
+        )
+        self.assertFalse(baseline_key["additionalProperties"])
+        self.assertNotIn("allOf", baseline_key)
+
+    # spec-0001@v1 S18, R34; code-review deterministic-type finding
+    def test_mixed_transition_elements_fail_without_traceback(self) -> None:
+        document = verified_catalog()
+        row = document["records"][0]
+        row["state"] = "published"
+        for key in (
+            "release_metadata_path",
+            "surface_contract_path",
+            "product_contract_version",
+            "package_version",
+            "release_tag",
+            "source_commit",
+            "identity_binding",
+            "clean_install_evidence",
+            "release_history_reference",
+        ):
+            row.pop(key)
+        row["transition_exception"] = {
+            "baseline_key": {
+                "plugin_id": "example",
+                "surface_id": "claude-code.local.interactive",
+            },
+            "selector_fingerprint": "a" * 64,
+            "missing_contract_elements": ["release-tag", 7],
+            "disclosure": "legacy published stock",
+            "terminal_action": "adopt-or-delist",
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "catalog.json"
+            write_json(path, document)
+            result = run_manage(
+                "validate-document", "--schema", "catalog-availability", str(path)
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing_contract_elements", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    # spec-0001@v1 complete-inventory provider; code-review resource-bound finding
+    def test_inventory_provider_timeout_and_output_bounds_are_contract_failures(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            output_provider = root / "output-provider"
+            output_provider.write_text(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "sys.stdout.write('x' * 128)\n",
+                encoding="utf-8",
+            )
+            output_provider.chmod(0o755)
+            with mock.patch.object(contract, "PROVIDER_OUTPUT_LIMIT", 64):
+                with self.assertRaisesRegex(contract.ContractError, "stdout"):
+                    contract.run_inventory_provider(root, "output-provider")
+
+            timeout_provider = root / "timeout-provider"
+            timeout_provider.write_text(
+                "#!/bin/sh\nsleep 1\n",
+                encoding="utf-8",
+            )
+            timeout_provider.chmod(0o755)
+            with mock.patch.object(contract, "PROVIDER_TIMEOUT_SECONDS", 0.05):
+                with self.assertRaisesRegex(contract.ContractError, "timed out"):
+                    contract.run_inventory_provider(root, "timeout-provider")
+
+    # spec-0001@v1 S9, R15; code-review host ambiguity finding
+    def test_host_projection_rejects_duplicate_plugin_entries(self) -> None:
+        manifest = {
+            "plugins": [
+                {
+                    "name": "grove",
+                    "source": {
+                        "source": "git-subdir",
+                        "url": "kodhama/grove",
+                        "path": "plugins/grove",
+                    },
+                },
+                {
+                    "name": "grove",
+                    "source": {
+                        "source": "git-subdir",
+                        "url": "kodhama/grove",
+                        "path": "plugins/grove",
+                    },
+                },
+            ]
+        }
+        with self.assertRaisesRegex(contract.ContractError, "duplicate"):
+            contract.host_entries_from_manifest(
+                ".claude-plugin/marketplace.json", manifest
+            )
+        duplicate_projection = {
+            "records": [
+                {
+                    "state": "published",
+                    "plugin_id": "grove",
+                    "surface_id": "claude-code.local.interactive",
+                    "host_projection": {
+                        "host": "claude-code",
+                        "entry_name": "grove",
+                        "fields": {},
+                    },
+                },
+                {
+                    "state": "published",
+                    "plugin_id": "grove",
+                    "surface_id": "claude-code.ci.headless",
+                    "host_projection": {
+                        "host": "claude-code",
+                        "entry_name": "grove",
+                        "fields": {},
+                    },
+                },
+            ]
+        }
+        with self.assertRaisesRegex(contract.ContractError, "duplicate"):
+            contract.build_host_catalogs(duplicate_projection)
+
+    # spec-0001@v1 common timestamp grammar; code-review calendar finding
+    def test_timestamp_rejects_impossible_calendar_date(self) -> None:
+        row = supported_surface_row()
+        row["evidence"][0]["observed_at"] = "2026-02-30T12:00:00Z"
+        document = {
+            "schema_version": 1,
+            "family_contract_version": 1,
+            "version": "1.2.3",
+            "surfaces": [row],
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "surface.json"
+            write_json(path, document)
+            result = run_manage(
+                "validate-document", "--schema", "surface-contract", str(path)
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("timestamp", result.stderr)
+
+    # spec-0001@v1 S22, R39; code-review partial-validator finding
+    def test_release_inventory_rejects_rows_missing_schema_fields(self) -> None:
+        valid = {
+            "schema_version": 1,
+            "host_manifests": [
+                {
+                    "host": "claude-code",
+                    "path": "plugin.json",
+                    "manifest_kind": "claude-plugin",
+                    "version_extractor": {
+                        "path": "plugin.json",
+                        "format": "json",
+                        "selector": "/version",
+                    },
+                    "package_version": "1.2.3",
+                }
+            ],
+            "payload_identities": [
+                {
+                    "payload_id": "payload.one",
+                    "source_path": "payload.txt",
+                    "extractor": {
+                        "kind": "file-bytes",
+                        "path": "payload.txt",
+                    },
+                    "kind": "content-hash",
+                    "value": "sha256:" + "a" * 64,
+                    "consumer_acted": True,
+                }
+            ],
+            "public_contract_items": [
+                {
+                    "contract_id": "contract.one",
+                    "category": "consumed-output-protocol",
+                    "source": stable_ref("contract.txt"),
+                    "extractor": {
+                        "kind": "file-bytes",
+                        "path": "contract.txt",
+                    },
+                    "fingerprint": "a" * 64,
+                    "compatibility": "initial",
+                }
+            ],
+            "support_derivatives": [
+                {
+                    "derivative_id": "support.one",
+                    "kind": "public-support-table",
+                    "path": "support.json",
+                    "extractor": {
+                        "kind": "file-bytes",
+                        "path": "support.json",
+                    },
+                    "surface_projection": [],
+                }
+            ],
+        }
+        inventory = {
+            "schema_version": 1,
+            "host_manifests": [],
+            "payload_identities": [{"payload_id": "payload.one"}],
+            "public_contract_items": [{"contract_id": "contract.one"}],
+            "support_derivatives": [{"derivative_id": "support.one"}],
+        }
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "inventory.json"
+            write_json(path, valid)
+            accepted = run_manage(
+                "validate-document", "--schema", "release-inventory", str(path)
+            )
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+
+            write_json(path, inventory)
+            result = run_manage(
+                "validate-document", "--schema", "release-inventory", str(path)
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("payload_identities", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    # spec-0001@v1 validation/generation interface; code-review gate finding
+    def test_repository_quality_gate_runs_all_checks(self) -> None:
+        if os.environ.get("STEWARDS_CHECK_INNER") == "1":
+            return
+        gate = ROOT / "distribution" / "check"
+        self.assertTrue(gate.is_file())
+        workflow = ROOT / ".github" / "workflows" / "distribution-check.yml"
+        self.assertTrue(workflow.is_file())
+        self.assertIn(
+            "distribution/check",
+            workflow.read_text(encoding="utf-8"),
+        )
+        result = subprocess.run(
+            [str(gate)],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":
