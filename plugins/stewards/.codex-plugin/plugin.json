@@ -1,0 +1,28 @@
+{
+  "name": "stewards",
+  "version": "0.1.0",
+  "description": "Author verified Claude and Codex marketplace setup in repository-owned GitHub Actions workflows.",
+  "author": {
+    "name": "kodhama"
+  },
+  "homepage": "https://github.com/kodhama/stewards",
+  "repository": "https://github.com/kodhama/stewards.git",
+  "keywords": [
+    "github-actions",
+    "marketplace",
+    "claude",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Stewards",
+    "shortDescription": "Add verified marketplace setup to CI.",
+    "longDescription": "Inspect repository-owned GitHub Actions jobs and author immutable, host-native marketplace setup for direct Claude Code and Codex CLI invocations.",
+    "developerName": "kodhama",
+    "category": "Developer Tools",
+    "capabilities": [
+      "GitHub Actions workflow authoring"
+    ],
+    "defaultPrompt": "Add verified kodhama marketplace setup to the selected GitHub Actions jobs."
+  }
+}

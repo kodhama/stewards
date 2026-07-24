@@ -1,0 +1,8 @@
+{
+  "name": "stewards",
+  "version": "0.1.0",
+  "description": "Author verified Claude and Codex marketplace setup in repository-owned GitHub Actions workflows.",
+  "author": {
+    "name": "kodhama"
+  }
+}

@@ -1,0 +1,15 @@
+name: Claude direct fixture
+on: workflow_dispatch
+
+jobs:
+  claude:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout product
+        uses: actions/checkout@1111111111111111111111111111111111111111
+      - name: Install Claude Code
+        id: install-claude
+        run: npm install --global @anthropic-ai/claude-code@2.1.199
+      - name: Run Claude
+        id: run-claude
+        run: claude -p "review"
