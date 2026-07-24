@@ -1,8 +1,8 @@
 ---
 id: kodhama-spec-0002-bounded-pre-agent-provisioner
 type: spec
-status: gated  # v2 author self-check passed; independent v2 review/ratification remains due
-version: 2
+status: gated  # v3 author self-check passed; independent v3 review/ratification remains due
+version: 3
 depends_on: [kodhama-0016-distribution-availability-and-effective-support, kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2]
 implements: [kodhama-0016-distribution-availability-and-effective-support]
 owner: agent
@@ -11,7 +11,7 @@ updated: 2026-07-24
 
 # Bounded pre-agent provisioner
 
-> **Amended 2026-07-24 — two-output commit and bounded cleanup.**
+> **Amended 2026-07-24 — v3 two-output commit and bounded cleanup.**
 > **WHAT:** Defined committed evidence solely from retained regular-file
 > paths, canonical bytes, schemas, and normal-receipt audit binding; separated
 > that external predicate from producer create/fsync/read-back obligations;
@@ -28,7 +28,9 @@ updated: 2026-07-24
 > **POINTER:** `distribution/IMPLEMENTATION-STATUS.md` at
 > `fe95bb93e59e4e24faaabe5ddfe1a6c8e8b9215c`; implementation-readiness review
 > of `kodhama-spec-0002-bounded-pre-agent-provisioner@v1` and spec-adversary
-> `NEEDS-REVISION` on `07555da` and `9a14d10`.
+> `NEEDS-REVISION` on `07555da` and `9a14d10`; version-counter review of
+> `ae873b6` required v3 because its remediation materially changed
+> S27/S31 and R40/R44 after v2 was stamped.
 > **VALUE:** Maintainers can distinguish trustworthy committed evidence from
 > handled-failure cleanup and operator-owned crash debris without risking
 > caller-owned files.
@@ -1480,9 +1482,10 @@ Self-check used the local contract-author rules, `specs/README.md`,
 | Intrinsic F6 route lookup failures | CLOSED | Duplicate/unknown target refs fail pre-route; lookup occurs before route-dependent phase 5; phase 6 remains global across route failures with exit-2 precedence |
 | Intrinsic F7 sealing failures | CLOSED | Parent/create/write/fsync/read-back/receipt failure paths distinguish minimal receipt from impossible receipt and use exit 7 |
 | Intrinsic F8 same-host continuation | CLOSED | Ordinary failures continue; only restore-failed preservation breach taints and blocks the host |
-| v2 two-output commit and cleanup | CLOSED | Retained path/type/canonical-byte/schema/digest state alone defines the normal/minimal receipt witness; cleanup authority is same-invocation and limited to demonstrably partial/invalid uncommitted leaves; abrupt debris becomes operator-owned |
-| v2 adversary F1 durable witness | CLOSED | External commitment is independent of writer and provable exclusive-create/fsync/read-back/identity history; those facts remain producer obligations and diagnostics only |
-| v2 adversary F2 crash recovery | CLOSED | Recovery preserves every valid retained witness, leaves uncertain state operator-owned, and treats surviving invalid debris as pre-existing without reclaiming it |
+| v3 two-output commit and cleanup | CLOSED | Retained path/type/canonical-byte/schema/digest state alone defines the normal/minimal receipt witness; cleanup authority is same-invocation and limited to demonstrably partial/invalid uncommitted leaves; abrupt debris becomes operator-owned |
+| v3 adversary F1 durable witness | CLOSED | External commitment is independent of writer and provable exclusive-create/fsync/read-back/identity history; those facts remain producer obligations and diagnostics only |
+| v3 adversary F2 crash recovery | CLOSED | Recovery preserves every valid retained witness, leaves uncertain state operator-owned, and treats surviving invalid debris as pre-existing without reclaiming it |
+| v3 counter review | CLOSED | The behavioral counter advanced after review remediation materially changed S27/S31 and R40/R44; this counter-only follow-up changes no semantics |
 | Whole-corpus validation | NOT CLAIMED | Issue #20 blocks literal full-corpus PASS; this artifact uses strict YAML/exact ids and was checked change-scoped |
 
 **Result: PASS for author self-check.**
@@ -1490,6 +1493,6 @@ Self-check used the local contract-author rules, `specs/README.md`,
 ## Gate record
 
 On 2026-07-24 the maintainer approved v1 after spec-adversary
-`APPROVE-READY` and conformance `PASS` against approved decision 0016. This v2
+`APPROVE-READY` and conformance `PASS` against approved decision 0016. This v3
 amendment passed the author self-check above and is `gated`; the prior v1 act
 is not reused as approval of the amended S27/S31 or R40/R44 output contract.

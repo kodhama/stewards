@@ -4,7 +4,7 @@ type: implementation-status
 status: gated
 depends_on:
   - kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2
-  - kodhama-spec-0002-bounded-pre-agent-provisioner@v2
+  - kodhama-spec-0002-bounded-pre-agent-provisioner@v3
 owner: agent
 updated: 2026-07-24
 ---
@@ -85,7 +85,7 @@ The historical external dependencies tracked by issue #20 remain unchanged.
 ## Spec 0002 status
 
 The bounded pre-agent provisioner is not implemented in this slice.
-Spec 0002 v2 scenarios S1–S32 and requirements R1–R45 remain unimplemented,
+Spec 0002 v3 scenarios S1–S32 and requirements R1–R45 remain unimplemented,
 including S27/S31 and R40/R44's canonical receipt commit witness,
 retained-state-only external validation, producer-obligation separation,
 same-invocation partial/invalid cleanup, operator-owned uncertain or
