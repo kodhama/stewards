@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Small dependency-free Python lint and formatting gate."""
+
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+import sys
+import tabnanny
+import tokenize
+from typing import Iterable
+
+
+ROOT = Path(__file__).resolve().parents[1]
+MAX_LINE_LENGTH = 250
+
+
+def default_paths() -> list[Path]:
+    paths = [
+        ROOT / "distribution" / "manage",
+        ROOT / "distribution" / "check",
+        ROOT / "distribution" / "python-lint",
+    ]
+    paths.extend(sorted((ROOT / "distribution" / "lib").rglob("*.py")))
+    paths.extend(sorted((ROOT / "distribution" / "tests").rglob("*.py")))
+    return paths
+
+
+def lint_path(path: Path) -> list[str]:
+    errors = []
+    try:
+        raw = path.read_bytes()
+        source = raw.decode("utf-8")
+    except (OSError, UnicodeError) as exc:
+        return [f"{path}: {exc}"]
+    if not raw.endswith(b"\n"):
+        errors.append(f"{path}: file must end with LF")
+    for number, line in enumerate(source.splitlines(), 1):
+        if "\t" in line:
+            errors.append(f"{path}:{number}: tab character is forbidden")
+        if line.rstrip(" \t") != line:
+            errors.append(f"{path}:{number}: trailing whitespace")
+        if len(line) > MAX_LINE_LENGTH:
+            errors.append(
+                f"{path}:{number}: line exceeds {MAX_LINE_LENGTH} characters"
+            )
+    try:
+        tree = ast.parse(source, filename=str(path))
+        list(tokenize.generate_tokens(iter(source.splitlines(True)).__next__))
+        with path.open("r", encoding="utf-8") as stream:
+            tabnanny.process_tokens(tokenize.generate_tokens(stream.readline))
+    except (SyntaxError, tokenize.TokenError, tabnanny.NannyNag) as exc:
+        errors.append(f"{path}: {exc}")
+        return errors
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and any(
+            alias.name == "*" for alias in node.names
+        ):
+            errors.append(f"{path}:{node.lineno}: wildcard import is forbidden")
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            untyped = [
+                argument.arg
+                for argument in node.args.args
+                if argument.arg not in {"self", "cls"}
+                and argument.annotation is None
+            ]
+            if node.returns is None or untyped:
+                details = ", ".join(untyped) if untyped else "return"
+                errors.append(
+                    f"{path}:{node.lineno}: missing type annotation: {details}"
+                )
+    definitions = set()
+    for node in tree.body:
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            if node.name in definitions:
+                errors.append(
+                    f"{path}:{node.lineno}: duplicate top-level definition {node.name}"
+                )
+            definitions.add(node.name)
+    return errors
+
+
+def main(arguments: Iterable[str]) -> int:
+    selected = [Path(argument).resolve() for argument in arguments]
+    paths = selected or default_paths()
+    errors = []
+    for path in paths:
+        errors.extend(lint_path(path))
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

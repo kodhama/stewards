@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kodhama/stewards/distribution/schemas/surface-registry.v1.schema.json",
+  "title": "Canonical surface registry v1",
+  "type": "object",
+  "required": ["schema_version", "registry_version", "surfaces"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "registry_version": { "type": "integer", "minimum": 1 },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "surface_id",
+          "host",
+          "environment",
+          "mode",
+          "label",
+          "lifecycle"
+        ],
+        "properties": {
+          "surface_id": {
+            "$ref": "common-types.v1.schema.json#/$defs/dot_id"
+          },
+          "host": { "type": "string", "minLength": 1 },
+          "environment": { "enum": ["local", "ci", "cloud-container"] },
+          "mode": { "enum": ["interactive", "headless"] },
+          "label": { "type": "string", "minLength": 1 },
+          "lifecycle": { "enum": ["active", "retired"] },
+          "retirement": {
+            "$ref": "common-types.v1.schema.json#/$defs/retirement"
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "lifecycle": { "const": "active" } } },
+            "then": { "not": { "required": ["retirement"] } },
+            "else": { "required": ["retirement"] }
+          }
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

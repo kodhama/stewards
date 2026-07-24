@@ -8,9 +8,16 @@ operational role formerly held by `kodhama/kodhama`, relocated here per
 THREE things live here and nothing else: **cross-collective decisions**
 (`decisions/`), the **conductor seat** (`conductor/` — wave briefs and
 ledgers for work that spans the collective's repos), and the **install
-door** (host-native marketplace manifests under `.claude-plugin/` and
-`.agents/plugins/`, both named `kodhama`: the collective's canonical
-install repository per `kodhama-0002` and `kodhama-0012`).
+door** (the collective's canonical install repository per `kodhama-0002`,
+`kodhama-0012`, and `kodhama-0016`).
+
+<!-- distribution-scope:begin -->
+The install door includes host-native catalogs, distribution metadata and
+schemas, deterministic validators and generators, and bounded pre-agent
+provisioner adapters. It excludes product builds or content, copied product
+contracts, a shared runtime, automatic plugin selection, and release
+coordination.
+<!-- distribution-scope:end -->
 
 Decisions made here keep the `kodhama-NNNN` id namespace — they are kodhama
 decisions made at the collective (steward) layer; spirit/org-level decisions
@@ -47,6 +54,26 @@ Rules (the collective's):
   liftable; until then the trellis overlay alone is owed — if the
   `trellis` CLI is available run `trellis setup`, otherwise record the
   debt in `conductor/` loudly.
+- **Distribution quality gate:** changes under the install door run
+  `distribution/check`. It executes the spec-anchored tests, door validation,
+  generated-file staleness check, Python compilation, annotation coverage,
+  dependency-free Python lint/format checks, JSON parsing, and both working-tree
+  and committed CI-range whitespace checks. This project-owned rule supersedes the managed
+  block's older “no test/typecheck gates” description for distribution files;
+  the next Grove refresh should update that adapter projection.
+  CI provisions product-adoption repositories automatically. Local runs require
+  these exact pinned checkouts and resolver mapping:
+
+      git clone https://github.com/kodhama/grove.git .product-repositories/grove
+      git -C .product-repositories/grove checkout db650fe5855a197eb65375b50e3e81b1065ebddb
+      git clone https://github.com/kodhama/trellis.git .product-repositories/trellis
+      git -C .product-repositories/trellis checkout 4062120cea71737bd28cb171785a2dcdd6192deb
+      export STEWARDS_PRODUCT_REPOSITORIES='{"kodhama/grove":".product-repositories/grove","kodhama/trellis":".product-repositories/trellis"}'
+      distribution/check
+
+  Without that mapping, the gate intentionally fails closed with the
+  product-adoption resolver prerequisite instead of trusting unresolved
+  references.
 
 <!-- grove:begin (managed by grove — edit .claude/agents/, not this block) -->
 This repo is **grove-managed**: conductor work items run as

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kodhama/stewards/distribution/schemas/product-adoptions.v1.schema.json",
+  "title": "Product-local adoption records v1",
+  "type": "object",
+  "required": ["schema_version", "products"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "plugin_id",
+          "repository",
+          "state",
+          "standing_decisions_to_reconcile",
+          "ownership_changes"
+        ],
+        "properties": {
+          "plugin_id": {
+            "$ref": "common-types.v1.schema.json#/$defs/plugin_id"
+          },
+          "repository": {
+            "$ref": "common-types.v1.schema.json#/$defs/repository"
+          },
+          "state": { "enum": ["required", "complete"] },
+          "standing_decisions_to_reconcile": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "ownership_changes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "adoption_decision": {
+            "$ref": "common-types.v1.schema.json#/$defs/stable_reference"
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "state": { "const": "complete" } } },
+            "then": { "required": ["adoption_decision"] },
+            "else": { "not": { "required": ["adoption_decision"] } }
+          }
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,72 @@
+---
+id: stewards-distribution-implementation-status-0001
+type: implementation-status
+status: gated
+depends_on: [kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v1]
+owner: agent
+updated: 2026-07-24
+---
+
+# Spec 0001 implementation status
+
+This change is an explicitly partial implementation of
+`kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v1`. It
+delivers the coherent metadata, install-door, legacy-transition, and
+effective-support slice. It does not claim whole-spec conformance.
+
+## Implemented
+
+- Versioned schemas and common shape/identity validators for typed references,
+  surface, catalog, provisioner-availability, clean-install, effective-facts,
+  legacy-stock, and product-adoption records. Cross-record checks now bind
+  provisioner acquisitions, product setup declarations, and resolved product
+  adoption decisions; this is not a claim that every referenced product or
+  release artifact is resolved.
+- Exact six-row surface registry, fixed-commit catalog discovery, canonical
+  selector fingerprints, immutable baseline/initial stock, removal-only
+  transition stock, and `wave-close`: S9, S10, S23 and R15–R17, R24, R40.
+- Deterministic host-catalog, availability, README, and CLAUDE generation,
+  including no-write stale checking: S11 and R18–R19, R36.
+- `.github/workflows/distribution-check.yml` runs `distribution/check` on
+  pull requests and `main`; the gate covers executable fixtures, door
+  validation, generation staleness, Python compilation, annotation coverage,
+  dependency-free lint/format checks, JSON parsing, working/staged diffs, and
+  the committed CI range from the event base SHA. CI checks out the exact
+  Grove and Trellis adoption commits and supplies them through the explicit
+  local product-repository resolver contract.
+- The public release phase fails closed. Product pre-tag version
+  extraction/carrier parity and exact expected-tag derivation implement the
+  pre-tag subset of S1 and R1–R4 until the complete history, compatibility,
+  approval, and tag engine below is implemented.
+- Product-local adoption references for Grove and Trellis resolve exact
+  repository/path/commit bytes, digests, and approved decision status through
+  an explicit local resolver. Trellis remains bounded legacy published stock
+  because adoption alone does not establish a conforming product release.
+- Verified provisioner acquisitions cross-bind to exactly one matching
+  verified provisioner row, and effective setup facts bind to their exact
+  product requirement row, setup declaration, contract, and identity.
+  Product and environment evidence bind every release-subject field their
+  records expose. Successful setup factors retain canonical, deduplicated
+  references to the product row, setup contract, and completion evidence.
+
+## Remaining before whole-spec conformance
+
+- S16, S22, R29–R30, and R39: execute and validate the complete inventory
+  extractor grammar, public-contract fingerprints, support-derivative
+  projection, payload/history completeness, surface change derivation, and
+  approval projection/final augmentation.
+- The release portion of S1/R2 plus S17, S21, R31–R32, and R38: resolve the
+  expected tag only as part of the complete engine; enforce append-only
+  history against every package tag, prior-tag immutability, exact SemVer
+  transitions, cumulative prerelease rules, minimum compatibility bumps, and
+  the product-human approval binding.
+- Resolve verified catalog product-contract and release-history references to
+  their exact retained bytes and last release row; current catalog validation
+  covers their typed shape and local identity relations only.
+- R21: run a declared product extension validator. Spec 0001 defines only its
+  path; it does not define argv, working directory, environment/network
+  boundary, input/output, or exit contract. That protocol requires an
+  upstream spec revision before safe execution; every declaration currently
+  fails closed in candidate, pre-tag, and release validation.
+
+The historical external dependencies tracked by issue #20 remain unchanged.

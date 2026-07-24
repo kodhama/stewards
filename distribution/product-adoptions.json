@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "products": [
+    {
+      "plugin_id": "grove",
+      "repository": "kodhama/grove",
+      "state": "complete",
+      "standing_decisions_to_reconcile": [
+        "grove/adr-0029-non-interactive-loading"
+      ],
+      "ownership_changes": [
+        "Grove retains behavioral evidence, bridge, launcher, load, and setup ownership",
+        "generic uniform-rollout-carrier ownership moves to Stewards"
+      ],
+      "adoption_decision": {
+        "kind": "repo-path",
+        "repository": "kodhama/grove",
+        "source_commit": "db650fe5855a197eb65375b50e3e81b1065ebddb",
+        "path": "decisions/adr-0033-adopt-family-plugin-contracts.md",
+        "sha256": "d03c4a1207f17c16e287241059c6560cd0b8cabb7d41c1520d22a3b3d7e98293"
+      }
+    },
+    {
+      "plugin_id": "trellis",
+      "repository": "kodhama/trellis",
+      "state": "complete",
+      "standing_decisions_to_reconcile": [
+        "trellis/decision-0036-plugin-versions-by-commit"
+      ],
+      "ownership_changes": [
+        "Trellis retains fallback, hook, live-rule, payload-stamp, and refresh evidence ownership",
+        "package releases adopt SemVer, immutable tags, and version-bound surfaces"
+      ],
+      "adoption_decision": {
+        "kind": "repo-path",
+        "repository": "kodhama/trellis",
+        "source_commit": "4062120cea71737bd28cb171785a2dcdd6192deb",
+        "path": "decisions/0059-family-plugin-release-and-surface-contract.md",
+        "sha256": "6ba1e3cc0f27d10a93a72b16adf94c408510d08b01ac82fcc6585b4b67fb56c5"
+      }
+    }
+  ]
+}

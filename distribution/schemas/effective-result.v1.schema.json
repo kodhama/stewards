@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kodhama/stewards/distribution/schemas/effective-result.v1.schema.json",
+  "title": "Derived effective-support result v1",
+  "type": "object",
+  "required": ["schema_version", "subject", "effective", "factors"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "subject": {
+      "$ref": "common-types.v1.schema.json#/$defs/release_subject"
+    },
+    "effective": { "type": "boolean" },
+    "factors": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": [
+          "factor",
+          "satisfied",
+          "reason_codes",
+          "source_refs",
+          "owners"
+        ],
+        "properties": {
+          "factor": {
+            "enum": [
+              "product_supported",
+              "distribution_verified",
+              "identity_match",
+              "consumer_selected",
+              "environment_ready",
+              "product_setup_complete"
+            ]
+          },
+          "satisfied": { "type": "boolean" },
+          "reason_codes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "source_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "common-types.v1.schema.json#/$defs/stable_reference"
+            }
+          },
+          "owners": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": ["product", "stewards", "consumer/environment"]
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
