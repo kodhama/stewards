@@ -1,11 +1,11 @@
 ---
 id: kodhama-0012-codex-marketplace-channel
 type: decision
-status: gated
+status: approved  # ratified by maintainer merge of PR #9 on 2026-07-24; this records the human-owned ship act named below
 depends_on: [kodhama-0002-delivery-channels]
 owner: agent
-updated: 2026-07-23
-provenance: maintainer approval on 2026-07-23 to implement Grove distribution for both Claude Code and Codex, with final review at the ship gate
+updated: 2026-07-24
+provenance: maintainer approval on 2026-07-23 to implement Grove distribution for both Claude Code and Codex; maintainer merge of PR #9 on 2026-07-24 performed the final ship act
 ---
 
 # Decision: the install door gains a native Codex catalog
@@ -55,3 +55,8 @@ unsupported Codex claim.
 
 The maintainer approved implementation on 2026-07-23. This decision remains
 `gated`; merging its change request is the human-owned ship act.
+
+## Lifecycle record
+
+The maintainer merged PR #9 on 2026-07-24. That merge performed the
+human-owned ship act specified above; the `approved` frontmatter records it.
