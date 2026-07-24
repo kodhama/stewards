@@ -2,7 +2,7 @@
 id: stewards-distribution-implementation-status-0001
 type: implementation-status
 status: gated
-depends_on: [kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v1]
+depends_on: [kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2]
 owner: agent
 updated: 2026-07-24
 ---
@@ -10,7 +10,7 @@ updated: 2026-07-24
 # Spec 0001 implementation status
 
 This change is an explicitly partial implementation of
-`kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v1`. It
+`kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2`. It
 delivers the coherent metadata, install-door, legacy-transition, and
 effective-support slice. It does not claim whole-spec conformance.
 
@@ -60,13 +60,20 @@ effective-support slice. It does not claim whole-spec conformance.
   history against every package tag, prior-tag immutability, exact SemVer
   transitions, cumulative prerelease rules, minimum compatibility bumps, and
   the product-human approval binding.
-- Resolve verified catalog product-contract and release-history references to
-  their exact retained bytes and last release row; current catalog validation
-  covers their typed shape and local identity relations only.
-- R21: run a declared product extension validator. Spec 0001 defines only its
-  path; it does not define argv, working directory, environment/network
-  boundary, input/output, or exit contract. That protocol requires an
-  upstream spec revision before safe execution; every declaration currently
-  fails closed in candidate, pre-tag, and release validation.
+- S25 and R43–R44: resolve verified catalog product-contract and
+  release-history references through v2's exact no-fetch retained-byte and
+  complete-ledger contract; current validation covers typed shape and local
+  identity relations only.
+- S24, S27–S28, R21, R41–R42, and R46–R49: canonicalize arbitrary nested JSON,
+  run each unique declared product extension identity in exact order, and use
+  v2's exact argv, working directory, environment, canonical Linux/macOS
+  platform detection with pre-store rejection elsewhere, explicit
+  content-addressed runtime store, digest-bound immutable runtime, audited
+  filesystem/network boundary, categorized runtime diagnostics,
+  request/result, exit, repetition, timeout, size, and side-effect protocol.
+  Every declaration continues to fail closed until that protocol is
+  implemented.
+- S26 and R45: validate the exact appended release-history row and preserve
+  the landed two-field pre-tag and three-field release-identity results.
 
 The historical external dependencies tracked by issue #20 remain unchanged.

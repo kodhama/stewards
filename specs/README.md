@@ -23,7 +23,7 @@ materializes; it is not a substitute for `depends_on`.
 
 | Spec | Version | Status | Subject |
 |---|---:|---|---|
-| [`kodhama-spec-0001-family-plugin-release-and-distribution-metadata`](0001-family-plugin-release-and-distribution-metadata.md) | 1 | approved | Family release/surface schemas, surface registry, availability records, validation, generation, and legacy-stock transition |
+| [`kodhama-spec-0001-family-plugin-release-and-distribution-metadata`](0001-family-plugin-release-and-distribution-metadata.md) | 2 | approved | Family release/surface schemas, surface registry, availability records, validation, generation, and legacy-stock transition |
 | [`kodhama-spec-0002-bounded-pre-agent-provisioner`](0002-bounded-pre-agent-provisioner.md) | 1 | approved | Explicit, idempotent Claude/Codex provisioning before local, CI, or cloud/container agent launch |
 
 ## Validation disclosure

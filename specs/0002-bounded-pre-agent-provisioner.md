@@ -3,7 +3,7 @@ id: kodhama-spec-0002-bounded-pre-agent-provisioner
 type: spec
 status: approved  # maintainer authorized the family rollout and merge after independent review; spec-adversary APPROVE-READY and conformance PASS preceded this recording
 version: 1
-depends_on: [kodhama-0016-distribution-availability-and-effective-support, kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v1]
+depends_on: [kodhama-0016-distribution-availability-and-effective-support, kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2]
 implements: [kodhama-0016-distribution-availability-and-effective-support]
 owner: agent
 updated: 2026-07-24
@@ -1268,7 +1268,7 @@ Self-check used the local contract-author rules, `specs/README.md`,
 
 | Check | Result | Evidence |
 |---|---|---|
-| Frontmatter, lifecycle, dependencies | PASS | Required fields and decision `implements` edge present; approved decision unpinned; metadata spec pinned at `@v1` |
+| Frontmatter, lifecycle, dependencies | PASS | Required fields and decision `implements` edge present; approved decision unpinned; metadata spec pinned at current `@v2` after rechecking the unchanged selector and availability types consumed here |
 | Required sections and grammars | PASS | S1–S32 are GWT; R1–R45 are EARS `shall` statements |
 | Decision boundary | PASS | Exact pre-agent distribution is specified; product behavior/setup, selection defaults, agent launch, and release coordination remain excluded |
 | F6 environment and uniqueness grammar | CLOSED | UUID, target/plugin uniqueness, typed roots/references, path/env grammars, and no-secret inputs are normative |

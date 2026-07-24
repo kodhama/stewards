@@ -1,8 +1,8 @@
 ---
 id: kodhama-spec-0001-family-plugin-release-and-distribution-metadata
 type: spec
-status: approved  # maintainer authorized the family rollout and merge after independent review; spec-adversary APPROVE-READY and conformance PASS preceded this recording
-version: 1
+status: approved  # Maintainer-authorized merge records v2 approval after independent gates passed
+version: 2
 depends_on: [kodhama-0015-family-plugin-release-and-surface-contract, kodhama-0016-distribution-availability-and-effective-support]
 implements: [kodhama-0015-family-plugin-release-and-surface-contract, kodhama-0016-distribution-availability-and-effective-support]
 owner: agent
@@ -10,6 +10,29 @@ updated: 2026-07-24
 ---
 
 # Family plugin release and distribution metadata
+
+> **Amended 2026-07-24 — whole-spec completion protocol.**
+> **WHAT:** Defined the product extension-validator process protocol,
+> canonical JSON grammar, execution identity/order, a digest-bound immutable
+> validator runtime, bounded POSIX platform detection, deterministic
+> local-store resolution, and audited sandbox boundary, retained catalog
+> product-contract/history resolution, and the exact public release-engine
+> and local-repository-resolver interfaces.
+> **WHY:** The approved v1 contract named those obligations but left their
+> process and retained-byte boundaries underdetermined, so the landed partial
+> implementation correctly failed closed and the remaining release engine
+> could not be implemented without guessing.
+> **SCOPE:** Common canonicalization, product validation, verified catalog
+> validation, S24–S28, and R41–R49; all v1 behavior and ownership boundaries
+> remain current.
+> **POINTER:** `distribution/IMPLEMENTATION-STATUS.md` at
+> `495b4cb632fc796f76200d8cf0be7442b4d41997`; intrinsic remediation triggered
+> by the spec-adversary `NEEDS-REVISION` verdicts on `95fced9`, `88f1988`,
+> `c5bedda`, and `bba6fa7`.
+> **VALUE:** Product maintainers can ship independently while Stewards verifies
+> exact release claims without interpreting or taking ownership of product
+> behavior.
+> **CONFIDENCE:** verified.
 
 ## Scope
 
@@ -32,6 +55,9 @@ All paths are relative to the Stewards repository root.
 | `distribution/schemas/release-metadata.v1.schema.json` | Product release-metadata minimum | Versioned authority |
 | `distribution/schemas/release-inventory.v1.schema.json` | Product host-manifest, payload, public-contract, and support-derivative inventory | Versioned authority |
 | `distribution/schemas/release-history.v1.schema.json` | Append-only release/tag/contract history | Versioned authority |
+| `distribution/schemas/extension-validator-request.v1.schema.json` | Product extension-validator request envelope | Versioned authority |
+| `distribution/schemas/extension-validator-result.v1.schema.json` | Product extension-validator result envelope | Versioned authority |
+| `distribution/schemas/extension-validator-runtime.v1.schema.json` | Content-addressed immutable validator runtime manifest | Versioned authority |
 | `distribution/schemas/surface-contract.v1.schema.json` | Product surface-contract minimum | Versioned authority |
 | `distribution/schemas/surface-registry.v1.schema.json` | Surface-registry schema | Versioned authority |
 | `distribution/schemas/catalog-availability.v1.schema.json` | Catalog availability schema | Versioned authority |
@@ -64,6 +90,33 @@ contracts, and behavioral evidence remain product-owned sources; Stewards
 stores stable references, never copied product payloads.
 
 ## Common types
+
+### Canonical JSON grammar
+
+Every use of “canonical JSON” in this spec uses this single grammar,
+recursively for arbitrary nested values:
+
+| JSON value | Canonical encoding |
+|---|---|
+| object | Normalize every key as a string below, reject duplicate keys both before and after normalization, sort members lexicographically by normalized Unicode scalar-value sequence, and emit `{` plus comma-separated `<canonical-key>:<canonical-value>` pairs plus `}` |
+| array | Preserve declared element order and emit `[` plus comma-separated canonical elements plus `]` |
+| string, including object key | Require Unicode scalar values, normalize to NFC, then apply the exact escaping below |
+| number | Parse as finite IEEE-754 binary64 and use only RFC 8785 §3.2.2.3's ECMAScript shortest round-trip number algorithm; serialize negative zero as `0`; reject NaN, infinities, overflow, and any non-JSON number token |
+| boolean | Lowercase `true` or `false` |
+| null | Lowercase `null` |
+
+String encoding emits `"` and `\` as `\"` and `\\`; U+0008, U+0009,
+U+000A, U+000C, and U+000D as `\b`, `\t`, `\n`, `\f`, and `\r`; and every
+other U+0000–U+001F scalar as lowercase `\u00xx`. Every other scalar,
+including `/`, U+2028, U+2029, and non-BMP scalars, is emitted unescaped as
+UTF-8. Unpaired surrogates are not Unicode scalar values and reject. The
+encoding has no BOM, insignificant whitespace, or terminal LF; a protocol
+that carries canonical JSON adds its explicitly specified LF after these
+bytes. Input parsing rejects invalid UTF-8 and duplicate source keys before
+normalization.
+
+Every field described as a normalized path additionally requires Unicode
+scalar values in NFC before applying its POSIX segment rules.
 
 ### Identity grammar
 
@@ -220,8 +273,11 @@ The release metadata object contains only:
 | `extensions` | no | Object keyed by `plugin_id` |
 
 Unknown common top-level fields are invalid. Product-specific values belong
-under `extensions.<plugin_id>`. A declared extension validator is a normalized
-package-relative path in `extensions.<plugin_id>.validator`.
+under `extensions.<plugin_id>`. A declared extension validator uses a
+normalized package-relative path in `extensions.<plugin_id>.validator` and
+requires `extensions.<plugin_id>.validator_runtime_sha256`, the exact
+immutable runtime-manifest digest defined below. Neither field is valid
+without the other.
 
 Product validation has two phases:
 
@@ -232,6 +288,280 @@ Product validation has two phases:
 
 Publication and any `verified` availability require the `release` phase.
 Stewards does not create the tag.
+
+### Product extension-validator protocol
+
+The common engine invokes only validators explicitly declared in product
+release metadata or in an `other-declared-host` inventory row. It validates
+the process envelope and accepts or rejects the declared extension result; it
+does not interpret a product finding as family vocabulary or behavioral
+evidence.
+
+Validator paths are normalized package-relative paths. The resolved target
+shall remain inside the package root, be a regular non-symlink file with no
+symlink path component, and be executable. For each validation phase, the
+engine invokes:
+
+1. `extensions.<namespace>.validator` in ascending normalized
+   `namespace` Unicode-scalar order; then
+2. each `other-declared-host` row's `extension_validator` in ascending
+   `(normalized host, normalized path)` tuple order.
+
+Extension namespaces are unique object keys under the canonical JSON grammar.
+Host-manifest identities are the unique tuples defined below. One validator
+path declared by multiple identities runs once per identity with that row's
+distinct request; validator-path equality never deduplicates executions.
+
+#### Immutable validator runtime
+
+Every validator declaration binds one locally available immutable runtime by
+the lowercase 64-hex SHA-256 of a canonical
+`extension-validator-runtime.v1` manifest. The digest is over the manifest's
+canonical JSON bytes without a terminal LF. The manifest has
+`additionalProperties: false` and exactly:
+
+| Field | Contract |
+|---|---|
+| `schema_version` | Integer `1` |
+| `platform` | Object containing only `os`, `architecture`, and `abi`; it shall be exactly one supported tuple below and equal the launcher's detected tuple |
+| `path_entries` | Non-empty, ordered, duplicate-free array of normalized absolute sandbox directories |
+| `executables` | Sorted, duplicate-free array of normalized absolute sandbox paths |
+| `entries` | Duplicate-free array sorted by normalized absolute sandbox path, with exactly one row for every runtime directory, regular file, and symbolic link |
+
+The complete platform vocabulary is:
+
+| `os` | `architecture` | `abi` |
+|---|---|---|
+| `linux` | `x86_64` | `elf` |
+| `linux` | `aarch64` | `elf` |
+| `macos` | `x86_64` | `macho` |
+| `macos` | `aarch64` | `macho` |
+
+The launcher detects its tuple once, before runtime-store lookup:
+
+1. On POSIX, it calls the operating-system `uname` API directly. `sysname`
+   `Linux` maps to `os: linux` and `abi: elf`; `Darwin` maps to `os: macos`
+   and `abi: macho`. Machine `x86_64` or `amd64` maps to
+   `architecture: x86_64`; `aarch64` or `arm64` maps to
+   `architecture: aarch64`.
+2. A Windows launcher is unsupported in v2; it performs no runtime-store
+   lookup or Windows platform/architecture/ABI inference.
+3. Windows, any other OS, a failed `uname` call, any other `sysname` or
+   `machine` value, and any other combination emit
+   `error: extension-runtime-platform-unsupported\n` and fail before store
+   lookup or spawn.
+
+The ABI value identifies the executable format accepted by the detected
+operating system; the image supplies and enumerates its own userland loader
+and libraries. The launcher never infers ABI from a caller string, shell
+command, host libc, or runtime manifest.
+
+On every supported host, sandbox paths use `/`-rooted POSIX syntax. The
+launcher projects them into the synthetic child view without exposing the
+corresponding live-host path. Every parent directory is an entry. A directory
+row contains only `path`, `kind: "directory"`, and `mode`. A regular-file row
+contains only `path`, `kind: "file"`, `mode`,
+lowercase 64-hex `sha256`, and `role`, where `role` is exactly `executable`,
+`loader`, `library`, `configuration`, or `runtime-data`. A symbolic-link row
+contains only `path`, `kind: "symlink"`, `mode`, and normalized absolute
+`target`. Every `mode` is a string matching `0[0-7]{3}`. Every link target is
+another entry, link resolution is acyclic, and the final target remains in the
+manifest.
+
+Each `path_entries` value names a manifest directory. Each `executables` value
+names an executable-mode regular-file entry with role `executable`. A file
+used as a program interpreter, dynamic loader, library, resolver input, locale
+input, timezone input, or other runtime/configuration dependency is an
+individually enumerated entry with its applicable role; directory visibility
+does not imply visibility of an unlisted child.
+
+The runtime image contains exactly the manifest entries with the declared
+types, modes, link targets, and file hashes—no extra entry or implicit
+live-host bind. It contains no device, socket, or writable file. Entries under
+`/home`, `/Users`, `/root`, `/private`, `/proc`, `/sys`, `/tmp`, `/dev`,
+`/run/secrets`, and `/var/run/secrets` are invalid. An individually enumerated
+immutable `configuration` file may use `/etc`; `/etc` directory visibility
+never exposes an unenumerated child.
+
+Manifest and image bytes are trusted, versioned runtime supply-chain input
+selected by the product's human-owned release. Digest and tree verification
+prove identity and immutability, not semantic safety or confidentiality:
+Stewards does not inspect or claim that enumerated runtime or package bytes
+are credential-free. The enforceable boundary is that no ambient live-host
+content outside the explicitly supplied package root and verified runtime
+object is projected into the child; no host profile, environment state, or
+runtime subtree is injected implicitly.
+
+`validate-product` receives the store root only through its required
+`--runtime-store <path>` argument. The value is a `/`-rooted POSIX path with
+no empty, `.`, or `..` component. Every root component is a directory and is
+not a symbolic link.
+
+For digest `aabb…` (64 lowercase hex characters), the one permitted object
+layout is:
+
+```text
+<runtime-store>/sha256/aa/<remaining-62-hex>/manifest.json
+<runtime-store>/sha256/aa/<remaining-62-hex>/image/
+```
+
+Every shown relative component uses the exact lowercase ASCII spelling.
+The digest object directory contains exactly regular file `manifest.json` and
+directory `image`, neither reached through a symbolic link.
+`manifest.json` contains the exact canonical manifest bytes without LF.
+`image/` represents sandbox `/`; stripping the leading `/` from each manifest
+entry yields its relative image path, and the manifest's required `/`
+directory entry describes the `image/` root. Other digest objects may coexist
+in the store.
+
+Before either execution, the launcher opens the exact object without following
+lookup symlinks, verifies the manifest digest, schema, canonical bytes,
+detected platform tuple, and complete image tree, and holds stable file
+handles or a private verified snapshot so path replacement cannot change the
+projected bytes. Image traversal uses no-follow metadata reads; a declared
+symbolic-link target is compared as a string and resolved only within the
+manifest graph, never through the live-host filesystem. The launcher projects
+the same verified tree read-only into both sandboxes, does not fetch, and
+rechecks that the source object did not change through process-group
+termination.
+
+Runtime failures use these exact public diagnostics; the first failure in
+validator execution order wins:
+
+| Diagnostic | Condition |
+|---|---|
+| `error: extension-runtime-unavailable <digest>\n` | Store root fails its absolute normalized no-symlink directory contract, or the digest object, manifest, or image is absent or unreadable |
+| `error: extension-runtime-malformed <digest>\n` | Readable manifest is invalid UTF-8/JSON/schema/canonical bytes, hashes to another digest, or names an invalid/unsupported entry |
+| `error: extension-runtime-platform-mismatch <digest>\n` | Valid manifest tuple differs from the detected supported tuple |
+| `error: extension-runtime-drift <digest>\n` | Object directory has an extra entry; image has a missing/extra or type/mode/hash/link mismatch; a lookup component between store root and image root is a symlink; or the verified object changes before validation ends |
+| `error: extension-runtime-enforcement-unavailable <digest>\n` | Exact read-only projection, stable-object handling, or required sandbox auditing cannot be established |
+
+Each validator is executed twice with this exact process contract:
+
+| Process field | Exact contract |
+|---|---|
+| `argv` | `[<resolved-validator-absolute-path>, "--stewards-extension-validator-v1"]`; no shell and no additional argument |
+| working directory | The resolved absolute package root supplied to `--package-root` |
+| stdin | One canonical `extension-validator-request.v1` JSON object, UTF-8, followed by exactly one LF; both executions receive identical bytes |
+| stdout | One canonical `extension-validator-result.v1` JSON object, UTF-8, followed by exactly one LF; no other bytes |
+| stderr | Empty for protocol exits `0` and `1`; otherwise captured only for bounded diagnostics and never interpreted as a product result |
+| timeout | 10 seconds per execution, measured from spawn through process-group termination |
+| sizes | Request and stdout are each at most 1,048,576 bytes; stderr is at most 65,536 bytes; exceeding a bound fails validation |
+| filesystem/runtime | Exact declared immutable runtime plus package/private overlays and audited forbidden-path behavior below |
+| network | Every socket/network attempt by the process tree is denied, audited, and independently fails validation as defined below |
+
+The child environment contains exactly these keys:
+
+| Key | Exact value |
+|---|---|
+| `PATH` | The runtime manifest's `path_entries`, joined in declared order with `:`; no caller PATH entry is inherited |
+| `LANG`, `LC_ALL` | `C.UTF-8` |
+| `TZ` | `UTC` |
+| `HOME` | `/tmp/home` |
+| `TMPDIR` | `/tmp` |
+| `NO_PROXY` | `*` |
+| `http_proxy`, `https_proxy`, `HTTP_PROXY`, `HTTPS_PROXY` | Empty string |
+
+No other inherited variable, file descriptor, or stdin byte is available to
+the child. No ambient live-host content outside the explicit package/runtime
+inputs is injected through those channels or through an undeclared filesystem
+projection. A launcher unable to establish the filesystem or network boundary
+fails closed before executing the validator.
+
+The sandbox presents a synthetic filesystem view, using a mount namespace,
+sandbox profile, or equivalent enforcement. Its complete visibility is:
+
+| Path | Visibility and permitted use |
+|---|---|
+| resolved package root, at the same absolute path used as `cwd` | Entire subtree readable and executable; no write, create, rename, link, metadata, or deletion operation |
+| canonical ancestors of the package root | Directory traversal and metadata needed to reach the mount only; directory listing and access to sibling entries are denied |
+| exact runtime-manifest entries | Declared directories and exact file/link entries readable; declared executable files executable; no unenumerated child or live-host counterpart visible |
+| `/tmp` | Fresh private tmpfs for one execution; `/tmp/home` exists and is empty; read/write/create/delete permitted only here |
+| `/dev/null` | Read/write character device |
+
+All other paths—including live-host runtime prefixes, caller/maintainer home
+directories, unenumerated `/etc` children, `/proc`, `/sys`, SSH/credential
+stores, the Stewards checkout outside the package root, and inherited
+temporary directories—are absent. `PATH` lookup can select only a path listed
+in manifest `executables`. Direct execution is permitted only for the declared
+validator, an executable regular file under the package root, or a manifest
+`executable`; the kernel may select only an enumerated `executable` interpreter
+or `loader` while starting one of those files. Every descendant inherits the
+same rules.
+
+Before each run, the launcher records the complete package-root
+path/type/mode/SHA-256 snapshot. A filesystem operation against a
+non-allowlisted path returns `EACCES`; a mutating operation outside `/tmp`
+returns `EROFS`. In either case the launcher sets an audited
+`forbidden_path_attempt` flag before returning the error. The flag fails common
+validation even when product code catches the error and returns a canonical
+`pass`. After process-group termination the launcher destroys the private
+tmpfs, requires the package snapshot to be byte-identical, and requires that
+no persistent writable path was exposed. An unsupported filesystem-view,
+canonical-path, syscall-audit, or process-tree containment mechanism fails
+before spawn.
+
+The launcher gives the process tree only stdin, stdout, and stderr file
+descriptors; none is a socket. It intercepts `socket`, `socketpair`, `connect`,
+`bind`, `listen`, `accept`, `accept4`, `shutdown`, `sendto`, `sendmsg`,
+`sendmmsg`, `recvfrom`, `recvmsg`, `recvmmsg`, `getsockname`, `getpeername`,
+`setsockopt`, and `getsockopt`, plus platform multiplexed/equivalent forms
+such as `socketcall` and socket operations submitted through `io_uring`,
+before the kernel performs them. Every such attempt sets a `network_attempt`
+audit flag and returns `EPERM`. The flag is process-tree-wide and fails common
+validation regardless of the validator's handled error, exit code, or result
+bytes.
+Name-service access cannot bypass this rule: network syscalls are audited, and
+non-allowlisted resolver/configuration paths trigger
+`forbidden_path_attempt`. A platform unable to observe and deny every listed
+attempt for the complete process tree fails closed before spawn; proxy
+variables and a network namespace without the audit flag are insufficient.
+
+The request object has `additionalProperties: false` and these common fields:
+
+| Field | Contract |
+|---|---|
+| `schema_version` | Integer `1` |
+| `request_kind` | `product-extension` or `host-manifest-extension` |
+| `phase` | `pre-tag` or `release` |
+| `plugin_id` | Extracted release-metadata plugin id |
+| `namespace` | Metadata extension key for `product-extension`; `plugin_id` for `host-manifest-extension` |
+| `package_version` | Extracted authority version |
+| `expected_tag` | Computed `<plugin_id>-v<package_version>` |
+| `source_commit` | `null` in `pre-tag`; the tag's peeled full commit in `release` |
+| `validator_runtime_sha256` | Exact digest from the validator declaration and verified runtime manifest |
+| `release_metadata_path`, `surface_contract_path`, `release_inventory_path`, `release_history_path` | The four normalized package-relative paths used by the common validator |
+
+A `product-extension` request additionally requires `extension`, the complete
+JSON value from `extensions.<namespace>` after removing the reserved
+`validator` and `validator_runtime_sha256` members, and forbids
+`host_manifest`. A
+`host-manifest-extension` request additionally requires `host_manifest`, the
+complete inventory row after removing `extension_validator` and
+`extension_validator_runtime_sha256`, and forbids `extension`. The engine
+constructs these values only after common schema, path, version, carrier,
+inventory, and runtime validation; validators do not receive unvalidated
+common fields.
+
+The result object has `additionalProperties: false` and exactly:
+
+| Field | Contract |
+|---|---|
+| `schema_version` | Integer `1` |
+| `request_sha256` | SHA-256 of the exact stdin bytes, including its terminal LF |
+| `outcome` | `pass` or `fail` |
+| `findings` | Sorted, duplicate-free array of exact finding objects |
+
+A finding contains exactly non-empty dot-id `code`, non-empty single-line
+`message`, and RFC 6901 `instance_pointer`. Findings sort by
+`(instance_pointer, code, message)` using Unicode code-point order. `pass`
+requires an empty array and process exit `0`; `fail` requires a non-empty array
+and process exit `1`. Any other exit, signal, stderr byte, malformed or
+non-canonical result, request-hash mismatch, outcome/exit mismatch, differing
+stdout across the two executions, timeout, network attempt, or persistent
+filesystem mutation fails common validation. Product `fail` findings may be
+reported with their namespace and pointer, but Stewards shall not transform
+their codes or messages into common support facts.
 
 ### Complete product release inventory
 
@@ -254,13 +584,24 @@ The inventory contains exact duplicate-free arrays:
 
 | Array | Required row |
 |---|---|
-| `host_manifests` | `host`, normalized `path`, manifest kind, version extractor, and extracted package version |
+| `host_manifests` | `host`, normalized `path`, manifest kind, version extractor, extracted package version, and the conditional extension-validator fields below |
 | `payload_identities` | `payload_id`, normalized source path, deterministic extractor, exact kind/value, and whether consumers act on it |
 | `public_contract_items` | stable `contract_id`, category, stable source/extractor, canonical fingerprint, and compatibility annotation |
 | `support_derivatives` | derivative id, kind (`public-support-table` or `host-manifest-claim`), path/extractor, and exact surface-contract projection |
 
+`host_manifests[].host` is a non-empty, single-line Unicode scalar string
+normalized to NFC. A host-manifest identity is exactly `(host, path)` after
+that normalization and normalized-path validation. The array is
+duplicate-free and sorted ascending by that tuple using Unicode scalar-value
+lexicographic order. No other field, including `manifest_kind`,
+`extension_validator`, or version, participates in identity or execution
+order.
+
 `manifest kind` is exactly `claude-plugin`, `codex-plugin`, `npm-package`, or
-`other-declared-host`; the last requires a namespaced extension validator.
+`other-declared-host`; the last requires normalized package-relative
+`extension_validator` and lowercase 64-hex
+`extension_validator_runtime_sha256`. Neither field is valid without the
+other, and neither is valid for another manifest kind.
 Every payload, public-contract, and support-derivative extractor is exactly one
 additional-properties-forbidden object:
 
@@ -313,17 +654,53 @@ version and support claims without copying them.
 ### Immutable history and SemVer compatibility
 
 The product's `release-history.v1` file is append-only and sorted by SemVer
-precedence. Each row contains package version, release tag, source commit,
+precedence. Each row contains package version, release tag, source commit, a
+`repo-path` `release_metadata_reference` to that tag's retained metadata blob,
 release-inventory SHA-256, complete payload-identity array, public-contract
 inventory SHA-256, surface-contract SHA-256, classified change set, and
 `release_approval`. Initial family adoption inventories every existing
 matching package tag and requires one product-human approval reference for
 that seed. Each new row also names a stable reference to the immediately prior
-ledger state; validation loads it and requires the current ledger to equal
-those prior canonical rows byte-for-byte plus exactly one appended row. The
-ledger may be committed after its release tag because its row contains that
-tag's source commit; catalog publication waits for the appended ledger and
-cites its stable reference, avoiding a commit self-reference.
+ledger state. Appended-ledger validation loads that reference and requires the
+current ledger to equal those prior canonical rows byte-for-byte plus exactly
+one appended row. The ledger may be committed after its release tag because
+its row contains that tag's source commit; catalog publication waits for the
+appended ledger and cites its stable reference, avoiding a commit
+self-reference.
+
+The three release-row digests are exact:
+
+| Field | SHA-256 preimage |
+|---|---|
+| `release_inventory_sha256` | The checked-in `release_inventory` file's exact bytes, which already equal the provider's canonical stdout including its terminal LF |
+| `public_contract_inventory_sha256` | Canonical JSON bytes of the complete `public_contract_items` array, with no terminal LF |
+| `surface_contract_sha256` | The checked-in `surface_contract` file's exact bytes |
+
+In `pre-tag`, `release_history` contains only seed/prior rows and the expected
+tag need not exist. In `release`, the expected tag exists and the current
+checked-in ledger contains exactly one appended last row for it. The engine
+reads release metadata, inventory, and surface bytes from the tag commit,
+loads the appended row's prior reference, and requires the current ledger to
+equal that prior ledger plus the one derived row. The release-validation
+checkout commit shall equal or descend from the release commit; files other
+than the append-only ledger shall match their tagged retained bytes. For a
+first family release, an empty prior ledger is valid only when no earlier
+matching package tag exists; otherwise the product-human-approved seed rows
+cover every earlier matching tag.
+
+When the prior ledger is non-empty, the appended row's
+`prior_history_reference` is a derived `repo-path` reference to the prior
+ledger blob at the release tag's `source_commit`: `repository` is the exact
+GitHub origin repository, `path` is the repository-relative composition of
+the package root and `release_history`, and `sha256` covers its raw bytes. The
+field is absent only for an empty ledger. The validator recomputes this
+reference and never trusts the row's supplied value.
+Every appended or seeded row's `release_metadata_reference` is likewise a
+derived `repo-path` reference to that row's exact tag commit and
+repository-relative metadata path, with SHA-256 over the raw metadata blob.
+The engine resolves that reference first to recover each historical
+inventory/surface path and bytes; a digest without this retained input cannot
+satisfy history validation.
 
 The classified change set is a sorted duplicate-free array of exact objects
 `{contract_id, change_kind, before_fingerprint, after_fingerprint,
@@ -570,6 +947,69 @@ equals the release tag or commit, or `provisioner-acquisition` only when a
 matching verified provisioner record carries the same identity. A mutable
 selector is capped at `published`.
 
+#### Retained product-contract and history resolution
+
+`validate-door` resolves product bytes only for `verified` catalog rows. It
+never executes product inventory providers or extension validators. Published
+rows retain their existing shape/publication checks but make no retained
+release-identity claim.
+
+Resolution uses the required `STEWARDS_PRODUCT_REPOSITORIES` environment
+variable. Its value is one UTF-8 JSON object with no duplicate keys or
+additional envelope: every key is a selector `owner/repository`, and every
+value is a non-empty local checkout path. Relative values resolve from the
+Stewards repository root; absolute values remain absolute. Every required
+repository shall have exactly one entry. Extra entries are permitted and
+ignored. Each selected checkout shall have an `origin` URL in
+`https://github.com/<owner>/<repository>[.git]`,
+`ssh://git@github.com/<owner>/<repository>[.git]`, or
+`git@github.com:<owner>/<repository>[.git]` form that normalizes exactly to
+the key. Validation performs no fetch and never reads a product working-tree
+file; an absent checkout/object is a contract failure.
+
+For a verified row, resolution is ordered and fail-closed:
+
+1. Resolve `source_selector.repository` through the mapping. Require
+   `source_commit` to be a commit object. For a tag selector, require the exact
+   ref `refs/tags/<release_tag>` to exist and peel to that commit; for a commit
+   selector, require its ref value to equal that commit.
+2. Define `package_prefix` as `source_selector.path`. Compose any
+   package-relative `p` as `p` when the prefix is empty and
+   `<package_prefix>/<p>` otherwise. Both inputs are independently normalized;
+   no absolute path, empty segment, `.`, `..`, backslash, or percent-decoded
+   alternate is accepted.
+3. At `source_commit`, resolve the composed `release_metadata_path`,
+   `surface_contract_path`, and the metadata-declared `release_inventory`
+   path as Git blobs of mode `100644` or `100755`; symlinks, submodules,
+   directories, missing objects, and working-tree fallbacks fail. Parse JSON
+   as UTF-8 without BOM or duplicate keys.
+4. Require release metadata `plugin_id`, extracted authority/carriers,
+   computed tag, `surface_contract`, and `family_contract_version` to equal the
+   catalog plugin id, release identity, catalog path, and
+   `product_contract_version`. Require the retained surface contract's version
+   and family version to match the same values. Require raw inventory/surface
+   digests and complete payload identities to match the release row below.
+5. `release_history_reference` shall be a `repo-path` stable reference with
+   the same repository and with `path` exactly equal to the composition of
+   `package_prefix` and metadata `release_history`. Its `source_commit` shall
+   be a commit descendant of or equal to the release `source_commit`. Resolve
+   that exact commit/path as a regular Git blob; its raw SHA-256 shall equal
+   the reference digest before parsing it as `release-history.v1`.
+6. Require a non-empty ledger whose last row has exact `package_version`,
+   `release_tag`, `source_commit`, `release_inventory_sha256`,
+   `public_contract_inventory_sha256`, `surface_contract_sha256`,
+   `payload_identities`, and `release_approval` for the retained release. Its
+   `release_metadata_reference` shall equal the repository, source commit,
+   composed path, and raw digest resolved in steps 1–4. Resolve every row's
+   metadata reference before validating the whole ledger's order, prior
+   references, tag immutability, change set, bump, and approval bindings; a
+   matching last-row identity alone is insufficient.
+
+No `https-url` or `artifact` reference can satisfy a verified catalog
+`release_history_reference`, because this no-fetch resolver cannot establish
+its retained repository/tag/path relations. Those stable-reference variants
+remain valid in the other fields that explicitly permit them.
+
 ### Provisioner
 
 Every provisioner record, including `unavailable`, has the same complete key:
@@ -811,14 +1251,34 @@ ratify its decision.
 
 | Command | Required result |
 |---|---|
-| `validate-product --phase pre-tag --package-root <path> --release-metadata <path>` | Deterministically extract and compare versions, validate surface data/extensions, emit expected tag |
-| `validate-product --phase release --package-root <path> --release-metadata <path>` | Additionally resolve the expected repository tag and emit its peeled commit |
-| `validate-door` | Validate all schemas, sources, cross-references, identities, baselines, and host projections |
+| `validate-product --phase pre-tag --package-root <path> --release-metadata <path> --runtime-store <absolute-path>` | Preserve the landed result: validate the pre-tag contract and emit exactly `{"expected_tag": string, "package_version": string}` |
+| `validate-product --phase release --package-root <path> --release-metadata <path> --runtime-store <absolute-path>` | Repeat pre-tag validation, validate extensions with the peeled commit, resolve/validate every package tag, appended history row, compatibility change, bump, and approval, then preserve v1's release-identity result as exactly `{"expected_tag": string, "package_version": string, "source_commit": string}` |
+| `validate-door` | Validate all schemas, sources, cross-references, identities, baselines, host projections, and verified retained product bytes through `STEWARDS_PRODUCT_REPOSITORIES` |
 | `generate` | Deterministically write both host catalogs and `distribution/availability.md` |
 | `generate --check` | Make no writes; fail and name every stale catalog, availability, README, or CLAUDE derivative |
 | `legacy-discover --baseline-commit <commit>` | Read only the two host manifests at that commit and emit sorted entry keys/fingerprints |
 | `wave-close` | Run `validate-door`; fail while transition stock remains |
 | `effective --facts <path>` | Validate authoritative facts and emit the typed result |
+
+`--package-root` resolves to an existing package directory inside a Git
+checkout; `--release-metadata` is a normalized path relative to that root.
+`--runtime-store` is the sole runtime-store discovery input and satisfies the
+absolute, normalized, no-symlink root contract above; environment variables,
+default directories, package-relative stores, and upward search cannot
+provide or override it.
+The validator reads package inputs from that root, resolves repository refs
+with `git -C <package-root>`, and passes the same resolved root to the
+inventory-provider and extension protocols. It does not fetch. In `release`,
+the checkout's exact tag ref supplies `source_commit`; caller or working-tree
+HEAD identity cannot substitute for it.
+
+Every emitted object uses the canonical JSON grammar already defined by this
+spec, followed by one LF. Successful non-emitting commands write no stdout or
+stderr. A contract failure exits `1`, writes no stdout, and writes exactly one
+UTF-8 stderr line `error: <message>\n`, where `message` contains no CR or LF.
+Argument parsing retains the command-line parser's exit `2`. An emitting
+command exits `0` only after its complete validation succeeds; no partial
+identity or projection is emitted on failure.
 
 Generation orders maps by schema-defined key and arrays by their declared
 identity key, emits UTF-8 JSON with LF and no insignificant whitespace, and
@@ -914,7 +1374,10 @@ Positive fixtures:
 | `positive/plain-authority-json-carriers/` | Deterministic VERSION plus JSON Pointer extraction and parity |
 | `positive/release-tag-resolution/` | Expected Git tag is the only tag source and peels to the emitted commit |
 | `positive/typed-supported-row/` | Exact evidence/load/support/setup objects validate |
-| `positive/product-extension/` | Namespaced product data survives common validation |
+| `positive/product-extension/` | Nested namespaced product data survives canonicalization; distinct metadata/host identities bind exact runtime digests, run in exact order, and pass the repeated v1 process protocol |
+| `positive/immutable-extension-runtime/` | Canonical Linux/macOS host detection accepts the exact matching platform manifest from the explicit content-addressed store; every executable, loader, library, configuration file, and link verifies before only that runtime plus package/private overlays becomes visible |
+| `positive/canonical-nested-json/` | Nested objects, arrays, NFC strings, control/non-BMP scalars, booleans, null, and numbers produce the single canonical byte stream |
+| `positive/retained-verified-release/` | Local no-fetch resolution binds selector, product blobs, history, and catalog identity |
 | `positive/published-mutable-catalog/` | Typed mutable selector remains published |
 | `positive/verified-immutable-catalog/` | Exact tag/commit and clean-install-evidence schema validate |
 | `positive/unavailable-exact-key/` | Unavailable uses the complete provisioner identity |
@@ -964,6 +1427,13 @@ Negative fixtures:
 | `negative/baseline-fingerprint-canonicalization/` | Reject alternate ordering, normalization, or bytes |
 | `negative/wave-close-with-stock/` | Reject first-wave completion |
 | `negative/stale-derived/` | Name every stale derivative without writes |
+| `negative/extension-validator-protocol/` | Reject wrong identity/order, argv/env/request/result/exit, stderr, differing runs, timeout, oversize output, forbidden path/write, caught socket attempt, or persistent mutation |
+| `negative/extension-runtime-platform/` | Reject Windows and every other non-vocabulary host result before store lookup, and reject a valid manifest for a supported but different tuple with the exact distinct diagnostic |
+| `negative/extension-runtime-store/` | Reject implicit/default store discovery, invalid root or object layout, absent object, malformed manifest, drifted image, changed object, and unavailable enforcement with the exact category diagnostic |
+| `negative/extension-runtime-live-host-state/` | Reject an ambient live-host bind or injected host environment/state outside explicit package/runtime inputs while treating those enumerated immutable bytes as trusted product-owned supply-chain input rather than asserting their semantic contents |
+| `negative/canonical-json-ambiguity/` | Reject invalid UTF-8/scalars/numbers, duplicate pre/post-NFC keys, or non-canonical key order, escaping, number bytes, whitespace, or LF |
+| `negative/retained-verified-release/` | Reject absent/wrong checkout, origin, Git object mode, path composition, digest, ancestry, last row, or release binding |
+| `negative/release-interface-output/` | Reject partial or non-canonical success/failure output and a release ledger other than prior rows plus one exact append |
 
 ## Acceptance criteria
 
@@ -1120,6 +1590,53 @@ Given current transition stock, when `validate-door` runs, then it resolves
 the immutable initial-stock comparison commit, verifies raw digest and exact
 one-row contents, and accepts only an ordered removal-only subset.
 
+**S24 — Bounded product extension validation**
+
+Given declared metadata and other-host extension validators, when pre-tag or
+release validation runs, then each unique identity runs in the exact order
+with the exact v1 request and filesystem/runtime boundary twice and passes only
+when both executions return identical matching canonical `pass` results with
+exit `0`, no stderr, no forbidden-path or network-attempt audit flag, and no
+persistent mutation.
+
+**S25 — Retained verified catalog release**
+
+Given a verified catalog row and explicit local repository mapping, when
+`validate-door` runs, then it resolves the immutable selector, retained
+metadata/surface/inventory blobs, and descendant history-reference blob
+without fetching and accepts only when the complete last history row and
+digests bind the row's exact product release.
+
+**S26 — Public release-engine result**
+
+Given a valid pre-tag package, when `validate-product --phase pre-tag` runs,
+then it preserves the two-field canonical result; given the subsequently
+tagged approved release and one correctly appended ledger row, when
+`--phase release` runs, then it validates that exact append and preserves the
+three-field release-identity result, and any contract failure emits no partial
+result.
+
+**S27 — Canonical arbitrary JSON**
+
+Given arbitrarily nested schema-valid JSON containing objects, arrays,
+strings, numbers, booleans, and null, when any canonical request, result,
+fingerprint, or digest preimage is formed, then the recursive grammar emits
+one NFC, scalar-key-ordered, exactly escaped, shortest-number UTF-8 byte stream
+and rejects invalid or normalization-duplicate input.
+
+**S28 — Immutable validator runtime**
+
+Given a validator declaration, an explicit runtime-store root, and a launcher
+host, when extension validation starts, then Windows or any other
+non-vocabulary host emits the exact unsupported diagnostic before store
+lookup, while a canonically detected Linux/macOS host resolves the digest only
+at the exact content-addressed object path, verifies and holds the matching
+manifest and image, exposes only those enumerated read-only entries plus the
+package, private temporary directory, and `/dev/null` overlays, and emits the
+exact unavailable, malformed, platform-mismatch, drift, or
+enforcement-unavailable diagnostic before spawn when its applicable boundary
+is not satisfied.
+
 ### Requirements and invariants
 
 - **R1:** The system shall extract the canonical package version and every
@@ -1219,6 +1736,45 @@ one-row contents, and accepts only an ordered removal-only subset.
 - **R40:** `validate-door` shall resolve the initial-stock comparison commit
   and shall verify its raw digest, exact immutable Trellis/Claude row, and
   current ordered removal-only subset.
+- **R41:** When a product extension validator is declared, the release engine
+  shall invoke each unique metadata/host identity in exact order and only with
+  the exact v1 argv, working directory, environment, filesystem/runtime,
+  network, stdin, output, exit, timeout, size, and side-effect contract.
+- **R42:** When either repeated extension-validator execution differs, fails
+  its result schema, crosses a process boundary, or sets a forbidden-path or
+  network-attempt audit flag, the release engine shall fail regardless of
+  handled child errors and without interpreting or promoting the product
+  finding.
+- **R43:** When a verified catalog row is validated, `validate-door` shall use
+  only its explicit local repository mapping and retained Git objects and
+  shall not fetch, read product working-tree files, or execute product code.
+- **R44:** A verified catalog row shall bind its immutable selector, retained
+  release metadata, surface contract, inventory, and repo-path history
+  reference to the exact package version, tag, commit, payloads, digests,
+  approval, and complete last ledger row.
+- **R45:** The public release-engine commands shall preserve the exact pre-tag
+  result and shall emit the exact release result or the one-line failure
+  contract without any partial output.
+- **R46:** Every canonical JSON use shall apply the single recursive object,
+  array, string, number, boolean, and null grammar and shall reject invalid
+  UTF-8/scalars/numbers and duplicate pre- or post-NFC object keys.
+- **R47:** Every host-manifest row shall have one unique normalized
+  `(host, path)` identity, and extension-validator execution shall use the
+  exact metadata-namespace-then-host-identity order without path-based
+  deduplication.
+- **R48:** The extension launcher shall deny and audit every forbidden
+  filesystem or network attempt across the complete process tree, and any
+  audit flag shall fail validation even when the validator catches the error
+  and otherwise returns `pass`.
+- **R49:** Every extension-validator declaration shall bind an exact
+  platform-specific immutable runtime-manifest digest; `validate-product`
+  shall derive the platform only through the canonical host mapping, reject
+  Windows and every other non-vocabulary host before store lookup, resolve the
+  object only beneath its explicit runtime-store argument on a supported host,
+  verify and hold every enumerated entry, exclude ambient live-host content
+  outside the explicit package/runtime inputs without classifying those
+  trusted contents, and fail before spawn with the exact applicable diagnostic
+  rather than fetch, search, substitute, or continue.
 
 ## Open questions
 
@@ -1233,7 +1789,8 @@ Self-check used the local contract-author rules, `specs/README.md`,
 | Check | Result | Evidence |
 |---|---|---|
 | Frontmatter, lifecycle, dependencies | PASS | Required fields and decision `implements` edges present; direct decisions approved; append-only ids unpinned |
-| Required sections and grammars | PASS | S1–S23 are GWT; R1–R40 are EARS `shall` statements |
+| Versioned amendment | PASS | Behavioral counter advanced to v2; section-level WHAT/WHY/SCOPE/POINTER/VALUE/CONFIDENCE delta is present; current dependent spec/index/test pin was updated |
+| Required sections and grammars | PASS | S1–S28 are GWT; R1–R49 are EARS `shall` statements |
 | Decision boundary | PASS | Stewards contract/availability machinery is typed; product behavior, evidence creation, release judgment, tag creation, and setup execution remain excluded |
 | F1 deterministic version/tag source | CLOSED | Typed byte extraction, typed carriers, computed tag, and peeled repository ref are normative |
 | F2 typed contract fields | CLOSED | Common schemas fully type evidence, load, support, publication, selector, retirement, and provisioner fields |
@@ -1253,15 +1810,21 @@ Self-check used the local contract-author rules, `specs/README.md`,
 | Intrinsic F1 SemVer edge transitions | CLOSED | Core, prerelease iteration/promotion/regression, cumulative minimum, and equal-precedence build rules are exact |
 | Intrinsic F2 executable inventory grammar | CLOSED | Manifest/extractor/fingerprint/annotation/change-set shapes, all surface-row transition mappings, exact evidence sets, and non-self-referential approval ordering are enumerated |
 | Intrinsic F3 immutable initial stock | CLOSED | Exact initial row, stable comparison commit/digest, working-file equality, and removal-only comparison are normative |
+| Adversary remediation F1–F4 | CLOSED | Generic nested canonical JSON including number bytes; unique host identity/order; manifest-derived PATH and exact immutable runtime/package/private visibility with forbidden-path audit; and process-tree network-attempt audit are normative |
+| Second-adversary F3 immutable runtime | CLOSED | Every declaration binds a platform-specific canonical manifest digest; every runtime entry is content/type/mode/link enumerated; live-host substitution and unavailable or drifted images fail before spawn |
+| Third-adversary F3.1 platform mapping | CLOSED | Four exact Linux/macOS OS/architecture/executable-ABI tuples and direct POSIX `uname` mappings are normative; Windows and every other host fail before store lookup |
+| Third-adversary F3.2 runtime-store resolution | CLOSED | Required CLI root, exact digest-object layout, stable no-symlink resolution, failure precedence, and distinct unavailable/malformed/platform/drift/enforcement diagnostics are normative |
+| Third-adversary F3.3 confidentiality claim | CLOSED | The contract excludes ambient live-host content outside explicit package/runtime inputs and treats those immutable bytes as trusted product-owned supply-chain input whose semantic contents Stewards does not classify |
+| v2 whole-spec execution boundary | CLOSED | Recursive canonical JSON, unique validator identities/order, digest-bound audited filesystem/runtime/network boundary, extension subprocess request/result/limits, retained verified-catalog resolution, release-history digest/append staging, and public CLI results are exact |
 | Whole-corpus validation | NOT CLAIMED | Issue #20 blocks literal full-corpus PASS; this artifact uses strict YAML/exact ids and was checked change-scoped |
 
 **Result: PASS for author self-check.**
 
-## Approval record
+## Gate record
 
-On 2026-07-24 the maintainer authorized the family-wide rollout, including
-the shared Stewards contract and its product-specific adoption, and authorized
-merge after independent review. The spec-adversary returned `APPROVE-READY`
-after the executable-schema findings were resolved, and the conformance
-reviewer returned `PASS` against approved decisions 0015 and 0016. This
-`approved` status records that prior human intent act.
+The maintainer's 2026-07-24 act approved v1 after spec-adversary and
+conformance review. On 2026-07-24, the maintainer authorized this wave to
+merge when its independent gates passed. V2 then received
+`APPROVE-READY` from the spec-adversary, `PASS` from the conformance reviewer,
+and a change-scoped corpus `PASS`; recording `approved` here records that
+maintainer act for S24–S28 and R41–R49 rather than reusing the v1 approval.
