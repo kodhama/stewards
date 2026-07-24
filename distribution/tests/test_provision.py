@@ -731,6 +731,55 @@ class ProvisionContractTests(unittest.TestCase):
 
             self.assertEqual(classification, "uncertain")
 
+    # spec-0002@v3 S27, R40; commitment rejects a split receipt/audit snapshot
+    def test_retained_classifier_requires_one_stable_bound_pair(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            self.assertEqual(
+                contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                ),
+                3,
+            )
+            valid_audit = audit.read_bytes()
+            audit.write_bytes(b"x")
+            real_open_retained = contract.open_retained_document
+            switched = False
+
+            def switch_between_receipt_and_audit(
+                root: Path,
+                path: Path,
+                schema_name: str,
+            ) -> contract.RetainedHandle:
+                nonlocal switched
+                if path == audit and not switched:
+                    switched = True
+                    receipt.write_bytes(b"x")
+                    audit.write_bytes(valid_audit)
+                return real_open_retained(root, path, schema_name)
+
+            with mock.patch.object(
+                contract,
+                "open_retained_document",
+                side_effect=switch_between_receipt_and_audit,
+            ):
+                classification = contract.classify_retained_evidence(
+                    ROOT,
+                    receipt,
+                    audit,
+                )
+
+            self.assertEqual(classification, "uncertain")
+
     # spec-0002@v3 S31, R44; output-containment uncertainty is exit 7
     def test_output_containment_traversal_failure_is_output_failure(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

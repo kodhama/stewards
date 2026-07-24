@@ -117,6 +117,30 @@ class RetainedDocument:
     digest: Optional[str] = None
 
 
+@dataclass
+class RetainedHandle:
+    """One retained document whose file and parent descriptors stay open."""
+
+    state: str
+    path: Path
+    schema_name: str
+    descriptor: int = -1
+    parent_fd: int = -1
+    identity: Optional[tuple[int, int]] = None
+    value: Optional[dict[str, Any]] = None
+    raw: Optional[bytes] = None
+    digest: Optional[str] = None
+
+    def close(self) -> None:
+        """Close retained file and parent descriptors once."""
+        if self.descriptor >= 0:
+            os.close(self.descriptor)
+            self.descriptor = -1
+        if self.parent_fd >= 0:
+            os.close(self.parent_fd)
+            self.parent_fd = -1
+
+
 def timestamp() -> str:
     """Return an RFC 3339 UTC whole-second timestamp."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -552,20 +576,88 @@ def write_once(target: OutputTarget, raw: bytes) -> str:
         sealed.close()
 
 
-def read_retained_document(
+def retained_handle_is_current(
+    root: Path,
+    handle: RetainedHandle,
+) -> bool:
+    """Revalidate held bytes and both exact retained path identities."""
+    if (
+        handle.state != "valid"
+        or handle.descriptor < 0
+        or handle.parent_fd < 0
+        or handle.identity is None
+        or handle.raw is None
+    ):
+        return False
+    current_parent_fd = -1
+    try:
+        opened = os.fstat(handle.descriptor)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or (opened.st_dev, opened.st_ino) != handle.identity
+        ):
+            return False
+        before_validation = read_descriptor(handle.descriptor)
+        if before_validation != handle.raw:
+            return False
+        validate_canonical_document(
+            root,
+            handle.schema_name,
+            before_validation,
+            str(handle.path),
+        )
+        after_validation = read_descriptor(handle.descriptor)
+        if after_validation != before_validation:
+            return False
+        current_parent_fd = open_directory_chain(
+            handle.path.parent,
+            str(handle.path),
+        )
+        retained_parent = os.fstat(handle.parent_fd)
+        current_parent = os.fstat(current_parent_fd)
+        if (retained_parent.st_dev, retained_parent.st_ino) != (
+            current_parent.st_dev,
+            current_parent.st_ino,
+        ):
+            return False
+        retained_leaf = os.stat(
+            handle.path.name,
+            dir_fd=handle.parent_fd,
+            follow_symlinks=False,
+        )
+        current_leaf = os.stat(
+            handle.path.name,
+            dir_fd=current_parent_fd,
+            follow_symlinks=False,
+        )
+        return (
+            retained_leaf.st_dev,
+            retained_leaf.st_ino,
+        ) == handle.identity and (
+            current_leaf.st_dev,
+            current_leaf.st_ino,
+        ) == handle.identity
+    except (OSError, OutputContractError, ValueError):
+        return False
+    finally:
+        if current_parent_fd >= 0:
+            os.close(current_parent_fd)
+
+
+def open_retained_document(
     root: Path,
     path: Path,
     schema_name: str,
-) -> RetainedDocument:
-    """Observe one exact retained path without following symlinks."""
+) -> RetainedHandle:
+    """Open and validate one exact retained path while retaining descriptors."""
     try:
         path_stat = os.stat(path, follow_symlinks=False)
     except FileNotFoundError:
-        return RetainedDocument("missing")
+        return RetainedHandle("missing", path, schema_name)
     except OSError:
-        return RetainedDocument("uncertain")
+        return RetainedHandle("uncertain", path, schema_name)
     if not stat.S_ISREG(path_stat.st_mode):
-        return RetainedDocument("invalid")
+        return RetainedHandle("invalid", path, schema_name)
 
     descriptor = -1
     parent_fd = -1
@@ -578,55 +670,64 @@ def read_retained_document(
         )
         opened = os.fstat(descriptor)
         if not stat.S_ISREG(opened.st_mode):
-            return RetainedDocument("invalid")
+            return RetainedHandle("invalid", path, schema_name)
         identity = (opened.st_dev, opened.st_ino)
         if identity != (path_stat.st_dev, path_stat.st_ino):
-            return RetainedDocument("uncertain")
+            return RetainedHandle("uncertain", path, schema_name)
         raw = read_descriptor(descriptor)
-        final_stat = os.stat(
-            path.name,
-            dir_fd=parent_fd,
-            follow_symlinks=False,
-        )
-        if identity != (final_stat.st_dev, final_stat.st_ino):
-            return RetainedDocument("uncertain")
-        confirmed_raw = read_descriptor(descriptor)
-        if confirmed_raw != raw:
-            return RetainedDocument("uncertain")
         try:
             value = validate_canonical_document(
                 root,
                 schema_name,
-                confirmed_raw,
+                raw,
                 str(path),
             )
         except (OSError, ValueError):
-            return RetainedDocument("invalid")
-        final_raw = read_descriptor(descriptor)
-        if final_raw != confirmed_raw:
-            return RetainedDocument("uncertain")
-        final_path_stat = os.stat(
-            path.name,
-            dir_fd=parent_fd,
-            follow_symlinks=False,
-        )
-        if identity != (final_path_stat.st_dev, final_path_stat.st_ino):
-            return RetainedDocument("uncertain")
-        return RetainedDocument(
+            return RetainedHandle("invalid", path, schema_name)
+        handle = RetainedHandle(
             "valid",
+            path,
+            schema_name,
+            descriptor,
+            parent_fd,
+            identity,
             value,
-            final_raw,
-            hashlib.sha256(final_raw).hexdigest(),
+            raw,
+            hashlib.sha256(raw).hexdigest(),
         )
+        descriptor = -1
+        parent_fd = -1
+        if not retained_handle_is_current(root, handle):
+            handle.close()
+            return RetainedHandle("uncertain", path, schema_name)
+        return handle
     except FileNotFoundError:
-        return RetainedDocument("uncertain")
+        return RetainedHandle("uncertain", path, schema_name)
     except (OSError, OutputContractError):
-        return RetainedDocument("uncertain")
+        return RetainedHandle("uncertain", path, schema_name)
     finally:
         if descriptor >= 0:
             os.close(descriptor)
         if parent_fd >= 0:
             os.close(parent_fd)
+
+
+def read_retained_document(
+    root: Path,
+    path: Path,
+    schema_name: str,
+) -> RetainedDocument:
+    """Observe one retained document and release its stable descriptors."""
+    handle = open_retained_document(root, path, schema_name)
+    try:
+        return RetainedDocument(
+            handle.state,
+            handle.value,
+            handle.raw,
+            handle.digest,
+        )
+    finally:
+        handle.close()
 
 
 def classify_retained_evidence(
@@ -635,32 +736,44 @@ def classify_retained_evidence(
     audit_path: Path,
 ) -> str:
     """Classify commitment solely from exact retained output state."""
-    receipt = read_retained_document(
+    receipt = open_retained_document(
         root,
         receipt_path,
         "provision-receipt.v1.schema.json",
     )
-    if receipt.state == "uncertain":
-        return "uncertain"
-    if receipt.state != "valid" or receipt.value is None:
-        return "uncommitted"
-    if receipt.value.get("overall_outcome") == "output-failure":
-        return "committed-minimal"
-    if receipt.value.get("write_events_reference") != str(audit_path):
-        return "uncommitted"
+    try:
+        if receipt.state == "uncertain":
+            return "uncertain"
+        if receipt.state != "valid" or receipt.value is None:
+            return "uncommitted"
+        if receipt.value.get("overall_outcome") == "output-failure":
+            if not retained_handle_is_current(root, receipt):
+                return "uncertain"
+            return "committed-minimal"
+        if receipt.value.get("write_events_reference") != str(audit_path):
+            return "uncommitted"
 
-    audit = read_retained_document(
-        root,
-        audit_path,
-        "provision-write-events.v1.schema.json",
-    )
-    if audit.state == "uncertain":
-        return "uncertain"
-    if audit.state != "valid" or audit.digest is None:
-        return "uncommitted"
-    if receipt.value.get("write_events_sha256") != audit.digest:
-        return "uncommitted"
-    return "committed-normal"
+        audit = open_retained_document(
+            root,
+            audit_path,
+            "provision-write-events.v1.schema.json",
+        )
+        try:
+            if audit.state == "uncertain":
+                return "uncertain"
+            if audit.state != "valid" or audit.digest is None:
+                return "uncommitted"
+            if receipt.value.get("write_events_sha256") != audit.digest:
+                return "uncommitted"
+            if not retained_handle_is_current(root, receipt):
+                return "uncertain"
+            if not retained_handle_is_current(root, audit):
+                return "uncertain"
+            return "committed-normal"
+        finally:
+            audit.close()
+    finally:
+        receipt.close()
 
 
 def cause(
