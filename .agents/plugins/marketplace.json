@@ -16,6 +16,19 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Developer Tools"
+    },
+    {
+      "name": "wisp",
+      "source": {
+        "source": "git-subdir",
+        "url": "kodhama/wisp",
+        "path": "plugins/wisp"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
     }
   ]
 }
