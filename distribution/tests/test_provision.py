@@ -680,6 +680,57 @@ class ProvisionContractTests(unittest.TestCase):
 
             self.assertEqual(classification, "uncertain")
 
+    # spec-0002@v3 S27, S31, R40, R44; validation-time mutation is uncertain
+    def test_retained_classifier_rechecks_bytes_after_schema_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            self.assertEqual(
+                contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                ),
+                3,
+            )
+            real_validate = contract.validate_canonical_document
+            mutated = False
+
+            def mutate_audit_during_validation(
+                root: Path,
+                schema_name: str,
+                raw_bytes: bytes,
+                where: str,
+            ) -> dict[str, Any]:
+                nonlocal mutated
+                value = real_validate(root, schema_name, raw_bytes, where)
+                if not mutated and where == str(audit):
+                    mutated = True
+                    with audit.open("r+b") as stream:
+                        stream.seek(0)
+                        stream.write(b"x")
+                        stream.truncate()
+                return value
+
+            with mock.patch.object(
+                contract,
+                "validate_canonical_document",
+                side_effect=mutate_audit_during_validation,
+            ):
+                classification = contract.classify_retained_evidence(
+                    ROOT,
+                    receipt,
+                    audit,
+                )
+
+            self.assertEqual(classification, "uncertain")
+
     # spec-0002@v3 S31, R44; output-containment uncertainty is exit 7
     def test_output_containment_traversal_failure_is_output_failure(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

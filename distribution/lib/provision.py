@@ -602,11 +602,21 @@ def read_retained_document(
             )
         except (OSError, ValueError):
             return RetainedDocument("invalid")
+        final_raw = read_descriptor(descriptor)
+        if final_raw != confirmed_raw:
+            return RetainedDocument("uncertain")
+        final_path_stat = os.stat(
+            path.name,
+            dir_fd=parent_fd,
+            follow_symlinks=False,
+        )
+        if identity != (final_path_stat.st_dev, final_path_stat.st_ino):
+            return RetainedDocument("uncertain")
         return RetainedDocument(
             "valid",
             value,
-            confirmed_raw,
-            hashlib.sha256(confirmed_raw).hexdigest(),
+            final_raw,
+            hashlib.sha256(final_raw).hexdigest(),
         )
     except FileNotFoundError:
         return RetainedDocument("uncertain")
