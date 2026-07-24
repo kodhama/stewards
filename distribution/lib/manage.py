@@ -68,6 +68,13 @@ FACTOR_ORDER = (
 PROVIDER_TIMEOUT_SECONDS = 10
 PROVIDER_OUTPUT_LIMIT = 1024 * 1024
 PROVIDER_STDERR_LIMIT = 64 * 1024
+RELEASE_SUBJECT_FIELDS = (
+    "plugin_id",
+    "package_version",
+    "release_tag",
+    "source_commit",
+    "surface_id",
+)
 
 
 class ContractError(ValueError):
@@ -263,6 +270,19 @@ def validate_subject(value: Any, where: str = "subject") -> dict[str, str]:
     require(isinstance(obj["source_commit"], str) and COMMIT.fullmatch(obj["source_commit"]), f"{where}.source_commit: invalid")
     validate_slug(obj["surface_id"], f"{where}.surface_id", dotted=True)
     return obj
+
+
+def require_subject_fields(
+    value: dict[str, Any],
+    subject: dict[str, str],
+    where: str,
+) -> None:
+    for field in RELEASE_SUBJECT_FIELDS:
+        if field in value:
+            require(
+                value[field] == subject[field],
+                f"{where}.{field}: declared subject mismatch",
+            )
 
 
 def validate_evidence_binding(value: Any, where: str) -> dict[str, Any]:
@@ -1934,10 +1954,26 @@ def validate_product_fact(value: Any) -> dict[str, Any]:
         subject = validate_subject(obj["subject"], "effective_facts.product_contract.subject")
         validate_stable_reference(obj["source_reference"], "effective_facts.product_contract.source_reference")
         validate_surface_row(obj["row"], subject["package_version"], "effective_facts.product_contract.row")
-        require(
-            obj["row"]["surface_id"] == subject["surface_id"],
-            "effective_facts.product_contract.row.surface_id: declared subject mismatch",
+        row = obj["row"]
+        where = "effective_facts.product_contract.row"
+        require_subject_fields(row, subject, where)
+        require_subject_fields(
+            row["post_install_setup"],
+            subject,
+            f"{where}.post_install_setup",
         )
+        for index, evidence in enumerate(row.get("evidence", ())):
+            require_subject_fields(
+                evidence,
+                subject,
+                f"{where}.evidence[{index}]",
+            )
+        if "support_record" in row:
+            require_subject_fields(
+                row["support_record"],
+                subject,
+                f"{where}.support_record",
+            )
     elif kind == "missing":
         obj = exact_keys(value, ("kind", "source_reference", "lookup"), where="effective_facts.product_contract")
         validate_stable_reference(obj["source_reference"])

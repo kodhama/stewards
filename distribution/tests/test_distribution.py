@@ -520,6 +520,54 @@ class DistributionContractTests(unittest.TestCase):
         ):
             contract.validate_product_fact(fact)
 
+    # spec-0001@v1 S8, S12, R12, R20; fifth-review release-identity finding
+    def test_product_row_records_match_declared_release_identity(self) -> None:
+        mutations = (
+            (
+                "cross-plugin-and-tag evidence",
+                lambda row: row["evidence"][0].update(
+                    {
+                        "plugin_id": "other",
+                        "release_tag": "other-v1.2.3",
+                    }
+                ),
+                r"row\.evidence\[0\]\.plugin_id",
+            ),
+            (
+                "cross-tag evidence",
+                lambda row: row["evidence"][0].update(
+                    {"release_tag": "other-v1.2.3"}
+                ),
+                r"row\.evidence\[0\]\.release_tag",
+            ),
+            (
+                "cross-commit evidence",
+                lambda row: row["evidence"][0].update(
+                    {"source_commit": "b" * 40}
+                ),
+                r"row\.evidence\[0\]\.source_commit",
+            ),
+            (
+                "cross-plugin support record",
+                lambda row: row["support_record"].update(
+                    {"plugin_id": "other"}
+                ),
+                r"row\.support_record\.plugin_id",
+            ),
+        )
+        for label, mutate, error in mutations:
+            with self.subTest(label):
+                row = supported_surface_row()
+                mutate(row)
+                fact = {
+                    "kind": "record",
+                    "source_reference": stable_ref("surfaces.json"),
+                    "subject": subject(),
+                    "row": row,
+                }
+                with self.assertRaisesRegex(contract.ContractError, error):
+                    contract.validate_product_fact(fact)
+
     # spec-0001@v1 S8, R23; conformance setup-binding counterexamples
     def test_effective_setup_complete_binds_product_requirement(self) -> None:
         product_reference = stable_ref("surfaces.json")
