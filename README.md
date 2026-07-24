@@ -11,8 +11,7 @@ marketplace a test exercised, and a generic Stewards skill that adds
 caller-selected Claude/Codex marketplace setup to CI. It does not certify
 product releases or support and owns no universal version, tag, release-history,
 approval, runtime-sandbox, cross-repository-resolution, or effective-support
-machinery. The superseded implementation remains temporarily pending its
-separate removal change.
+machinery.
 <!-- distribution-scope:end -->
 
 The stewards: [trellis](https://github.com/kodhama/trellis) (governance) · [grove](https://github.com/kodhama/grove) (agent swarm) · [wisp](https://github.com/kodhama/wisp) (runtime observability) · [design-system](https://github.com/kodhama/design-system) (brand) · [homebrew-tap](https://github.com/kodhama/homebrew-tap) (delivery).
