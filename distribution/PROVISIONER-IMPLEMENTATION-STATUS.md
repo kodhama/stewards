@@ -3,8 +3,8 @@ id: stewards-provisioner-implementation-status-0001
 type: implementation-status
 status: gated
 depends_on:
-  - kodhama-spec-0002-bounded-pre-agent-provisioner@v1
-  - kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v1
+  - kodhama-spec-0002-bounded-pre-agent-provisioner@v3
+  - kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2
 owner: agent
 updated: 2026-07-24
 ---
@@ -26,9 +26,15 @@ and makes no installation, idempotency, preservation, or promotion claim.
 - The request cases exercised by retained fixtures: exact-version rejection,
   surface/root/reference checks, complete-key route lookup, and global
   unused-reference precedence.
-- Descriptor-relative no-follow/exclusive creation, same-descriptor read-back
-  hashing, partial-file cleanup, physically disjoint output checks, typed
+- Descriptor-relative no-follow/exclusive creation, file-and-parent fsync,
+  same-descriptor read-back hashing, physically disjoint output checks, typed
   output-failure receipts, and distinct audit/receipt sealing failures.
+- External commitment classification from exact retained regular-file,
+  canonical, schema-valid receipt/audit bytes and normal-receipt path/digest
+  binding, independent of producer history.
+- Invalid or uncertain output debris remains operator-owned because the
+  supported POSIX/Python interface cannot make unlink conditional on the
+  invocation-recorded file identity.
 - Claude Code and Codex reach the same core and fail at identity resolution
   with `route-not-found` while the availability source has no route.
 - Thin CI and cloud/container entrypoints delegate to the core and contain no

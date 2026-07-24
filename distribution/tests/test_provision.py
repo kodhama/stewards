@@ -626,13 +626,69 @@ class ProvisionContractTests(unittest.TestCase):
                 "committed-normal",
             )
 
-    # spec-0002@v1 bounded implementation disclosure; conformance status finding
+    # spec-0002@v3 S31, R44; normal receipt prevalidation is a receipt failure
+    def test_receipt_prevalidation_failure_preserves_orphan_audit(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            real_canonical_schema_bytes = contract.canonical_schema_bytes
+
+            def fail_normal_receipt_prevalidation(
+                root: Path,
+                schema_name: str,
+                value: dict[str, object],
+            ) -> bytes:
+                if (
+                    schema_name == "provision-receipt.v1.schema.json"
+                    and value.get("overall_outcome") != "output-failure"
+                ):
+                    raise contract.OutputSealError(
+                        "final-validation",
+                        OSError("forced receipt prevalidation failure"),
+                    )
+                return real_canonical_schema_bytes(root, schema_name, value)
+
+            stderr = io.StringIO()
+            with mock.patch.object(
+                contract,
+                "canonical_schema_bytes",
+                side_effect=fail_normal_receipt_prevalidation,
+            ), redirect_stderr(stderr):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            self.assertTrue(audit.is_file())
+            self.assertFalse(receipt.exists())
+            self.assertIn("receipt-seal-failed", stderr.getvalue())
+            self.assertNotIn("audit-seal-failed", stderr.getvalue())
+
+    # spec-0002@v3 bounded implementation disclosure; conformance status finding
     def test_implementation_status_does_not_claim_whole_protocol_conformance(self) -> None:
         status = (
             ROOT / "distribution" / "PROVISIONER-IMPLEMENTATION-STATUS.md"
         ).read_text(encoding="utf-8")
         self.assertIn("No whole-spec conformance is claimed", status)
         self.assertIn("descriptor-relative", status.lower())
+        self.assertIn(
+            "kodhama-spec-0002-bounded-pre-agent-provisioner@v3",
+            status,
+        )
+        self.assertIn(
+            "kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2",
+            status,
+        )
+        self.assertIn("operator-owned", status)
+        self.assertNotIn("partial-file cleanup", status)
         self.assertNotIn(
             "Host-neutral request decoding, phases 1–4",
             status,

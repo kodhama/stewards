@@ -1744,6 +1744,15 @@ def execute(
                 "provision-receipt.v1.schema.json",
                 receipt,
             )
+        except OutputSealError as exc:
+            recover_receipt_output_failure(
+                root,
+                receipt_target,
+                audit_target,
+                exc,
+            )
+            return 7
+        try:
             verify_sealed_output(
                 audit_sealed,
                 root,
