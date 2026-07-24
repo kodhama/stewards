@@ -1,7 +1,7 @@
 ---
 id: kodhama-spec-0003-marketplace-test-observation
 type: spec
-status: gated
+status: approved  # maintainer approved checkpoint 1 on 2026-07-24
 depends_on: [kodhama-0017-retire-family-release-certification]
 implements: [kodhama-0017-retire-family-release-certification]
 owner: agent
@@ -227,3 +227,10 @@ from `draft` to `gated`.
 This is a change-scoped self-check only. It does not claim that the malformed
 legacy metadata tracked by issue #20 has been repaired or that the full corpus
 passes strict validation.
+
+## Lifecycle record
+
+The maintainer explicitly approved checkpoint 1 on 2026-07-24 after the spec
+adversary returned `APPROVE-READY`, the conformance reviewer returned `PASS`,
+and the change-scoped corpus review returned `PASS`. The `approved` status
+records that human spec-gate act.
