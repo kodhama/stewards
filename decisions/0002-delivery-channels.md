@@ -54,6 +54,13 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 > puts external adoption at "validated on essentially one project," so
 > the migration cost of retiring it is judged near-zero.
 
+> **Forward pointer (2026-07-23, post-ratification annotation).**
+> `kodhama-0012-codex-marketplace-channel` amends “one marketplace front
+> door” from one Claude-specific manifest to one canonical marketplace
+> **repository** with one host-native manifest per supported plugin host.
+> The marketplace name `kodhama`, thin-catalog principle, and product-owned
+> release cadence stand unchanged.
+
 **Context (maintainer, 2026-07-07).** Espalier's current delivery
 ("vendor the charters by hand", espalier README §Adopting) reads as
 inconsistent with trellis (brew + curl + Claude plugin). The maintainer
