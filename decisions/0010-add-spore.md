@@ -2,7 +2,7 @@
 id: kodhama-0010-add-spore
 type: decision
 status: superseded  # retired by kodhama-0014 (2026-07-24); original ratification: PR #7 merge (2026-07-22)
-depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama/kodhama-0009-org-topology-spirit-stewards-trees]
+depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0009-org-topology-spirit-stewards-trees]
 superseded_by: [kodhama-0014-retire-spore]
 owner: agent
 updated: 2026-07-22
