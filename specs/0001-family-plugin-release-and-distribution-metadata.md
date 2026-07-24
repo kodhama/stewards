@@ -12,17 +12,20 @@ updated: 2026-07-24
 # Family plugin release and distribution metadata
 
 > **Amended 2026-07-24 — whole-spec completion protocol.**
-> **WHAT:** Defined the product extension-validator process protocol, retained
-> catalog product-contract/history resolution, and the exact public
+> **WHAT:** Defined the product extension-validator process protocol,
+> canonical JSON grammar, execution identity/order, audited sandbox boundary,
+> retained catalog product-contract/history resolution, and the exact public
 > release-engine and local-repository-resolver interfaces.
 > **WHY:** The approved v1 contract named those obligations but left their
 > process and retained-byte boundaries underdetermined, so the landed partial
 > implementation correctly failed closed and the remaining release engine
 > could not be implemented without guessing.
-> **SCOPE:** Product validation, verified catalog validation, S24–S26, and
-> R41–R45; all v1 behavior and ownership boundaries remain current.
+> **SCOPE:** Common canonicalization, product validation, verified catalog
+> validation, S24–S27, and R41–R48; all v1 behavior and ownership boundaries
+> remain current.
 > **POINTER:** `distribution/IMPLEMENTATION-STATUS.md` at
-> `495b4cb632fc796f76200d8cf0be7442b4d41997`.
+> `495b4cb632fc796f76200d8cf0be7442b4d41997`; intrinsic remediation triggered
+> by the spec-adversary `NEEDS-REVISION` verdict on `95fced9`.
 > **VALUE:** Product maintainers can ship independently while Stewards verifies
 > exact release claims without interpreting or taking ownership of product
 > behavior.
@@ -83,6 +86,33 @@ contracts, and behavioral evidence remain product-owned sources; Stewards
 stores stable references, never copied product payloads.
 
 ## Common types
+
+### Canonical JSON grammar
+
+Every use of “canonical JSON” in this spec uses this single grammar,
+recursively for arbitrary nested values:
+
+| JSON value | Canonical encoding |
+|---|---|
+| object | Normalize every key as a string below, reject duplicate keys both before and after normalization, sort members lexicographically by normalized Unicode scalar-value sequence, and emit `{` plus comma-separated `<canonical-key>:<canonical-value>` pairs plus `}` |
+| array | Preserve declared element order and emit `[` plus comma-separated canonical elements plus `]` |
+| string, including object key | Require Unicode scalar values, normalize to NFC, then apply the exact escaping below |
+| number | Parse as finite IEEE-754 binary64 and use only RFC 8785 §3.2.2.3's ECMAScript shortest round-trip number algorithm; serialize negative zero as `0`; reject NaN, infinities, overflow, and any non-JSON number token |
+| boolean | Lowercase `true` or `false` |
+| null | Lowercase `null` |
+
+String encoding emits `"` and `\` as `\"` and `\\`; U+0008, U+0009,
+U+000A, U+000C, and U+000D as `\b`, `\t`, `\n`, `\f`, and `\r`; and every
+other U+0000–U+001F scalar as lowercase `\u00xx`. Every other scalar,
+including `/`, U+2028, U+2029, and non-BMP scalars, is emitted unescaped as
+UTF-8. Unpaired surrogates are not Unicode scalar values and reject. The
+encoding has no BOM, insignificant whitespace, or terminal LF; a protocol
+that carries canonical JSON adds its explicitly specified LF after these
+bytes. Input parsing rejects invalid UTF-8 and duplicate source keys before
+normalization.
+
+Every field described as a normalized path additionally requires Unicode
+scalar values in NFC before applying its POSIX segment rules.
 
 ### Identity grammar
 
@@ -265,10 +295,15 @@ shall remain inside the package root, be a regular non-symlink file with no
 symlink path component, and be executable. For each validation phase, the
 engine invokes:
 
-1. `extensions.<namespace>.validator` in ascending Unicode-code-point
-   `namespace` order; then
-2. each `other-declared-host` row's `extension_validator` in the inventory's
-   required host-manifest identity order.
+1. `extensions.<namespace>.validator` in ascending normalized
+   `namespace` Unicode-scalar order; then
+2. each `other-declared-host` row's `extension_validator` in ascending
+   `(normalized host, normalized path)` tuple order.
+
+Extension namespaces are unique object keys under the canonical JSON grammar.
+Host-manifest identities are the unique tuples defined below. One validator
+path declared by multiple identities runs once per identity with that row's
+distinct request; validator-path equality never deduplicates executions.
 
 Each validator is executed twice with this exact process contract:
 
@@ -281,14 +316,14 @@ Each validator is executed twice with this exact process contract:
 | stderr | Empty for protocol exits `0` and `1`; otherwise captured only for bounded diagnostics and never interpreted as a product result |
 | timeout | 10 seconds per execution, measured from spawn through process-group termination |
 | sizes | Request and stdout are each at most 1,048,576 bytes; stderr is at most 65,536 bytes; exceeding a bound fails validation |
-| filesystem | Package root is mounted/read-open only; `HOME=/tmp/home` and `TMPDIR=/tmp` name fresh private writable directories destroyed after the invocation; no persistent path may change |
-| network | All network namespaces, sockets, and name-service egress are denied by the launcher; clearing proxy variables alone is not sufficient |
+| filesystem/runtime | Exact allowlist and audited forbidden-path behavior below |
+| network | Every socket/network attempt by the process tree is denied, audited, and independently fails validation as defined below |
 
 The child environment contains exactly these keys:
 
 | Key | Exact value |
 |---|---|
-| `PATH` | The launcher's `PATH` value, or the empty string when absent |
+| `PATH` | `/usr/bin:/bin`; no caller PATH entry is inherited |
 | `LANG`, `LC_ALL` | `C.UTF-8` |
 | `TZ` | `UTC` |
 | `HOME` | `/tmp/home` |
@@ -299,6 +334,54 @@ The child environment contains exactly these keys:
 No other inherited variable, file descriptor, credential, or stdin byte is
 available to the child. A launcher unable to establish the filesystem or
 network boundary fails closed before executing the validator.
+
+The sandbox presents a synthetic filesystem view, using a mount namespace,
+sandbox profile, or equivalent enforcement. Its complete visibility is:
+
+| Path | Visibility and permitted use |
+|---|---|
+| resolved package root, at the same absolute path used as `cwd` | Entire subtree readable and executable; no write, create, rename, link, metadata, or deletion operation |
+| canonical ancestors of the package root | Directory traversal and metadata needed to reach the mount only; directory listing and access to sibling entries are denied |
+| `/usr`, `/bin`, `/lib`, `/lib64`, `/System/Library` | Existing platform runtime subtree readable only; no path outside these exact prefixes is implied by a symlink, which resolves only when its canonical target is also allowlisted |
+| `/tmp` | Fresh private tmpfs for one execution; `/tmp/home` exists and is empty; read/write/create/delete permitted only here |
+| `/dev/null` | Read/write character device |
+
+All other paths—including caller/maintainer home directories, `/etc`,
+`/proc`, `/sys`, SSH/credential stores, the Stewards checkout outside the
+package root, and inherited temporary directories—are absent. `PATH` lookup
+can select only an executable whose canonical path is an immediate child of
+`/usr/bin` or `/bin`. Direct execution is permitted only for the declared
+validator, an executable regular file under the package root, a PATH-selected
+executable, or the interpreter/loader that the kernel selects while starting
+one of those files; every descendant inherits the same rules.
+
+Before each run, the launcher records the complete package-root
+path/type/mode/SHA-256 snapshot. A filesystem operation against a
+non-allowlisted path returns `EACCES`; a mutating operation outside `/tmp`
+returns `EROFS`. In either case the launcher sets an audited
+`forbidden_path_attempt` flag before returning the error. The flag fails common
+validation even when product code catches the error and returns a canonical
+`pass`. After process-group termination the launcher destroys the private
+tmpfs, requires the package snapshot to be byte-identical, and requires that
+no persistent writable path was exposed. An unsupported filesystem-view,
+canonical-path, syscall-audit, or process-tree containment mechanism fails
+before spawn.
+
+The launcher gives the process tree only stdin, stdout, and stderr file
+descriptors; none is a socket. It intercepts `socket`, `socketpair`, `connect`,
+`bind`, `listen`, `accept`, `accept4`, `shutdown`, `sendto`, `sendmsg`,
+`sendmmsg`, `recvfrom`, `recvmsg`, `recvmmsg`, `getsockname`, `getpeername`,
+`setsockopt`, and `getsockopt`, plus platform multiplexed/equivalent forms
+such as `socketcall` and socket operations submitted through `io_uring`,
+before the kernel performs them. Every such attempt sets a `network_attempt`
+audit flag and returns `EPERM`. The flag is process-tree-wide and fails common
+validation regardless of the validator's handled error, exit code, or result
+bytes.
+Name-service access cannot bypass this rule: network syscalls are audited, and
+non-allowlisted resolver/configuration paths trigger
+`forbidden_path_attempt`. A platform unable to observe and deny every listed
+attempt for the complete process tree fails closed before spawn; proxy
+variables and a network namespace without the audit flag are insufficient.
 
 The request object has `additionalProperties: false` and these common fields:
 
@@ -368,6 +451,14 @@ The inventory contains exact duplicate-free arrays:
 | `payload_identities` | `payload_id`, normalized source path, deterministic extractor, exact kind/value, and whether consumers act on it |
 | `public_contract_items` | stable `contract_id`, category, stable source/extractor, canonical fingerprint, and compatibility annotation |
 | `support_derivatives` | derivative id, kind (`public-support-table` or `host-manifest-claim`), path/extractor, and exact surface-contract projection |
+
+`host_manifests[].host` is a non-empty, single-line Unicode scalar string
+normalized to NFC. A host-manifest identity is exactly `(host, path)` after
+that normalization and normalized-path validation. The array is
+duplicate-free and sorted ascending by that tuple using Unicode scalar-value
+lexicographic order. No other field, including `manifest_kind`,
+`extension_validator`, or version, participates in identity or execution
+order.
 
 `manifest kind` is exactly `claude-plugin`, `codex-plugin`, `npm-package`, or
 `other-declared-host`; the last requires a namespaced extension validator.
@@ -1139,7 +1230,8 @@ Positive fixtures:
 | `positive/plain-authority-json-carriers/` | Deterministic VERSION plus JSON Pointer extraction and parity |
 | `positive/release-tag-resolution/` | Expected Git tag is the only tag source and peels to the emitted commit |
 | `positive/typed-supported-row/` | Exact evidence/load/support/setup objects validate |
-| `positive/product-extension/` | Namespaced product data survives common validation and its declared validator passes the repeated v1 process protocol |
+| `positive/product-extension/` | Nested namespaced product data survives canonicalization; distinct metadata/host identities run in exact order and pass the repeated v1 process protocol |
+| `positive/canonical-nested-json/` | Nested objects, arrays, NFC strings, control/non-BMP scalars, booleans, null, and numbers produce the single canonical byte stream |
 | `positive/retained-verified-release/` | Local no-fetch resolution binds selector, product blobs, history, and catalog identity |
 | `positive/published-mutable-catalog/` | Typed mutable selector remains published |
 | `positive/verified-immutable-catalog/` | Exact tag/commit and clean-install-evidence schema validate |
@@ -1190,7 +1282,8 @@ Negative fixtures:
 | `negative/baseline-fingerprint-canonicalization/` | Reject alternate ordering, normalization, or bytes |
 | `negative/wave-close-with-stock/` | Reject first-wave completion |
 | `negative/stale-derived/` | Name every stale derivative without writes |
-| `negative/extension-validator-protocol/` | Reject wrong argv/env/request/result/exit, stderr, differing runs, timeout, oversize output, network access, or persistent mutation |
+| `negative/extension-validator-protocol/` | Reject wrong identity/order, argv/env/request/result/exit, stderr, differing runs, timeout, oversize output, forbidden path/write, caught socket attempt, or persistent mutation |
+| `negative/canonical-json-ambiguity/` | Reject invalid UTF-8/scalars/numbers, duplicate pre/post-NFC keys, or non-canonical key order, escaping, number bytes, whitespace, or LF |
 | `negative/retained-verified-release/` | Reject absent/wrong checkout, origin, Git object mode, path composition, digest, ancestry, last row, or release binding |
 | `negative/release-interface-output/` | Reject partial or non-canonical success/failure output and a release ledger other than prior rows plus one exact append |
 
@@ -1351,11 +1444,12 @@ one-row contents, and accepts only an ordered removal-only subset.
 
 **S24 — Bounded product extension validation**
 
-Given a declared metadata or other-host extension validator, when pre-tag or
-release validation runs, then the validator receives the exact v1 request in
-the read-only, network-denied process boundary twice and passes only when both
-executions return identical matching canonical `pass` results with exit `0`
-and no stderr or persistent mutation.
+Given declared metadata and other-host extension validators, when pre-tag or
+release validation runs, then each unique identity runs in the exact order
+with the exact v1 request and filesystem/runtime boundary twice and passes only
+when both executions return identical matching canonical `pass` results with
+exit `0`, no stderr, no forbidden-path or network-attempt audit flag, and no
+persistent mutation.
 
 **S25 — Retained verified catalog release**
 
@@ -1373,6 +1467,14 @@ tagged approved release and one correctly appended ledger row, when
 `--phase release` runs, then it validates that exact append and preserves the
 three-field release-identity result, and any contract failure emits no partial
 result.
+
+**S27 — Canonical arbitrary JSON**
+
+Given arbitrarily nested schema-valid JSON containing objects, arrays,
+strings, numbers, booleans, and null, when any canonical request, result,
+fingerprint, or digest preimage is formed, then the recursive grammar emits
+one NFC, scalar-key-ordered, exactly escaped, shortest-number UTF-8 byte stream
+and rejects invalid or normalization-duplicate input.
 
 ### Requirements and invariants
 
@@ -1474,11 +1576,14 @@ result.
   and shall verify its raw digest, exact immutable Trellis/Claude row, and
   current ordered removal-only subset.
 - **R41:** When a product extension validator is declared, the release engine
-  shall invoke it only with the exact v1 argv, working directory, environment,
+  shall invoke each unique metadata/host identity in exact order and only with
+  the exact v1 argv, working directory, environment, filesystem/runtime,
   network, stdin, output, exit, timeout, size, and side-effect contract.
 - **R42:** When either repeated extension-validator execution differs, fails
-  its result schema, or crosses a process boundary, the release engine shall
-  fail without interpreting or promoting the product finding.
+  its result schema, crosses a process boundary, or sets a forbidden-path or
+  network-attempt audit flag, the release engine shall fail regardless of
+  handled child errors and without interpreting or promoting the product
+  finding.
 - **R43:** When a verified catalog row is validated, `validate-door` shall use
   only its explicit local repository mapping and retained Git objects and
   shall not fetch, read product working-tree files, or execute product code.
@@ -1489,6 +1594,17 @@ result.
 - **R45:** The public release-engine commands shall preserve the exact pre-tag
   result and shall emit the exact release result or the one-line failure
   contract without any partial output.
+- **R46:** Every canonical JSON use shall apply the single recursive object,
+  array, string, number, boolean, and null grammar and shall reject invalid
+  UTF-8/scalars/numbers and duplicate pre- or post-NFC object keys.
+- **R47:** Every host-manifest row shall have one unique normalized
+  `(host, path)` identity, and extension-validator execution shall use the
+  exact metadata-namespace-then-host-identity order without path-based
+  deduplication.
+- **R48:** The extension launcher shall deny and audit every forbidden
+  filesystem or network attempt across the complete process tree, and any
+  audit flag shall fail validation even when the validator catches the error
+  and otherwise returns `pass`.
 
 ## Open questions
 
@@ -1504,7 +1620,7 @@ Self-check used the local contract-author rules, `specs/README.md`,
 |---|---|---|
 | Frontmatter, lifecycle, dependencies | PASS | Required fields and decision `implements` edges present; direct decisions approved; append-only ids unpinned |
 | Versioned amendment | PASS | Behavioral counter advanced to v2; section-level WHAT/WHY/SCOPE/POINTER/VALUE/CONFIDENCE delta is present; current dependent spec/index/test pin was updated |
-| Required sections and grammars | PASS | S1–S26 are GWT; R1–R45 are EARS `shall` statements |
+| Required sections and grammars | PASS | S1–S27 are GWT; R1–R48 are EARS `shall` statements |
 | Decision boundary | PASS | Stewards contract/availability machinery is typed; product behavior, evidence creation, release judgment, tag creation, and setup execution remain excluded |
 | F1 deterministic version/tag source | CLOSED | Typed byte extraction, typed carriers, computed tag, and peeled repository ref are normative |
 | F2 typed contract fields | CLOSED | Common schemas fully type evidence, load, support, publication, selector, retirement, and provisioner fields |
@@ -1524,7 +1640,8 @@ Self-check used the local contract-author rules, `specs/README.md`,
 | Intrinsic F1 SemVer edge transitions | CLOSED | Core, prerelease iteration/promotion/regression, cumulative minimum, and equal-precedence build rules are exact |
 | Intrinsic F2 executable inventory grammar | CLOSED | Manifest/extractor/fingerprint/annotation/change-set shapes, all surface-row transition mappings, exact evidence sets, and non-self-referential approval ordering are enumerated |
 | Intrinsic F3 immutable initial stock | CLOSED | Exact initial row, stable comparison commit/digest, working-file equality, and removal-only comparison are normative |
-| v2 whole-spec execution boundary | CLOSED | Extension subprocess request/result/limits, retained verified-catalog resolution, release-history digest/append staging, and public CLI results are exact |
+| Adversary remediation F1–F4 | CLOSED | Generic nested canonical JSON including number bytes; unique host identity/order; exact PATH/filesystem/runtime visibility and forbidden-path audit; and process-tree network-attempt audit are normative |
+| v2 whole-spec execution boundary | CLOSED | Recursive canonical JSON, unique validator identities/order, audited allowlisted filesystem/runtime/network boundary, extension subprocess request/result/limits, retained verified-catalog resolution, release-history digest/append staging, and public CLI results are exact |
 | Whole-corpus validation | NOT CLAIMED | Issue #20 blocks literal full-corpus PASS; this artifact uses strict YAML/exact ids and was checked change-scoped |
 
 **Result: PASS for author self-check.**
@@ -1533,4 +1650,4 @@ Self-check used the local contract-author rules, `specs/README.md`,
 
 The maintainer's 2026-07-24 act approved v1 after spec-adversary and
 conformance review. This v2 amendment passed the author self-check above and
-is `gated`; the prior v1 act is not reused as approval of S24–S26 or R41–R45.
+is `gated`; the prior v1 act is not reused as approval of S24–S27 or R41–R48.

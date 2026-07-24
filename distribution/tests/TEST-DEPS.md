@@ -20,5 +20,5 @@ That spec derives from approved decisions
 
 Tests additionally name the exact spec scenario or requirement above each
 test function. Existing `@v1` annotations remain accurate provenance because
-v2 preserves those clauses; S24–S26 and R41–R45 remain unimplemented and are
+v2 preserves those clauses; S24–S27 and R41–R48 remain unimplemented and are
 tracked in `distribution/IMPLEMENTATION-STATUS.md`.
