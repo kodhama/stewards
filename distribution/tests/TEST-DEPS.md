@@ -3,7 +3,7 @@ id: stewards-distribution-tests-deps
 type: test-dependencies
 status: gated
 depends_on:
-  - kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v1
+  - kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2
   - kodhama-0015-family-plugin-release-and-surface-contract
   - kodhama-0016-distribution-availability-and-effective-support
 owner: agent
@@ -12,11 +12,13 @@ updated: 2026-07-24
 
 # Distribution test dependencies
 
-The `distribution/tests` package guards
-`kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v1`.
+The `distribution/tests` package guards the landed subset of
+`kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2`.
 That spec derives from approved decisions
 `kodhama-0015-family-plugin-release-and-surface-contract` and
 `kodhama-0016-distribution-availability-and-effective-support`.
 
 Tests additionally name the exact spec scenario or requirement above each
-test function.
+test function. Existing `@v1` annotations remain accurate provenance because
+v2 preserves those clauses; S24–S26 and R41–R45 remain unimplemented and are
+tracked in `distribution/IMPLEMENTATION-STATUS.md`.

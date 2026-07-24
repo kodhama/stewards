@@ -1,8 +1,8 @@
 ---
 id: kodhama-spec-0001-family-plugin-release-and-distribution-metadata
 type: spec
-status: approved  # maintainer authorized the family rollout and merge after independent review; spec-adversary APPROVE-READY and conformance PASS preceded this recording
-version: 1
+status: gated  # v2 author self-check passed; independent v2 review/ratification remains due
+version: 2
 depends_on: [kodhama-0015-family-plugin-release-and-surface-contract, kodhama-0016-distribution-availability-and-effective-support]
 implements: [kodhama-0015-family-plugin-release-and-surface-contract, kodhama-0016-distribution-availability-and-effective-support]
 owner: agent
@@ -10,6 +10,23 @@ updated: 2026-07-24
 ---
 
 # Family plugin release and distribution metadata
+
+> **Amended 2026-07-24 — whole-spec completion protocol.**
+> **WHAT:** Defined the product extension-validator process protocol, retained
+> catalog product-contract/history resolution, and the exact public
+> release-engine and local-repository-resolver interfaces.
+> **WHY:** The approved v1 contract named those obligations but left their
+> process and retained-byte boundaries underdetermined, so the landed partial
+> implementation correctly failed closed and the remaining release engine
+> could not be implemented without guessing.
+> **SCOPE:** Product validation, verified catalog validation, S24–S26, and
+> R41–R45; all v1 behavior and ownership boundaries remain current.
+> **POINTER:** `distribution/IMPLEMENTATION-STATUS.md` at
+> `495b4cb632fc796f76200d8cf0be7442b4d41997`.
+> **VALUE:** Product maintainers can ship independently while Stewards verifies
+> exact release claims without interpreting or taking ownership of product
+> behavior.
+> **CONFIDENCE:** verified.
 
 ## Scope
 
@@ -32,6 +49,8 @@ All paths are relative to the Stewards repository root.
 | `distribution/schemas/release-metadata.v1.schema.json` | Product release-metadata minimum | Versioned authority |
 | `distribution/schemas/release-inventory.v1.schema.json` | Product host-manifest, payload, public-contract, and support-derivative inventory | Versioned authority |
 | `distribution/schemas/release-history.v1.schema.json` | Append-only release/tag/contract history | Versioned authority |
+| `distribution/schemas/extension-validator-request.v1.schema.json` | Product extension-validator request envelope | Versioned authority |
+| `distribution/schemas/extension-validator-result.v1.schema.json` | Product extension-validator result envelope | Versioned authority |
 | `distribution/schemas/surface-contract.v1.schema.json` | Product surface-contract minimum | Versioned authority |
 | `distribution/schemas/surface-registry.v1.schema.json` | Surface-registry schema | Versioned authority |
 | `distribution/schemas/catalog-availability.v1.schema.json` | Catalog availability schema | Versioned authority |
@@ -233,6 +252,97 @@ Product validation has two phases:
 Publication and any `verified` availability require the `release` phase.
 Stewards does not create the tag.
 
+### Product extension-validator protocol
+
+The common engine invokes only validators explicitly declared in product
+release metadata or in an `other-declared-host` inventory row. It validates
+the process envelope and accepts or rejects the declared extension result; it
+does not interpret a product finding as family vocabulary or behavioral
+evidence.
+
+Validator paths are normalized package-relative paths. The resolved target
+shall remain inside the package root, be a regular non-symlink file with no
+symlink path component, and be executable. For each validation phase, the
+engine invokes:
+
+1. `extensions.<namespace>.validator` in ascending Unicode-code-point
+   `namespace` order; then
+2. each `other-declared-host` row's `extension_validator` in the inventory's
+   required host-manifest identity order.
+
+Each validator is executed twice with this exact process contract:
+
+| Process field | Exact contract |
+|---|---|
+| `argv` | `[<resolved-validator-absolute-path>, "--stewards-extension-validator-v1"]`; no shell and no additional argument |
+| working directory | The resolved absolute package root supplied to `--package-root` |
+| stdin | One canonical `extension-validator-request.v1` JSON object, UTF-8, followed by exactly one LF; both executions receive identical bytes |
+| stdout | One canonical `extension-validator-result.v1` JSON object, UTF-8, followed by exactly one LF; no other bytes |
+| stderr | Empty for protocol exits `0` and `1`; otherwise captured only for bounded diagnostics and never interpreted as a product result |
+| timeout | 10 seconds per execution, measured from spawn through process-group termination |
+| sizes | Request and stdout are each at most 1,048,576 bytes; stderr is at most 65,536 bytes; exceeding a bound fails validation |
+| filesystem | Package root is mounted/read-open only; `HOME=/tmp/home` and `TMPDIR=/tmp` name fresh private writable directories destroyed after the invocation; no persistent path may change |
+| network | All network namespaces, sockets, and name-service egress are denied by the launcher; clearing proxy variables alone is not sufficient |
+
+The child environment contains exactly these keys:
+
+| Key | Exact value |
+|---|---|
+| `PATH` | The launcher's `PATH` value, or the empty string when absent |
+| `LANG`, `LC_ALL` | `C.UTF-8` |
+| `TZ` | `UTC` |
+| `HOME` | `/tmp/home` |
+| `TMPDIR` | `/tmp` |
+| `NO_PROXY` | `*` |
+| `http_proxy`, `https_proxy`, `HTTP_PROXY`, `HTTPS_PROXY` | Empty string |
+
+No other inherited variable, file descriptor, credential, or stdin byte is
+available to the child. A launcher unable to establish the filesystem or
+network boundary fails closed before executing the validator.
+
+The request object has `additionalProperties: false` and these common fields:
+
+| Field | Contract |
+|---|---|
+| `schema_version` | Integer `1` |
+| `request_kind` | `product-extension` or `host-manifest-extension` |
+| `phase` | `pre-tag` or `release` |
+| `plugin_id` | Extracted release-metadata plugin id |
+| `namespace` | Metadata extension key for `product-extension`; `plugin_id` for `host-manifest-extension` |
+| `package_version` | Extracted authority version |
+| `expected_tag` | Computed `<plugin_id>-v<package_version>` |
+| `source_commit` | `null` in `pre-tag`; the tag's peeled full commit in `release` |
+| `release_metadata_path`, `surface_contract_path`, `release_inventory_path`, `release_history_path` | The four normalized package-relative paths used by the common validator |
+
+A `product-extension` request additionally requires `extension`, the complete
+JSON value from `extensions.<namespace>` after removing the reserved
+`validator` member, and forbids `host_manifest`. A
+`host-manifest-extension` request additionally requires `host_manifest`, the
+complete inventory row after removing `extension_validator`, and forbids
+`extension`. The engine constructs these values only after common schema,
+path, version, carrier, and inventory validation; validators do not receive
+unvalidated common fields.
+
+The result object has `additionalProperties: false` and exactly:
+
+| Field | Contract |
+|---|---|
+| `schema_version` | Integer `1` |
+| `request_sha256` | SHA-256 of the exact stdin bytes, including its terminal LF |
+| `outcome` | `pass` or `fail` |
+| `findings` | Sorted, duplicate-free array of exact finding objects |
+
+A finding contains exactly non-empty dot-id `code`, non-empty single-line
+`message`, and RFC 6901 `instance_pointer`. Findings sort by
+`(instance_pointer, code, message)` using Unicode code-point order. `pass`
+requires an empty array and process exit `0`; `fail` requires a non-empty array
+and process exit `1`. Any other exit, signal, stderr byte, malformed or
+non-canonical result, request-hash mismatch, outcome/exit mismatch, differing
+stdout across the two executions, timeout, network attempt, or persistent
+filesystem mutation fails common validation. Product `fail` findings may be
+reported with their namespace and pointer, but Stewards shall not transform
+their codes or messages into common support facts.
+
 ### Complete product release inventory
 
 The common validator invokes the product-owned `inventory_provider` twice in a
@@ -313,17 +423,53 @@ version and support claims without copying them.
 ### Immutable history and SemVer compatibility
 
 The product's `release-history.v1` file is append-only and sorted by SemVer
-precedence. Each row contains package version, release tag, source commit,
+precedence. Each row contains package version, release tag, source commit, a
+`repo-path` `release_metadata_reference` to that tag's retained metadata blob,
 release-inventory SHA-256, complete payload-identity array, public-contract
 inventory SHA-256, surface-contract SHA-256, classified change set, and
 `release_approval`. Initial family adoption inventories every existing
 matching package tag and requires one product-human approval reference for
 that seed. Each new row also names a stable reference to the immediately prior
-ledger state; validation loads it and requires the current ledger to equal
-those prior canonical rows byte-for-byte plus exactly one appended row. The
-ledger may be committed after its release tag because its row contains that
-tag's source commit; catalog publication waits for the appended ledger and
-cites its stable reference, avoiding a commit self-reference.
+ledger state. Appended-ledger validation loads that reference and requires the
+current ledger to equal those prior canonical rows byte-for-byte plus exactly
+one appended row. The ledger may be committed after its release tag because
+its row contains that tag's source commit; catalog publication waits for the
+appended ledger and cites its stable reference, avoiding a commit
+self-reference.
+
+The three release-row digests are exact:
+
+| Field | SHA-256 preimage |
+|---|---|
+| `release_inventory_sha256` | The checked-in `release_inventory` file's exact bytes, which already equal the provider's canonical stdout including its terminal LF |
+| `public_contract_inventory_sha256` | Canonical JSON bytes of the complete `public_contract_items` array, with no terminal LF |
+| `surface_contract_sha256` | The checked-in `surface_contract` file's exact bytes |
+
+In `pre-tag`, `release_history` contains only seed/prior rows and the expected
+tag need not exist. In `release`, the expected tag exists and the current
+checked-in ledger contains exactly one appended last row for it. The engine
+reads release metadata, inventory, and surface bytes from the tag commit,
+loads the appended row's prior reference, and requires the current ledger to
+equal that prior ledger plus the one derived row. The release-validation
+checkout commit shall equal or descend from the release commit; files other
+than the append-only ledger shall match their tagged retained bytes. For a
+first family release, an empty prior ledger is valid only when no earlier
+matching package tag exists; otherwise the product-human-approved seed rows
+cover every earlier matching tag.
+
+When the prior ledger is non-empty, the appended row's
+`prior_history_reference` is a derived `repo-path` reference to the prior
+ledger blob at the release tag's `source_commit`: `repository` is the exact
+GitHub origin repository, `path` is the repository-relative composition of
+the package root and `release_history`, and `sha256` covers its raw bytes. The
+field is absent only for an empty ledger. The validator recomputes this
+reference and never trusts the row's supplied value.
+Every appended or seeded row's `release_metadata_reference` is likewise a
+derived `repo-path` reference to that row's exact tag commit and
+repository-relative metadata path, with SHA-256 over the raw metadata blob.
+The engine resolves that reference first to recover each historical
+inventory/surface path and bytes; a digest without this retained input cannot
+satisfy history validation.
 
 The classified change set is a sorted duplicate-free array of exact objects
 `{contract_id, change_kind, before_fingerprint, after_fingerprint,
@@ -570,6 +716,69 @@ equals the release tag or commit, or `provisioner-acquisition` only when a
 matching verified provisioner record carries the same identity. A mutable
 selector is capped at `published`.
 
+#### Retained product-contract and history resolution
+
+`validate-door` resolves product bytes only for `verified` catalog rows. It
+never executes product inventory providers or extension validators. Published
+rows retain their existing shape/publication checks but make no retained
+release-identity claim.
+
+Resolution uses the required `STEWARDS_PRODUCT_REPOSITORIES` environment
+variable. Its value is one UTF-8 JSON object with no duplicate keys or
+additional envelope: every key is a selector `owner/repository`, and every
+value is a non-empty local checkout path. Relative values resolve from the
+Stewards repository root; absolute values remain absolute. Every required
+repository shall have exactly one entry. Extra entries are permitted and
+ignored. Each selected checkout shall have an `origin` URL in
+`https://github.com/<owner>/<repository>[.git]`,
+`ssh://git@github.com/<owner>/<repository>[.git]`, or
+`git@github.com:<owner>/<repository>[.git]` form that normalizes exactly to
+the key. Validation performs no fetch and never reads a product working-tree
+file; an absent checkout/object is a contract failure.
+
+For a verified row, resolution is ordered and fail-closed:
+
+1. Resolve `source_selector.repository` through the mapping. Require
+   `source_commit` to be a commit object. For a tag selector, require the exact
+   ref `refs/tags/<release_tag>` to exist and peel to that commit; for a commit
+   selector, require its ref value to equal that commit.
+2. Define `package_prefix` as `source_selector.path`. Compose any
+   package-relative `p` as `p` when the prefix is empty and
+   `<package_prefix>/<p>` otherwise. Both inputs are independently normalized;
+   no absolute path, empty segment, `.`, `..`, backslash, or percent-decoded
+   alternate is accepted.
+3. At `source_commit`, resolve the composed `release_metadata_path`,
+   `surface_contract_path`, and the metadata-declared `release_inventory`
+   path as Git blobs of mode `100644` or `100755`; symlinks, submodules,
+   directories, missing objects, and working-tree fallbacks fail. Parse JSON
+   as UTF-8 without BOM or duplicate keys.
+4. Require release metadata `plugin_id`, extracted authority/carriers,
+   computed tag, `surface_contract`, and `family_contract_version` to equal the
+   catalog plugin id, release identity, catalog path, and
+   `product_contract_version`. Require the retained surface contract's version
+   and family version to match the same values. Require raw inventory/surface
+   digests and complete payload identities to match the release row below.
+5. `release_history_reference` shall be a `repo-path` stable reference with
+   the same repository and with `path` exactly equal to the composition of
+   `package_prefix` and metadata `release_history`. Its `source_commit` shall
+   be a commit descendant of or equal to the release `source_commit`. Resolve
+   that exact commit/path as a regular Git blob; its raw SHA-256 shall equal
+   the reference digest before parsing it as `release-history.v1`.
+6. Require a non-empty ledger whose last row has exact `package_version`,
+   `release_tag`, `source_commit`, `release_inventory_sha256`,
+   `public_contract_inventory_sha256`, `surface_contract_sha256`,
+   `payload_identities`, and `release_approval` for the retained release. Its
+   `release_metadata_reference` shall equal the repository, source commit,
+   composed path, and raw digest resolved in steps 1–4. Resolve every row's
+   metadata reference before validating the whole ledger's order, prior
+   references, tag immutability, change set, bump, and approval bindings; a
+   matching last-row identity alone is insufficient.
+
+No `https-url` or `artifact` reference can satisfy a verified catalog
+`release_history_reference`, because this no-fetch resolver cannot establish
+its retained repository/tag/path relations. Those stable-reference variants
+remain valid in the other fields that explicitly permit them.
+
 ### Provisioner
 
 Every provisioner record, including `unavailable`, has the same complete key:
@@ -811,14 +1020,30 @@ ratify its decision.
 
 | Command | Required result |
 |---|---|
-| `validate-product --phase pre-tag --package-root <path> --release-metadata <path>` | Deterministically extract and compare versions, validate surface data/extensions, emit expected tag |
-| `validate-product --phase release --package-root <path> --release-metadata <path>` | Additionally resolve the expected repository tag and emit its peeled commit |
-| `validate-door` | Validate all schemas, sources, cross-references, identities, baselines, and host projections |
+| `validate-product --phase pre-tag --package-root <path> --release-metadata <path>` | Preserve the landed interface: validate the pre-tag contract and emit exactly `{"expected_tag": string, "package_version": string}` |
+| `validate-product --phase release --package-root <path> --release-metadata <path>` | Repeat pre-tag validation, validate extensions with the peeled commit, resolve/validate every package tag, appended history row, compatibility change, bump, and approval, then preserve v1's release-identity result as exactly `{"expected_tag": string, "package_version": string, "source_commit": string}` |
+| `validate-door` | Validate all schemas, sources, cross-references, identities, baselines, host projections, and verified retained product bytes through `STEWARDS_PRODUCT_REPOSITORIES` |
 | `generate` | Deterministically write both host catalogs and `distribution/availability.md` |
 | `generate --check` | Make no writes; fail and name every stale catalog, availability, README, or CLAUDE derivative |
 | `legacy-discover --baseline-commit <commit>` | Read only the two host manifests at that commit and emit sorted entry keys/fingerprints |
 | `wave-close` | Run `validate-door`; fail while transition stock remains |
 | `effective --facts <path>` | Validate authoritative facts and emit the typed result |
+
+`--package-root` resolves to an existing package directory inside a Git
+checkout; `--release-metadata` is a normalized path relative to that root.
+The validator reads package inputs from that root, resolves repository refs
+with `git -C <package-root>`, and passes the same resolved root to the
+inventory-provider and extension protocols. It does not fetch. In `release`,
+the checkout's exact tag ref supplies `source_commit`; caller or working-tree
+HEAD identity cannot substitute for it.
+
+Every emitted object uses the canonical JSON grammar already defined by this
+spec, followed by one LF. Successful non-emitting commands write no stdout or
+stderr. A contract failure exits `1`, writes no stdout, and writes exactly one
+UTF-8 stderr line `error: <message>\n`, where `message` contains no CR or LF.
+Argument parsing retains the command-line parser's exit `2`. An emitting
+command exits `0` only after its complete validation succeeds; no partial
+identity or projection is emitted on failure.
 
 Generation orders maps by schema-defined key and arrays by their declared
 identity key, emits UTF-8 JSON with LF and no insignificant whitespace, and
@@ -914,7 +1139,8 @@ Positive fixtures:
 | `positive/plain-authority-json-carriers/` | Deterministic VERSION plus JSON Pointer extraction and parity |
 | `positive/release-tag-resolution/` | Expected Git tag is the only tag source and peels to the emitted commit |
 | `positive/typed-supported-row/` | Exact evidence/load/support/setup objects validate |
-| `positive/product-extension/` | Namespaced product data survives common validation |
+| `positive/product-extension/` | Namespaced product data survives common validation and its declared validator passes the repeated v1 process protocol |
+| `positive/retained-verified-release/` | Local no-fetch resolution binds selector, product blobs, history, and catalog identity |
 | `positive/published-mutable-catalog/` | Typed mutable selector remains published |
 | `positive/verified-immutable-catalog/` | Exact tag/commit and clean-install-evidence schema validate |
 | `positive/unavailable-exact-key/` | Unavailable uses the complete provisioner identity |
@@ -964,6 +1190,9 @@ Negative fixtures:
 | `negative/baseline-fingerprint-canonicalization/` | Reject alternate ordering, normalization, or bytes |
 | `negative/wave-close-with-stock/` | Reject first-wave completion |
 | `negative/stale-derived/` | Name every stale derivative without writes |
+| `negative/extension-validator-protocol/` | Reject wrong argv/env/request/result/exit, stderr, differing runs, timeout, oversize output, network access, or persistent mutation |
+| `negative/retained-verified-release/` | Reject absent/wrong checkout, origin, Git object mode, path composition, digest, ancestry, last row, or release binding |
+| `negative/release-interface-output/` | Reject partial or non-canonical success/failure output and a release ledger other than prior rows plus one exact append |
 
 ## Acceptance criteria
 
@@ -1120,6 +1349,31 @@ Given current transition stock, when `validate-door` runs, then it resolves
 the immutable initial-stock comparison commit, verifies raw digest and exact
 one-row contents, and accepts only an ordered removal-only subset.
 
+**S24 — Bounded product extension validation**
+
+Given a declared metadata or other-host extension validator, when pre-tag or
+release validation runs, then the validator receives the exact v1 request in
+the read-only, network-denied process boundary twice and passes only when both
+executions return identical matching canonical `pass` results with exit `0`
+and no stderr or persistent mutation.
+
+**S25 — Retained verified catalog release**
+
+Given a verified catalog row and explicit local repository mapping, when
+`validate-door` runs, then it resolves the immutable selector, retained
+metadata/surface/inventory blobs, and descendant history-reference blob
+without fetching and accepts only when the complete last history row and
+digests bind the row's exact product release.
+
+**S26 — Public release-engine result**
+
+Given a valid pre-tag package, when `validate-product --phase pre-tag` runs,
+then it preserves the two-field canonical result; given the subsequently
+tagged approved release and one correctly appended ledger row, when
+`--phase release` runs, then it validates that exact append and preserves the
+three-field release-identity result, and any contract failure emits no partial
+result.
+
 ### Requirements and invariants
 
 - **R1:** The system shall extract the canonical package version and every
@@ -1219,6 +1473,22 @@ one-row contents, and accepts only an ordered removal-only subset.
 - **R40:** `validate-door` shall resolve the initial-stock comparison commit
   and shall verify its raw digest, exact immutable Trellis/Claude row, and
   current ordered removal-only subset.
+- **R41:** When a product extension validator is declared, the release engine
+  shall invoke it only with the exact v1 argv, working directory, environment,
+  network, stdin, output, exit, timeout, size, and side-effect contract.
+- **R42:** When either repeated extension-validator execution differs, fails
+  its result schema, or crosses a process boundary, the release engine shall
+  fail without interpreting or promoting the product finding.
+- **R43:** When a verified catalog row is validated, `validate-door` shall use
+  only its explicit local repository mapping and retained Git objects and
+  shall not fetch, read product working-tree files, or execute product code.
+- **R44:** A verified catalog row shall bind its immutable selector, retained
+  release metadata, surface contract, inventory, and repo-path history
+  reference to the exact package version, tag, commit, payloads, digests,
+  approval, and complete last ledger row.
+- **R45:** The public release-engine commands shall preserve the exact pre-tag
+  result and shall emit the exact release result or the one-line failure
+  contract without any partial output.
 
 ## Open questions
 
@@ -1233,7 +1503,8 @@ Self-check used the local contract-author rules, `specs/README.md`,
 | Check | Result | Evidence |
 |---|---|---|
 | Frontmatter, lifecycle, dependencies | PASS | Required fields and decision `implements` edges present; direct decisions approved; append-only ids unpinned |
-| Required sections and grammars | PASS | S1–S23 are GWT; R1–R40 are EARS `shall` statements |
+| Versioned amendment | PASS | Behavioral counter advanced to v2; section-level WHAT/WHY/SCOPE/POINTER/VALUE/CONFIDENCE delta is present; current dependent spec/index/test pin was updated |
+| Required sections and grammars | PASS | S1–S26 are GWT; R1–R45 are EARS `shall` statements |
 | Decision boundary | PASS | Stewards contract/availability machinery is typed; product behavior, evidence creation, release judgment, tag creation, and setup execution remain excluded |
 | F1 deterministic version/tag source | CLOSED | Typed byte extraction, typed carriers, computed tag, and peeled repository ref are normative |
 | F2 typed contract fields | CLOSED | Common schemas fully type evidence, load, support, publication, selector, retirement, and provisioner fields |
@@ -1253,15 +1524,13 @@ Self-check used the local contract-author rules, `specs/README.md`,
 | Intrinsic F1 SemVer edge transitions | CLOSED | Core, prerelease iteration/promotion/regression, cumulative minimum, and equal-precedence build rules are exact |
 | Intrinsic F2 executable inventory grammar | CLOSED | Manifest/extractor/fingerprint/annotation/change-set shapes, all surface-row transition mappings, exact evidence sets, and non-self-referential approval ordering are enumerated |
 | Intrinsic F3 immutable initial stock | CLOSED | Exact initial row, stable comparison commit/digest, working-file equality, and removal-only comparison are normative |
+| v2 whole-spec execution boundary | CLOSED | Extension subprocess request/result/limits, retained verified-catalog resolution, release-history digest/append staging, and public CLI results are exact |
 | Whole-corpus validation | NOT CLAIMED | Issue #20 blocks literal full-corpus PASS; this artifact uses strict YAML/exact ids and was checked change-scoped |
 
 **Result: PASS for author self-check.**
 
-## Approval record
+## Gate record
 
-On 2026-07-24 the maintainer authorized the family-wide rollout, including
-the shared Stewards contract and its product-specific adoption, and authorized
-merge after independent review. The spec-adversary returned `APPROVE-READY`
-after the executable-schema findings were resolved, and the conformance
-reviewer returned `PASS` against approved decisions 0015 and 0016. This
-`approved` status records that prior human intent act.
+The maintainer's 2026-07-24 act approved v1 after spec-adversary and
+conformance review. This v2 amendment passed the author self-check above and
+is `gated`; the prior v1 act is not reused as approval of S24–S26 or R41–R45.
