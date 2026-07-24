@@ -13,19 +13,20 @@ updated: 2026-07-24
 
 > **Amended 2026-07-24 — whole-spec completion protocol.**
 > **WHAT:** Defined the product extension-validator process protocol,
-> canonical JSON grammar, execution identity/order, audited sandbox boundary,
-> retained catalog product-contract/history resolution, and the exact public
-> release-engine and local-repository-resolver interfaces.
+> canonical JSON grammar, execution identity/order, a digest-bound immutable
+> validator runtime and audited sandbox boundary, retained catalog
+> product-contract/history resolution, and the exact public release-engine
+> and local-repository-resolver interfaces.
 > **WHY:** The approved v1 contract named those obligations but left their
 > process and retained-byte boundaries underdetermined, so the landed partial
 > implementation correctly failed closed and the remaining release engine
 > could not be implemented without guessing.
 > **SCOPE:** Common canonicalization, product validation, verified catalog
-> validation, S24–S27, and R41–R48; all v1 behavior and ownership boundaries
+> validation, S24–S28, and R41–R49; all v1 behavior and ownership boundaries
 > remain current.
 > **POINTER:** `distribution/IMPLEMENTATION-STATUS.md` at
 > `495b4cb632fc796f76200d8cf0be7442b4d41997`; intrinsic remediation triggered
-> by the spec-adversary `NEEDS-REVISION` verdict on `95fced9`.
+> by the spec-adversary `NEEDS-REVISION` verdicts on `95fced9` and `88f1988`.
 > **VALUE:** Product maintainers can ship independently while Stewards verifies
 > exact release claims without interpreting or taking ownership of product
 > behavior.
@@ -54,6 +55,7 @@ All paths are relative to the Stewards repository root.
 | `distribution/schemas/release-history.v1.schema.json` | Append-only release/tag/contract history | Versioned authority |
 | `distribution/schemas/extension-validator-request.v1.schema.json` | Product extension-validator request envelope | Versioned authority |
 | `distribution/schemas/extension-validator-result.v1.schema.json` | Product extension-validator result envelope | Versioned authority |
+| `distribution/schemas/extension-validator-runtime.v1.schema.json` | Content-addressed immutable validator runtime manifest | Versioned authority |
 | `distribution/schemas/surface-contract.v1.schema.json` | Product surface-contract minimum | Versioned authority |
 | `distribution/schemas/surface-registry.v1.schema.json` | Surface-registry schema | Versioned authority |
 | `distribution/schemas/catalog-availability.v1.schema.json` | Catalog availability schema | Versioned authority |
@@ -269,8 +271,11 @@ The release metadata object contains only:
 | `extensions` | no | Object keyed by `plugin_id` |
 
 Unknown common top-level fields are invalid. Product-specific values belong
-under `extensions.<plugin_id>`. A declared extension validator is a normalized
-package-relative path in `extensions.<plugin_id>.validator`.
+under `extensions.<plugin_id>`. A declared extension validator uses a
+normalized package-relative path in `extensions.<plugin_id>.validator` and
+requires `extensions.<plugin_id>.validator_runtime_sha256`, the exact
+immutable runtime-manifest digest defined below. Neither field is valid
+without the other.
 
 Product validation has two phases:
 
@@ -305,6 +310,58 @@ Host-manifest identities are the unique tuples defined below. One validator
 path declared by multiple identities runs once per identity with that row's
 distinct request; validator-path equality never deduplicates executions.
 
+#### Immutable validator runtime
+
+Every validator declaration binds one locally available immutable runtime by
+the lowercase 64-hex SHA-256 of a canonical
+`extension-validator-runtime.v1` manifest. The digest is over the manifest's
+canonical JSON bytes without a terminal LF. The manifest has
+`additionalProperties: false` and exactly:
+
+| Field | Contract |
+|---|---|
+| `schema_version` | Integer `1` |
+| `platform` | Object with only non-empty lowercase dot-id `os`, `architecture`, and `abi`; it shall exactly equal the launcher's detected target tuple |
+| `path_entries` | Non-empty, ordered, duplicate-free array of normalized absolute sandbox directories |
+| `executables` | Sorted, duplicate-free array of normalized absolute sandbox paths |
+| `entries` | Duplicate-free array sorted by normalized absolute sandbox path, with exactly one row for every runtime directory, regular file, and symbolic link |
+
+Sandbox paths use `/`-rooted POSIX syntax regardless of host operating system;
+the launcher projects them into the synthetic child view without exposing the
+corresponding live-host path. Every parent directory is an entry. A directory
+row contains only `path`, `kind: "directory"`, and `mode`. A regular-file row
+contains only `path`, `kind: "file"`, `mode`,
+lowercase 64-hex `sha256`, and `role`, where `role` is exactly `executable`,
+`loader`, `library`, `configuration`, or `runtime-data`. A symbolic-link row
+contains only `path`, `kind: "symlink"`, `mode`, and normalized absolute
+`target`. Every `mode` is a string matching `0[0-7]{3}`. Every link target is
+another entry, link resolution is acyclic, and the final target remains in the
+manifest.
+
+Each `path_entries` value names a manifest directory. Each `executables` value
+names an executable-mode regular-file entry with role `executable`. A file
+used as a program interpreter, dynamic loader, library, resolver input, locale
+input, timezone input, or other runtime/configuration dependency is an
+individually enumerated entry with its applicable role; directory visibility
+does not imply visibility of an unlisted child.
+
+The runtime image contains exactly the manifest entries with the declared
+types, modes, link targets, and file hashes—no extra entry or implicit
+live-host bind. It contains no credential, user profile, mutable host state,
+device, socket, or writable file. Entries under `/home`, `/Users`, `/root`,
+`/private`, `/proc`, `/sys`, `/tmp`, `/dev`, `/run/secrets`, and
+`/var/run/secrets` are invalid. An individually enumerated immutable
+`configuration` file may use `/etc`; `/etc` directory visibility never exposes
+an unenumerated child.
+
+Before either execution, the launcher resolves the declaration's exact digest
+from its local content-addressed runtime store, validates the manifest digest,
+schema, platform tuple, and complete image tree, and projects the same verified
+tree read-only into both sandboxes. It does not fetch or substitute another
+digest or platform. An unavailable digest, malformed manifest, digest
+mismatch, platform mismatch, missing or extra image entry, type/mode/hash/link
+mismatch, forbidden path, or unsupported projection fails before spawn.
+
 Each validator is executed twice with this exact process contract:
 
 | Process field | Exact contract |
@@ -316,14 +373,14 @@ Each validator is executed twice with this exact process contract:
 | stderr | Empty for protocol exits `0` and `1`; otherwise captured only for bounded diagnostics and never interpreted as a product result |
 | timeout | 10 seconds per execution, measured from spawn through process-group termination |
 | sizes | Request and stdout are each at most 1,048,576 bytes; stderr is at most 65,536 bytes; exceeding a bound fails validation |
-| filesystem/runtime | Exact allowlist and audited forbidden-path behavior below |
+| filesystem/runtime | Exact declared immutable runtime plus package/private overlays and audited forbidden-path behavior below |
 | network | Every socket/network attempt by the process tree is denied, audited, and independently fails validation as defined below |
 
 The child environment contains exactly these keys:
 
 | Key | Exact value |
 |---|---|
-| `PATH` | `/usr/bin:/bin`; no caller PATH entry is inherited |
+| `PATH` | The runtime manifest's `path_entries`, joined in declared order with `:`; no caller PATH entry is inherited |
 | `LANG`, `LC_ALL` | `C.UTF-8` |
 | `TZ` | `UTC` |
 | `HOME` | `/tmp/home` |
@@ -342,18 +399,19 @@ sandbox profile, or equivalent enforcement. Its complete visibility is:
 |---|---|
 | resolved package root, at the same absolute path used as `cwd` | Entire subtree readable and executable; no write, create, rename, link, metadata, or deletion operation |
 | canonical ancestors of the package root | Directory traversal and metadata needed to reach the mount only; directory listing and access to sibling entries are denied |
-| `/usr`, `/bin`, `/lib`, `/lib64`, `/System/Library` | Existing platform runtime subtree readable only; no path outside these exact prefixes is implied by a symlink, which resolves only when its canonical target is also allowlisted |
+| exact runtime-manifest entries | Declared directories and exact file/link entries readable; declared executable files executable; no unenumerated child or live-host counterpart visible |
 | `/tmp` | Fresh private tmpfs for one execution; `/tmp/home` exists and is empty; read/write/create/delete permitted only here |
 | `/dev/null` | Read/write character device |
 
-All other paths—including caller/maintainer home directories, `/etc`,
-`/proc`, `/sys`, SSH/credential stores, the Stewards checkout outside the
-package root, and inherited temporary directories—are absent. `PATH` lookup
-can select only an executable whose canonical path is an immediate child of
-`/usr/bin` or `/bin`. Direct execution is permitted only for the declared
-validator, an executable regular file under the package root, a PATH-selected
-executable, or the interpreter/loader that the kernel selects while starting
-one of those files; every descendant inherits the same rules.
+All other paths—including live-host runtime prefixes, caller/maintainer home
+directories, unenumerated `/etc` children, `/proc`, `/sys`, SSH/credential
+stores, the Stewards checkout outside the package root, and inherited
+temporary directories—are absent. `PATH` lookup can select only a path listed
+in manifest `executables`. Direct execution is permitted only for the declared
+validator, an executable regular file under the package root, or a manifest
+`executable`; the kernel may select only an enumerated `executable` interpreter
+or `loader` while starting one of those files. Every descendant inherits the
+same rules.
 
 Before each run, the launcher records the complete package-root
 path/type/mode/SHA-256 snapshot. A filesystem operation against a
@@ -395,16 +453,19 @@ The request object has `additionalProperties: false` and these common fields:
 | `package_version` | Extracted authority version |
 | `expected_tag` | Computed `<plugin_id>-v<package_version>` |
 | `source_commit` | `null` in `pre-tag`; the tag's peeled full commit in `release` |
+| `validator_runtime_sha256` | Exact digest from the validator declaration and verified runtime manifest |
 | `release_metadata_path`, `surface_contract_path`, `release_inventory_path`, `release_history_path` | The four normalized package-relative paths used by the common validator |
 
 A `product-extension` request additionally requires `extension`, the complete
 JSON value from `extensions.<namespace>` after removing the reserved
-`validator` member, and forbids `host_manifest`. A
+`validator` and `validator_runtime_sha256` members, and forbids
+`host_manifest`. A
 `host-manifest-extension` request additionally requires `host_manifest`, the
-complete inventory row after removing `extension_validator`, and forbids
-`extension`. The engine constructs these values only after common schema,
-path, version, carrier, and inventory validation; validators do not receive
-unvalidated common fields.
+complete inventory row after removing `extension_validator` and
+`extension_validator_runtime_sha256`, and forbids `extension`. The engine
+constructs these values only after common schema, path, version, carrier,
+inventory, and runtime validation; validators do not receive unvalidated
+common fields.
 
 The result object has `additionalProperties: false` and exactly:
 
@@ -447,7 +508,7 @@ The inventory contains exact duplicate-free arrays:
 
 | Array | Required row |
 |---|---|
-| `host_manifests` | `host`, normalized `path`, manifest kind, version extractor, and extracted package version |
+| `host_manifests` | `host`, normalized `path`, manifest kind, version extractor, extracted package version, and the conditional extension-validator fields below |
 | `payload_identities` | `payload_id`, normalized source path, deterministic extractor, exact kind/value, and whether consumers act on it |
 | `public_contract_items` | stable `contract_id`, category, stable source/extractor, canonical fingerprint, and compatibility annotation |
 | `support_derivatives` | derivative id, kind (`public-support-table` or `host-manifest-claim`), path/extractor, and exact surface-contract projection |
@@ -461,7 +522,10 @@ lexicographic order. No other field, including `manifest_kind`,
 order.
 
 `manifest kind` is exactly `claude-plugin`, `codex-plugin`, `npm-package`, or
-`other-declared-host`; the last requires a namespaced extension validator.
+`other-declared-host`; the last requires normalized package-relative
+`extension_validator` and lowercase 64-hex
+`extension_validator_runtime_sha256`. Neither field is valid without the
+other, and neither is valid for another manifest kind.
 Every payload, public-contract, and support-derivative extractor is exactly one
 additional-properties-forbidden object:
 
@@ -1230,7 +1294,8 @@ Positive fixtures:
 | `positive/plain-authority-json-carriers/` | Deterministic VERSION plus JSON Pointer extraction and parity |
 | `positive/release-tag-resolution/` | Expected Git tag is the only tag source and peels to the emitted commit |
 | `positive/typed-supported-row/` | Exact evidence/load/support/setup objects validate |
-| `positive/product-extension/` | Nested namespaced product data survives canonicalization; distinct metadata/host identities run in exact order and pass the repeated v1 process protocol |
+| `positive/product-extension/` | Nested namespaced product data survives canonicalization; distinct metadata/host identities bind exact runtime digests, run in exact order, and pass the repeated v1 process protocol |
+| `positive/immutable-extension-runtime/` | An exact platform manifest and image enumerate every executable, loader, library, configuration file, and link; only that read-only runtime plus package/private overlays is visible |
 | `positive/canonical-nested-json/` | Nested objects, arrays, NFC strings, control/non-BMP scalars, booleans, null, and numbers produce the single canonical byte stream |
 | `positive/retained-verified-release/` | Local no-fetch resolution binds selector, product blobs, history, and catalog identity |
 | `positive/published-mutable-catalog/` | Typed mutable selector remains published |
@@ -1283,6 +1348,7 @@ Negative fixtures:
 | `negative/wave-close-with-stock/` | Reject first-wave completion |
 | `negative/stale-derived/` | Name every stale derivative without writes |
 | `negative/extension-validator-protocol/` | Reject wrong identity/order, argv/env/request/result/exit, stderr, differing runs, timeout, oversize output, forbidden path/write, caught socket attempt, or persistent mutation |
+| `negative/extension-runtime-unavailable-or-drifted/` | Reject absent/mismatched digest, platform mismatch, missing/extra or type/mode/hash/link-drifted entry, unenumerated loader/configuration/executable, forbidden runtime path, or live-host runtime substitution before spawn |
 | `negative/canonical-json-ambiguity/` | Reject invalid UTF-8/scalars/numbers, duplicate pre/post-NFC keys, or non-canonical key order, escaping, number bytes, whitespace, or LF |
 | `negative/retained-verified-release/` | Reject absent/wrong checkout, origin, Git object mode, path composition, digest, ancestry, last row, or release binding |
 | `negative/release-interface-output/` | Reject partial or non-canonical success/failure output and a release ledger other than prior rows plus one exact append |
@@ -1476,6 +1542,15 @@ fingerprint, or digest preimage is formed, then the recursive grammar emits
 one NFC, scalar-key-ordered, exactly escaped, shortest-number UTF-8 byte stream
 and rejects invalid or normalization-duplicate input.
 
+**S28 — Immutable validator runtime**
+
+Given a validator declaration with an exact runtime-manifest digest and a
+matching launcher platform, when extension validation starts, then the
+launcher resolves and verifies that exact local manifest and complete image,
+exposes only its enumerated read-only entries plus the package, private
+temporary directory, and `/dev/null` overlays, and fails before spawn when the
+digest, platform, content, or enforcement is unavailable or differs.
+
 ### Requirements and invariants
 
 - **R1:** The system shall extract the canonical package version and every
@@ -1605,6 +1680,11 @@ and rejects invalid or normalization-duplicate input.
   filesystem or network attempt across the complete process tree, and any
   audit flag shall fail validation even when the validator catches the error
   and otherwise returns `pass`.
+- **R49:** Every extension-validator declaration shall bind an exact
+  platform-specific immutable runtime-manifest digest; the launcher shall
+  verify every enumerated entry and shall fail before spawn rather than fetch,
+  substitute live-host content, or continue when that exact runtime or its
+  credential-free read-only projection is unavailable.
 
 ## Open questions
 
@@ -1620,7 +1700,7 @@ Self-check used the local contract-author rules, `specs/README.md`,
 |---|---|---|
 | Frontmatter, lifecycle, dependencies | PASS | Required fields and decision `implements` edges present; direct decisions approved; append-only ids unpinned |
 | Versioned amendment | PASS | Behavioral counter advanced to v2; section-level WHAT/WHY/SCOPE/POINTER/VALUE/CONFIDENCE delta is present; current dependent spec/index/test pin was updated |
-| Required sections and grammars | PASS | S1–S27 are GWT; R1–R48 are EARS `shall` statements |
+| Required sections and grammars | PASS | S1–S28 are GWT; R1–R49 are EARS `shall` statements |
 | Decision boundary | PASS | Stewards contract/availability machinery is typed; product behavior, evidence creation, release judgment, tag creation, and setup execution remain excluded |
 | F1 deterministic version/tag source | CLOSED | Typed byte extraction, typed carriers, computed tag, and peeled repository ref are normative |
 | F2 typed contract fields | CLOSED | Common schemas fully type evidence, load, support, publication, selector, retirement, and provisioner fields |
@@ -1640,8 +1720,9 @@ Self-check used the local contract-author rules, `specs/README.md`,
 | Intrinsic F1 SemVer edge transitions | CLOSED | Core, prerelease iteration/promotion/regression, cumulative minimum, and equal-precedence build rules are exact |
 | Intrinsic F2 executable inventory grammar | CLOSED | Manifest/extractor/fingerprint/annotation/change-set shapes, all surface-row transition mappings, exact evidence sets, and non-self-referential approval ordering are enumerated |
 | Intrinsic F3 immutable initial stock | CLOSED | Exact initial row, stable comparison commit/digest, working-file equality, and removal-only comparison are normative |
-| Adversary remediation F1–F4 | CLOSED | Generic nested canonical JSON including number bytes; unique host identity/order; exact PATH/filesystem/runtime visibility and forbidden-path audit; and process-tree network-attempt audit are normative |
-| v2 whole-spec execution boundary | CLOSED | Recursive canonical JSON, unique validator identities/order, audited allowlisted filesystem/runtime/network boundary, extension subprocess request/result/limits, retained verified-catalog resolution, release-history digest/append staging, and public CLI results are exact |
+| Adversary remediation F1–F4 | CLOSED | Generic nested canonical JSON including number bytes; unique host identity/order; manifest-derived PATH and exact immutable runtime/package/private visibility with forbidden-path audit; and process-tree network-attempt audit are normative |
+| Second-adversary F3 immutable runtime | CLOSED | Every declaration binds a platform-specific canonical manifest digest; every runtime entry is content/type/mode/link enumerated; live-host substitution and unavailable or drifted images fail before spawn |
+| v2 whole-spec execution boundary | CLOSED | Recursive canonical JSON, unique validator identities/order, digest-bound audited filesystem/runtime/network boundary, extension subprocess request/result/limits, retained verified-catalog resolution, release-history digest/append staging, and public CLI results are exact |
 | Whole-corpus validation | NOT CLAIMED | Issue #20 blocks literal full-corpus PASS; this artifact uses strict YAML/exact ids and was checked change-scoped |
 
 **Result: PASS for author self-check.**
@@ -1650,4 +1731,4 @@ Self-check used the local contract-author rules, `specs/README.md`,
 
 The maintainer's 2026-07-24 act approved v1 after spec-adversary and
 conformance review. This v2 amendment passed the author self-check above and
-is `gated`; the prior v1 act is not reused as approval of S24–S27 or R41–R48.
+is `gated`; the prior v1 act is not reused as approval of S24–S28 or R41–R49.

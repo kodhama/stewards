@@ -64,12 +64,12 @@ effective-support slice. It does not claim whole-spec conformance.
   release-history references through v2's exact no-fetch retained-byte and
   complete-ledger contract; current validation covers typed shape and local
   identity relations only.
-- S24, S27, R21, R41–R42, and R46–R48: canonicalize arbitrary nested JSON,
+- S24, S27–S28, R21, R41–R42, and R46–R49: canonicalize arbitrary nested JSON,
   run each unique declared product extension identity in exact order, and use
-  v2's exact argv, working directory, environment, audited
-  filesystem/runtime/network boundary, request/result, exit, repetition,
-  timeout, size, and side-effect protocol. Every declaration continues to
-  fail closed until that protocol is implemented.
+  v2's exact argv, working directory, environment, digest-bound immutable
+  runtime, audited filesystem/network boundary, request/result, exit,
+  repetition, timeout, size, and side-effect protocol. Every declaration
+  continues to fail closed until that protocol is implemented.
 - S26 and R45: validate the exact appended release-history row and preserve
   the landed two-field pre-tag and three-field release-identity results.
 
