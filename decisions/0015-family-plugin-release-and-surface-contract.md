@@ -1,7 +1,7 @@
 ---
 id: kodhama-0015-family-plugin-release-and-surface-contract
 type: decision
-status: gated
+status: approved  # maintainer intent act: authorized the family-wide rollout and merge after independent review; decision-adversary SOUND preceded this recording
 depends_on: [kodhama-0002-delivery-channels]
 informed_by: [grove/adr-0028-plugin-release-tagging, grove/adr-0031-multi-host-distribution, trellis/decision-0036, kodhama-0013-family-codex-native-product-support]
 owner: agent
@@ -289,3 +289,12 @@ misattributed to SemVer. Existing nonconforming Trellis stock is surfaced with
 a terminating migration condition. No current Claude, Codex, cloud, CI, or
 SDK support is inferred. Promote `draft → gated`; `approved` remains a human
 intent act.
+
+## Approval record
+
+On 2026-07-24 the maintainer directed the family SemVer/distribution strategy,
+asked that it be applied across the plugin producers, and authorized merge
+when independently sound. The decision-adversary returned SOUND after its
+legacy-transition, public-contract, and SemVer-attribution findings were
+folded. This `approved` status records that prior human intent act; it does not
+turn any candidate or unavailable surface into support.

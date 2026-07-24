@@ -1,7 +1,7 @@
 ---
 id: kodhama-0016-distribution-availability-and-effective-support
 type: decision
-status: gated
+status: approved  # maintainer intent act: authorized Stewards-owned family provisioning and merge after independent review; decision-adversary SOUND preceded this recording
 depends_on: [kodhama-0002-delivery-channels, kodhama-0012-codex-marketplace-channel, kodhama-0015-family-plugin-release-and-surface-contract]
 informed_by: [grove/adr-0029-non-interactive-loading, grove/adr-0031-multi-host-distribution, kodhama-0013-family-codex-native-product-support]
 owner: agent
@@ -320,3 +320,12 @@ transition prevents current Trellis availability from becoming an indefinite
 exception. The rollout has product, catalog, provisioner, and verification
 seams instead of an all-at-once family release. Promote `draft → gated`;
 `approved` remains a human intent act.
+
+## Approval record
+
+On 2026-07-24 the maintainer assigned marketplace availability and reusable
+headless/cloud provisioning to Stewards, required product behavior to remain
+product-owned, and authorized the reviewed rollout. The decision-adversary
+returned SOUND after mutable selectors were made publication-only and exact
+release binding was limited to immutable catalogs or exact-release
+provisioners. This `approved` status records that prior human intent act.
