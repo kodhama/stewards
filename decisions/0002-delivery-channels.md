@@ -3,7 +3,7 @@ id: kodhama-0002-delivery-channels
 type: decision
 status: approved  # ratified by PR #1 merge (2026-07-07); names read through kodhama-0003-family-naming
 depends_on: [kodhama-0001-family-delivery]
-superseded_in_part_by: [kodhama-0009-org-topology-spirit-stewards-trees]  # 2026-07-15 — §Decision 2's host-repo clause only ("in kodhama/kodhama"); the one-marketplace principle and the "kodhama" name stand
+superseded_in_part_by: [kodhama/kodhama-0009-org-topology-spirit-stewards-trees]  # 2026-07-15 — §Decision 2's host-repo clause only ("in kodhama/kodhama"); the one-marketplace principle and the "kodhama" name stand
 owner: agent
 updated: 2026-07-07
 provenance: maintainer review session 2026-07-07 — re-examination of family delivery prompted by espalier's interim vendoring UX; ratifies 0001's core and answers its marketplace open question
@@ -11,7 +11,8 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 
 # Decision: family delivery — one marketplace front door, npx for espial
 
-> **Superseded in part by `kodhama-0009-org-topology-spirit-stewards-trees`**
+> **Superseded in part by
+> `kodhama/kodhama-0009-org-topology-spirit-stewards-trees`**
 > (2026-07-15 annotation; text below preserved as written). §Decision 2's
 > clause "one org marketplace **in `kodhama/kodhama`**" is superseded: the
 > marketplace's host repo moved to `kodhama/stewards` when the org was
