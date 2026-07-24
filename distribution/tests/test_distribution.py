@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import shutil
 import subprocess
 import tempfile
@@ -879,46 +880,65 @@ class DistributionContractTests(unittest.TestCase):
         self.assertIn("github.event.pull_request.base.sha", workflow)
         self.assertIn("github.event.before", workflow)
 
-    # spec-0001@v1 complete-inventory provider; second-review pipe containment finding
-    def test_provider_kills_pipe_holding_child_with_bounded_join(self) -> None:
+    # spec-0001@v1 complete-inventory provider; third-review escaped-session finding
+    def test_provider_capture_returns_with_setsid_descendant(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
-            provider = root / "pipe-provider"
+            child = root / "escaped-child.py"
+            child.write_text(
+                "import os\n"
+                "from pathlib import Path\n"
+                "import time\n"
+                "os.setsid()\n"
+                "Path('escaped.pid').write_text(str(os.getpid()), encoding='utf-8')\n"
+                "time.sleep(5)\n",
+                encoding="utf-8",
+            )
+            provider = root / "escape-provider"
             provider.write_text(
                 "#!/bin/sh\n"
-                "(sleep 3) &\n"
+                "python3 escaped-child.py &\n"
+                "while [ ! -s escaped.pid ]; do sleep 0.01; done\n"
                 "exit 0\n",
                 encoding="utf-8",
             )
             provider.chmod(0o755)
             started = time.monotonic()
-            with mock.patch.object(
-                contract,
-                "PROVIDER_READER_JOIN_SECONDS",
-                0.05,
-            ):
-                with self.assertRaisesRegex(
-                    contract.ContractError,
-                    "pipe",
-                ):
-                    contract.run_bounded_process(
-                        [str(provider)],
-                        cwd=root,
-                        env={"PATH": os.environ.get("PATH", "")},
+            escaped_pid = None
+            try:
+                result = contract.run_bounded_process(
+                    [str(provider)],
+                    cwd=root,
+                    env={"PATH": os.environ.get("PATH", "")},
+                )
+                elapsed = time.monotonic() - started
+                escaped_pid = int(
+                    (root / "escaped.pid").read_text(encoding="utf-8")
+                )
+                self.assertEqual(result.returncode, 0)
+                self.assertLess(elapsed, 1.0)
+            finally:
+                if escaped_pid is None and (root / "escaped.pid").is_file():
+                    escaped_pid = int(
+                        (root / "escaped.pid").read_text(encoding="utf-8")
                     )
-            self.assertLess(time.monotonic() - started, 1.0)
+                if escaped_pid is not None:
+                    try:
+                        os.kill(escaped_pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
 
-    # spec-0001@v1 S22, R39; second-review manifest-kind type finding
-    def test_release_inventory_manifest_kind_type_fails_deterministically(
+    # spec-0001@v1 S22, R39; third-review enum type finding
+    def test_enum_and_set_membership_types_fail_deterministically(
         self,
     ) -> None:
-        inventory = {
+        base_inventory = {
             "schema_version": 1,
             "host_manifests": [
                 {
                     "host": "claude-code",
                     "path": "plugin.json",
-                    "manifest_kind": {"not": "hashable"},
+                    "manifest_kind": "claude-plugin",
                     "version_extractor": {
                         "path": "plugin.json",
                         "format": "json",
@@ -927,22 +947,53 @@ class DistributionContractTests(unittest.TestCase):
                     "package_version": "1.2.3",
                 }
             ],
-            "payload_identities": [],
+            "payload_identities": [
+                {
+                    "payload_id": "payload.one",
+                    "source_path": "payload.txt",
+                    "extractor": {
+                        "kind": "file-bytes",
+                        "path": "payload.txt",
+                    },
+                    "kind": "content-hash",
+                    "value": "sha256:" + "a" * 64,
+                    "consumer_acted": True,
+                }
+            ],
             "public_contract_items": [],
             "support_derivatives": [],
         }
         with tempfile.TemporaryDirectory() as raw:
             path = Path(raw) / "inventory.json"
-            write_json(path, inventory)
-            result = run_manage(
-                "validate-document",
-                "--schema",
-                "release-inventory",
-                str(path),
+            malformed = (
+                ("manifest_kind", ("host_manifests", 0, "manifest_kind")),
+                ("payload kind", ("payload_identities", 0, "kind")),
             )
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("manifest_kind", result.stderr)
-        self.assertNotIn("Traceback", result.stderr)
+            for label, (collection, index, field) in malformed:
+                with self.subTest(label=label):
+                    inventory = json.loads(json.dumps(base_inventory))
+                    inventory[collection][index][field] = {"not": "hashable"}
+                    write_json(path, inventory)
+                    result = run_manage(
+                        "validate-document",
+                        "--schema",
+                        "release-inventory",
+                        str(path),
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(field, result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+        invalid_fact = {
+            "kind": "invalid",
+            "source_reference": stable_ref("facts/product.json"),
+            "lookup": subject(),
+            "errors": [{"not": "hashable"}],
+        }
+        with self.assertRaisesRegex(
+            contract.ContractError,
+            "errors: invalid",
+        ):
+            contract.validate_product_fact(invalid_fact)
 
     # spec-0001@v1 clean-install evidence; second-review interval finding
     def test_clean_install_finished_at_precedes_started_at_is_rejected(
@@ -1016,8 +1067,22 @@ class DistributionContractTests(unittest.TestCase):
             "properties"
         ]["pointer"]["pattern"]
         for pattern in (version_pattern, pointer_pattern):
+            self.assertIsNotNone(re.fullmatch(pattern, ""))
             self.assertIsNotNone(re.fullmatch(pattern, "/version/nested~1key"))
             self.assertIsNone(re.fullmatch(pattern, "/invalid~2escape"))
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "version.json").write_text('"1.2.3"\n', encoding="utf-8")
+            actual = contract.extract_version(
+                root,
+                {
+                    "path": "version.json",
+                    "format": "json",
+                    "selector": "",
+                },
+                "root-version",
+            )
+        self.assertEqual(actual, "1.2.3")
 
     # spec-0001@v1 repository quality; second-review Python lint finding
     def test_python_lint_gate_is_real_and_rejects_bad_source(self) -> None:
@@ -1027,6 +1092,13 @@ class DistributionContractTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("distribution/python-lint", check_source)
+        instructions = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+        self.assertNotIn("Python compilation/typecheck", instructions)
+        self.assertIn("annotation coverage", instructions)
+        status = (
+            ROOT / "distribution" / "IMPLEMENTATION-STATUS.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("annotation coverage", status)
         with tempfile.TemporaryDirectory() as raw:
             bad = Path(raw) / "bad.py"
             bad.write_text("from os import *  \n", encoding="utf-8")

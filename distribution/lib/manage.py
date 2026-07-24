@@ -15,11 +15,11 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import resource
 import signal
 import subprocess
 import sys
-import threading
-import time
+import tempfile
 from typing import Any, Callable, Iterable, Optional, Sequence
 import unicodedata
 from urllib.parse import urlsplit
@@ -68,7 +68,6 @@ FACTOR_ORDER = (
 PROVIDER_TIMEOUT_SECONDS = 10
 PROVIDER_OUTPUT_LIMIT = 1024 * 1024
 PROVIDER_STDERR_LIMIT = 64 * 1024
-PROVIDER_READER_JOIN_SECONDS = 1
 
 
 class ContractError(ValueError):
@@ -163,6 +162,11 @@ def validate_semver(value: Any, where: str) -> str:
     return value
 
 
+def validate_enum(value: Any, allowed: Iterable[str], where: str) -> str:
+    require(isinstance(value, str) and value in allowed, f"{where}: invalid")
+    return value
+
+
 def validate_timestamp(value: Any, where: str) -> str:
     require(
         isinstance(value, str) and TIMESTAMP.fullmatch(value) is not None,
@@ -195,7 +199,11 @@ def normalized_path(value: Any, where: str, allow_empty: bool = False) -> str:
 
 def validate_stable_reference(value: Any, where: str = "stable_reference") -> dict[str, Any]:
     require(isinstance(value, dict), f"{where}: expected object")
-    kind = value.get("kind")
+    kind = validate_enum(
+        value.get("kind"),
+        {"repo-path", "https-url", "artifact"},
+        f"{where}.kind",
+    )
     if kind == "repo-path":
         obj = exact_keys(
             value,
@@ -286,7 +294,11 @@ def validate_evidence_binding(value: Any, where: str) -> dict[str, Any]:
 
 def validate_load_path(value: Any, where: str) -> dict[str, Any]:
     obj = exact_keys(value, ("kind", "locator"), ("invocation",), where)
-    require(obj["kind"] in {"command", "skill", "agent", "hook", "connector", "host-discovery"}, f"{where}.kind: invalid")
+    validate_enum(
+        obj["kind"],
+        {"command", "skill", "agent", "hook", "connector", "host-discovery"},
+        f"{where}.kind",
+    )
     require(isinstance(obj["locator"], str) and bool(obj["locator"]), f"{where}.locator: empty")
     if "invocation" in obj:
         require(isinstance(obj["invocation"], str) and bool(obj["invocation"]), f"{where}.invocation: empty")
@@ -322,7 +334,11 @@ def validate_setup_declaration(value: Any, where: str) -> dict[str, Any]:
 def validate_surface_row(value: Any, package_version: str, where: str) -> dict[str, Any]:
     common = {"surface_id", "host", "status", "post_install_setup"}
     require(isinstance(value, dict), f"{where}: expected object")
-    status = value.get("status")
+    status = validate_enum(
+        value.get("status"),
+        {"supported", "candidate", "unsupported"},
+        f"{where}.status",
+    )
     if status == "supported":
         exact_keys(value, common | {"evidence", "load_path", "support_record"}, where=where)
     elif status in {"candidate", "unsupported"}:
@@ -383,13 +399,17 @@ def validate_surface_contract(value: Any) -> dict[str, Any]:
 
 def validate_source_selector(value: Any, where: str = "source_selector") -> dict[str, Any]:
     require(isinstance(value, dict), f"{where}: expected object")
-    kind = value.get("kind")
+    kind = validate_enum(
+        value.get("kind"),
+        {"mutable", "immutable"},
+        f"{where}.kind",
+    )
     if kind == "mutable":
         obj = exact_keys(value, ("kind", "repository", "path"), where=where)
     elif kind == "immutable":
         obj = exact_keys(value, ("kind", "repository", "path", "ref"), where=where)
         ref = exact_keys(obj["ref"], ("kind", "value"), where=f"{where}.ref")
-        require(ref["kind"] in {"tag", "commit"}, f"{where}.ref.kind: invalid")
+        validate_enum(ref["kind"], {"tag", "commit"}, f"{where}.ref.kind")
         if ref["kind"] == "tag":
             require(isinstance(ref["value"], str) and bool(ref["value"]), f"{where}.ref.value: invalid")
         else:
@@ -432,10 +452,15 @@ def validate_host_projection(value: Any, expected_host: str, where: str) -> dict
         fields = exact_keys(obj["fields"], ("source", "policy", "category"), where=f"{where}.fields")
         require(isinstance(fields["category"], str) and bool(fields["category"]), f"{where}.fields.category: empty")
         policy = exact_keys(fields["policy"], ("installation", "authentication"), where=f"{where}.fields.policy")
-        require(
-            policy["installation"] in {"AVAILABLE", "REQUIRED", "BLOCKED"}
-            and policy["authentication"] in {"ON_INSTALL", "ON_USE", "NONE"},
-            f"{where}.fields.policy: invalid",
+        validate_enum(
+            policy["installation"],
+            {"AVAILABLE", "REQUIRED", "BLOCKED"},
+            f"{where}.fields.policy.installation",
+        )
+        validate_enum(
+            policy["authentication"],
+            {"ON_INSTALL", "ON_USE", "NONE"},
+            f"{where}.fields.policy.authentication",
         )
     else:
         reject(f"{where}.host: unsupported host adapter")
@@ -488,7 +513,11 @@ def validate_transition_exception(value: Any, where: str) -> dict[str, Any]:
 
 def validate_catalog_row(value: Any, where: str) -> dict[str, Any]:
     require(isinstance(value, dict), f"{where}: expected object")
-    state = value.get("state")
+    state = validate_enum(
+        value.get("state"),
+        {"absent", "published", "verified"},
+        f"{where}.state",
+    )
     base = {"plugin_id", "surface_id", "state"}
     if state == "absent":
         exact_keys(value, base | {"reason"}, where=where)
@@ -613,11 +642,16 @@ def validate_catalog(value: Any) -> dict[str, Any]:
 
 def validate_distribution_binding(value: Any, where: str) -> dict[str, Any]:
     require(isinstance(value, dict), f"{where}: expected object")
-    if value.get("kind") == "catalog-selector":
+    kind = validate_enum(
+        value.get("kind"),
+        {"catalog-selector", "provisioner-acquisition"},
+        f"{where}.kind",
+    )
+    if kind == "catalog-selector":
         obj = exact_keys(value, ("kind", "selector"), where=where)
         selector = validate_source_selector(obj["selector"], f"{where}.selector")
         require(selector["kind"] == "immutable", f"{where}.selector: must be immutable")
-    elif value.get("kind") == "provisioner-acquisition":
+    else:
         obj = exact_keys(value, ("kind", "provisioner_identity", "evidence_bundle"), where=where)
         identity = exact_keys(
             obj["provisioner_identity"],
@@ -639,8 +673,6 @@ def validate_distribution_binding(value: Any, where: str) -> dict[str, Any]:
         )
         validate_semver(identity["provisioner_version"], f"{where}.provisioner_identity.provisioner_version")
         validate_stable_reference(obj["evidence_bundle"], f"{where}.evidence_bundle")
-    else:
-        reject(f"{where}.kind: invalid")
     return value
 
 
@@ -698,7 +730,11 @@ def validate_clean_install_evidence(value: Any) -> dict[str, Any]:
         and environment["mode"] == surface[2],
         "clean_install_evidence.clean_environment: surface mismatch",
     )
-    require(environment["snapshot_kind"] in {"machine-snapshot", "ci-image", "container-image"}, "clean_install_evidence.clean_environment.snapshot_kind: invalid")
+    validate_enum(
+        environment["snapshot_kind"],
+        {"machine-snapshot", "ci-image", "container-image"},
+        "clean_install_evidence.clean_environment.snapshot_kind",
+    )
     require(isinstance(environment["snapshot_id"], str) and bool(environment["snapshot_id"]), "clean_install_evidence.clean_environment.snapshot_id: empty")
     require(isinstance(environment["sha256"], str) and SHA256.fullmatch(environment["sha256"]), "clean_install_evidence.clean_environment.sha256: invalid")
     installation = exact_keys(
@@ -738,7 +774,11 @@ def validate_prerequisite(value: Any, where: str) -> dict[str, Any]:
     )
     validate_slug(obj["prerequisite_id"], f"{where}.prerequisite_id", dotted=True)
     validate_slug(obj["request_reference_id"], f"{where}.request_reference_id", dotted=True)
-    require(obj["kind"] in {"authentication", "trust", "runtime", "configuration", "writable-state"}, f"{where}.kind: invalid")
+    validate_enum(
+        obj["kind"],
+        {"authentication", "trust", "runtime", "configuration", "writable-state"},
+        f"{where}.kind",
+    )
     require(isinstance(obj["description"], str) and bool(obj["description"]), f"{where}.description: empty")
     return obj
 
@@ -746,7 +786,11 @@ def validate_prerequisite(value: Any, where: str) -> dict[str, Any]:
 def validate_provisioner_row(value: Any, where: str) -> dict[str, Any]:
     base = {"route_id", "surface_id", "plugin_id", "package_version", "state"}
     require(isinstance(value, dict), f"{where}: expected object")
-    state = value.get("state")
+    state = validate_enum(
+        value.get("state"),
+        {"unavailable", "candidate", "verified"},
+        f"{where}.state",
+    )
     if state == "unavailable":
         exact_keys(value, base | {"reason"}, where=where)
         require(isinstance(value["reason"], str) and bool(value["reason"]), f"{where}.reason: empty")
@@ -826,7 +870,7 @@ def validate_surface_registry(value: Any) -> dict[str, Any]:
         surface_id = validate_slug(row["surface_id"], f"{where}.surface_id", dotted=True)
         require(surface_id not in ids, "surface_registry.surfaces: duplicate surface_id")
         ids.add(surface_id)
-        require(row["lifecycle"] in {"active", "retired"}, f"{where}.lifecycle: invalid")
+        validate_enum(row["lifecycle"], {"active", "retired"}, f"{where}.lifecycle")
         require(isinstance(row["label"], str) and bool(row["label"]), f"{where}.label: empty")
         if row["lifecycle"] == "active":
             require("retirement" not in row, f"{where}.retirement: forbidden for active")
@@ -862,15 +906,22 @@ def json_pointer(document: Any, pointer: str, where: str) -> Any:
 
 def validate_extractor(value: Any, where: str) -> dict[str, Any]:
     require(isinstance(value, dict), f"{where}: expected object")
-    if value.get("format") == "plain-text":
+    format_name = validate_enum(
+        value.get("format"),
+        {"plain-text", "json"},
+        f"{where}.format",
+    )
+    if format_name == "plain-text":
         obj = exact_keys(value, ("path", "format"), where=where)
-    elif value.get("format") == "json":
-        obj = exact_keys(value, ("path", "format", "selector"), where=where)
-        require(isinstance(obj["selector"], str), f"{where}.selector: expected JSON Pointer")
-        json_pointer({}, obj["selector"], f"{where}.selector") if obj["selector"] == "" else None
-        require(obj["selector"].startswith("/"), f"{where}.selector: expected RFC 6901 JSON Pointer")
     else:
-        reject(f"{where}.format: invalid")
+        obj = exact_keys(value, ("path", "format", "selector"), where=where)
+        selector = obj["selector"]
+        require(
+            isinstance(selector, str)
+            and (selector == "" or selector.startswith("/"))
+            and re.search(r"~(?:[^01]|$)", selector) is None,
+            f"{where}.selector: expected RFC 6901 JSON Pointer",
+        )
     normalized_path(obj["path"], f"{where}.path")
     return obj
 
@@ -922,7 +973,11 @@ def validate_release_metadata(value: Any, phase: str) -> dict[str, Any]:
         where = f"release_metadata.version_carriers[{index}]"
         exact_keys(carrier, ("carrier_id", "role", "path", "format"), ("selector",), where)
         validate_slug(carrier["carrier_id"], f"{where}.carrier_id", dotted=True)
-        require(carrier["role"] in {"host-manifest", "package-manifest", "other"}, f"{where}.role: invalid")
+        validate_enum(
+            carrier["role"],
+            {"host-manifest", "package-manifest", "other"},
+            f"{where}.role",
+        )
         extractor = {key: carrier[key] for key in ("path", "format", "selector") if key in carrier}
         validate_extractor(extractor, where)
         pair = (carrier["path"], carrier.get("selector"))
@@ -963,86 +1018,51 @@ def run_bounded_process(
     cwd: Path,
     env: dict[str, str],
 ) -> subprocess.CompletedProcess[bytes]:
-    process = subprocess.Popen(
-        command,
-        cwd=cwd,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        start_new_session=True,
-    )
-    streams = {
-        "stdout": (process.stdout, PROVIDER_OUTPUT_LIMIT),
-        "stderr": (process.stderr, PROVIDER_STDERR_LIMIT),
-    }
-    output: dict[str, bytes] = {}
-    reader_errors: list[Exception] = []
+    capture_limit = max(PROVIDER_OUTPUT_LIMIT, PROVIDER_STDERR_LIMIT) + 1
 
-    def kill_process_group() -> None:
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-
-    def close_streams() -> None:
-        for stream, _ in streams.values():
-            try:
-                stream.close()
-            except OSError as exc:
-                reader_errors.append(exc)
-
-    def read_stream(name: str, stream: Any, limit: int) -> None:
-        try:
-            output[name] = stream.read(limit + 1)
-            if len(output[name]) > limit:
-                kill_process_group()
-        except (OSError, ValueError) as exc:
-            reader_errors.append(exc)
-
-    def join_readers() -> bool:
-        deadline = time.monotonic() + PROVIDER_READER_JOIN_SECONDS
-        for reader in readers:
-            reader.join(max(0.0, deadline - time.monotonic()))
-        return all(not reader.is_alive() for reader in readers)
-
-    readers = [
-        threading.Thread(
-            target=read_stream,
-            args=(name, stream, limit),
-            daemon=True,
+    def limit_capture_files() -> None:
+        _, hard_limit = resource.getrlimit(resource.RLIMIT_FSIZE)
+        if hard_limit == resource.RLIM_INFINITY:
+            bounded_limit = capture_limit
+        else:
+            bounded_limit = min(capture_limit, hard_limit)
+        resource.setrlimit(
+            resource.RLIMIT_FSIZE,
+            (bounded_limit, bounded_limit),
         )
-        for name, (stream, limit) in streams.items()
-    ]
-    for reader in readers:
-        reader.start()
-    try:
-        returncode = process.wait(timeout=PROVIDER_TIMEOUT_SECONDS)
-    except subprocess.TimeoutExpired as exc:
-        kill_process_group()
-        process.wait()
-        joined = join_readers()
-        close_streams()
-        require(joined, "inventory_provider: pipe readers did not terminate")
-        raise ContractError(
-            f"inventory_provider: timed out after {PROVIDER_TIMEOUT_SECONDS}s"
-        ) from exc
-    joined = join_readers()
-    held_pipes_open = not joined
-    if not joined:
-        kill_process_group()
-        joined = join_readers()
-    if not joined:
-        close_streams()
-        join_readers()
-        reject("inventory_provider: pipe readers did not terminate")
-    close_streams()
-    require(
-        not held_pipes_open,
-        "inventory_provider: child process held output pipe open",
-    )
-    require(not reader_errors, "inventory_provider: failed while reading output pipes")
-    stdout = output.get("stdout", b"")
-    stderr = output.get("stderr", b"")
+
+    with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
+        process = subprocess.Popen(
+            command,
+            cwd=cwd,
+            env=env,
+            stdout=stdout_file,
+            stderr=stderr_file,
+            start_new_session=True,
+            preexec_fn=limit_capture_files,
+        )
+
+        def kill_process_group() -> None:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+        try:
+            returncode = process.wait(timeout=PROVIDER_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired as exc:
+            kill_process_group()
+            try:
+                process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                reject("inventory_provider: process did not terminate after timeout")
+            raise ContractError(
+                f"inventory_provider: timed out after {PROVIDER_TIMEOUT_SECONDS}s"
+            ) from exc
+        stdout_file.seek(0)
+        stderr_file.seek(0)
+        stdout = stdout_file.read(PROVIDER_OUTPUT_LIMIT + 1)
+        stderr = stderr_file.read(PROVIDER_STDERR_LIMIT + 1)
     require(
         len(stdout) <= PROVIDER_OUTPUT_LIMIT,
         f"inventory_provider: stdout exceeds {PROVIDER_OUTPUT_LIMIT} bytes",
@@ -1084,7 +1104,11 @@ def run_inventory_provider(root: Path, provider_path: str) -> bytes:
 
 def validate_inventory_extractor(value: Any, where: str) -> dict[str, Any]:
     require(isinstance(value, dict), f"{where}: expected object")
-    kind = value.get("kind")
+    kind = validate_enum(
+        value.get("kind"),
+        {"file-bytes", "text-line", "json-pointer"},
+        f"{where}.kind",
+    )
     if kind == "file-bytes":
         obj = exact_keys(value, ("kind", "path"), where=where)
     elif kind == "text-line":
@@ -1102,8 +1126,6 @@ def validate_inventory_extractor(value: Any, where: str) -> dict[str, Any]:
             and re.search(r"~(?:[^01]|$)", pointer) is None,
             f"{where}.pointer: invalid RFC 6901 JSON Pointer",
         )
-    else:
-        reject(f"{where}.kind: invalid inventory extractor")
     normalized_path(obj["path"], f"{where}.path")
     return obj
 
@@ -1123,16 +1145,15 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
         where = f"release_inventory.host_manifests[{index}]"
         exact_keys(row, ("host", "path", "manifest_kind", "version_extractor", "package_version"), ("extension_validator",), where)
         normalized_path(row["path"], f"{where}.path")
-        require(
-            isinstance(row["manifest_kind"], str)
-            and row["manifest_kind"]
-            in {
+        validate_enum(
+            row["manifest_kind"],
+            {
                 "claude-plugin",
                 "codex-plugin",
                 "npm-package",
                 "other-declared-host",
             },
-            f"{where}.manifest_kind: invalid",
+            f"{where}.manifest_kind",
         )
         if row["manifest_kind"] == "other-declared-host":
             normalized_path(row.get("extension_validator"), f"{where}.extension_validator")
@@ -1183,10 +1204,10 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
         )
         kind = row["kind"]
         require(
-            kind in {"content-hash", "version-stamp"}
-            or (
-                isinstance(kind, str)
-                and re.fullmatch(
+            isinstance(kind, str)
+            and (
+                kind in {"content-hash", "version-stamp"}
+                or re.fullmatch(
                     r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*:[a-z][a-z0-9-]*",
                     kind,
                 )
@@ -1238,7 +1259,7 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
             where=where,
         )
         contract_id = validate_slug(row["contract_id"], f"{where}.contract_id", dotted=True)
-        require(row["category"] in categories, f"{where}.category: invalid")
+        validate_enum(row["category"], categories, f"{where}.category")
         validate_stable_reference(row["source"], f"{where}.source")
         validate_inventory_extractor(row["extractor"], f"{where}.extractor")
         require(
@@ -1246,7 +1267,11 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
             and SHA256.fullmatch(row["fingerprint"]),
             f"{where}.fingerprint: invalid",
         )
-        require(row["compatibility"] in compatibilities, f"{where}.compatibility: invalid")
+        validate_enum(
+            row["compatibility"],
+            compatibilities,
+            f"{where}.compatibility",
+        )
         require(contract_id not in seen, "release_inventory.public_contract_items: duplicate contract_id")
         require(prior_id is None or prior_id < contract_id, "release_inventory.public_contract_items: rows are not in identity order")
         seen.add(contract_id)
@@ -1262,9 +1287,10 @@ def validate_release_inventory(value: Any, package_version: Optional[str] = None
             where=where,
         )
         derivative_id = validate_slug(row["derivative_id"], f"{where}.derivative_id", dotted=True)
-        require(
-            row["kind"] in {"public-support-table", "host-manifest-claim"},
-            f"{where}.kind: invalid",
+        validate_enum(
+            row["kind"],
+            {"public-support-table", "host-manifest-claim"},
+            f"{where}.kind",
         )
         normalized_path(row["path"], f"{where}.path")
         extractor = validate_inventory_extractor(row["extractor"], f"{where}.extractor")
@@ -1446,12 +1472,15 @@ def validate_product_adoptions(value: Any) -> dict[str, Any]:
         seen.add(plugin)
         prior = plugin
         validate_repository(row["repository"], f"{where}.repository")
-        require(row["state"] in {"required", "complete"}, f"{where}.state: invalid")
+        validate_enum(row["state"], {"required", "complete"}, f"{where}.state")
         for key in ("standing_decisions_to_reconcile", "ownership_changes"):
             require(
                 isinstance(row[key], list)
-                and row[key] == sorted(set(row[key]))
                 and all(isinstance(item, str) and item for item in row[key]),
+                f"{where}.{key}: expected sorted unique strings",
+            )
+            require(
+                row[key] == sorted(set(row[key])),
                 f"{where}.{key}: expected sorted unique strings",
             )
         if row["state"] == "complete":
@@ -1492,7 +1521,11 @@ def validate_legacy_rows(value: Any, where: str, baseline: bool = False) -> list
         require(row["manifest_path"] == manifest_for_surface(row["surface_id"]), f"{row_where}.manifest_path: mismatch")
         require(isinstance(row["selector_fingerprint"], str) and SHA256.fullmatch(row["selector_fingerprint"]), f"{row_where}.selector_fingerprint: invalid")
         if baseline:
-            require(row["kind"] in {"mutable", "immutable"}, f"{row_where}.kind: invalid")
+            validate_enum(
+                row["kind"],
+                {"mutable", "immutable"},
+                f"{row_where}.kind",
+            )
             validate_repository(row["repository"], f"{row_where}.repository")
             normalized_path(row["path"], f"{row_where}.path", allow_empty=True)
             require(isinstance(row["ref"], str), f"{row_where}.ref: expected string")
@@ -1501,9 +1534,15 @@ def validate_legacy_rows(value: Any, where: str, baseline: bool = False) -> list
         keys.add(key)
         prior = key
         if not baseline:
+            missing = row.get("missing_contract_elements")
             require(
-                row.get("missing_contract_elements") == sorted(set(row.get("missing_contract_elements", [])))
-                and bool(row.get("missing_contract_elements")),
+                isinstance(missing, list)
+                and bool(missing)
+                and all(isinstance(item, str) and item for item in missing),
+                f"{row_where}.missing_contract_elements: invalid",
+            )
+            require(
+                missing == sorted(set(missing)),
                 f"{row_where}.missing_contract_elements: invalid",
             )
             require(row.get("disclosure") == "legacy published stock", f"{row_where}.disclosure: invalid")
@@ -1713,7 +1752,11 @@ def validate_effective_facts(value: Any) -> dict[str, Any]:
 
 def validate_product_fact(value: Any) -> dict[str, Any]:
     require(isinstance(value, dict), "effective_facts.product_contract: expected object")
-    kind = value.get("kind")
+    kind = validate_enum(
+        value.get("kind"),
+        {"record", "missing", "invalid"},
+        "effective_facts.product_contract.kind",
+    )
     if kind == "record":
         obj = exact_keys(value, ("kind", "source_reference", "subject", "row"), where="effective_facts.product_contract")
         subject = validate_subject(obj["subject"], "effective_facts.product_contract.subject")
@@ -1728,7 +1771,13 @@ def validate_product_fact(value: Any) -> dict[str, Any]:
         validate_stable_reference(obj["source_reference"])
         validate_subject(obj["lookup"])
         allowed = {"row-schema-invalid", "duplicate-surface", "stable-reference-mismatch"}
-        require(isinstance(obj["errors"], list) and bool(obj["errors"]) and set(obj["errors"]) <= allowed, "effective_facts.product_contract.errors: invalid")
+        require(
+            isinstance(obj["errors"], list)
+            and bool(obj["errors"])
+            and all(isinstance(item, str) for item in obj["errors"])
+            and set(obj["errors"]) <= allowed,
+            "effective_facts.product_contract.errors: invalid",
+        )
     else:
         reject("effective_facts.product_contract.kind: invalid")
     return value
@@ -1736,31 +1785,48 @@ def validate_product_fact(value: Any) -> dict[str, Any]:
 
 def validate_distribution_fact(value: Any) -> dict[str, Any]:
     require(isinstance(value, dict), "effective_facts.distribution_record: expected object")
-    kind = value.get("kind")
+    kind = validate_enum(
+        value.get("kind"),
+        {"record", "missing", "invalid"},
+        "effective_facts.distribution_record.kind",
+    )
     if kind == "record":
         obj = exact_keys(value, ("kind", "source_reference", "record_type", "record"), where="effective_facts.distribution_record")
         validate_stable_reference(obj["source_reference"])
-        if obj["record_type"] == "catalog":
+        record_type = validate_enum(
+            obj["record_type"],
+            {"catalog", "provisioner"},
+            "effective_facts.distribution_record.record_type",
+        )
+        if record_type == "catalog":
             validate_catalog_row(obj["record"], "effective_facts.distribution_record.record")
-        elif obj["record_type"] == "provisioner":
-            validate_provisioner_row(obj["record"], "effective_facts.distribution_record.record")
         else:
-            reject("effective_facts.distribution_record.record_type: invalid")
+            validate_provisioner_row(obj["record"], "effective_facts.distribution_record.record")
     elif kind in {"missing", "invalid"}:
         required = {"kind", "source_reference", "record_type", "lookup_key"}
         if kind == "invalid":
             required.add("error_codes")
         obj = exact_keys(value, required, where="effective_facts.distribution_record")
         validate_stable_reference(obj["source_reference"])
-        if obj["record_type"] == "catalog":
+        record_type = validate_enum(
+            obj["record_type"],
+            {"catalog", "provisioner"},
+            "effective_facts.distribution_record.record_type",
+        )
+        if record_type == "catalog":
             exact_keys(obj["lookup_key"], ("plugin_id", "surface_id"), where="effective_facts.distribution_record.lookup_key")
-        elif obj["record_type"] == "provisioner":
-            exact_keys(obj["lookup_key"], ("route_id", "surface_id", "plugin_id", "package_version"), where="effective_facts.distribution_record.lookup_key")
         else:
-            reject("effective_facts.distribution_record.record_type: invalid")
+            exact_keys(obj["lookup_key"], ("route_id", "surface_id", "plugin_id", "package_version"), where="effective_facts.distribution_record.lookup_key")
         if kind == "invalid":
             allowed = {"row-schema-invalid", "duplicate-key", "stable-reference-mismatch"}
-            require(isinstance(obj["error_codes"], list) and bool(obj["error_codes"]) and len(obj["error_codes"]) == len(set(obj["error_codes"])) and set(obj["error_codes"]) <= allowed, "effective_facts.distribution_record.error_codes: invalid")
+            require(
+                isinstance(obj["error_codes"], list)
+                and bool(obj["error_codes"])
+                and all(isinstance(item, str) for item in obj["error_codes"])
+                and len(obj["error_codes"]) == len(set(obj["error_codes"]))
+                and set(obj["error_codes"]) <= allowed,
+                "effective_facts.distribution_record.error_codes: invalid",
+            )
     else:
         reject("effective_facts.distribution_record.kind: invalid")
     return value
@@ -1768,7 +1834,11 @@ def validate_distribution_fact(value: Any) -> dict[str, Any]:
 
 def validate_selection_fact(value: Any) -> dict[str, Any]:
     require(isinstance(value, dict), "effective_facts.consumer_selection: expected object")
-    state = value.get("state")
+    state = validate_enum(
+        value.get("state"),
+        {"selected", "missing", "invalid"},
+        "effective_facts.consumer_selection.state",
+    )
     if state == "selected":
         obj = exact_keys(
             value,
@@ -1789,7 +1859,14 @@ def validate_selection_fact(value: Any) -> dict[str, Any]:
         obj = exact_keys(value, ("state", "subject", "source_reference", "errors"), where="effective_facts.consumer_selection")
         validate_subject(obj["subject"])
         validate_stable_reference(obj["source_reference"])
-        require(isinstance(obj["errors"], list) and bool(obj["errors"]) and set(obj["errors"]) <= {"selection-mismatch", "selection-reference-invalid"}, "effective_facts.consumer_selection.errors: invalid")
+        require(
+            isinstance(obj["errors"], list)
+            and bool(obj["errors"])
+            and all(isinstance(item, str) for item in obj["errors"])
+            and set(obj["errors"])
+            <= {"selection-mismatch", "selection-reference-invalid"},
+            "effective_facts.consumer_selection.errors: invalid",
+        )
     else:
         reject("effective_facts.consumer_selection.state: invalid")
     return value
@@ -1797,7 +1874,11 @@ def validate_selection_fact(value: Any) -> dict[str, Any]:
 
 def validate_environment_fact(value: Any) -> dict[str, Any]:
     require(isinstance(value, dict), "effective_facts.environment_assessment: expected object")
-    state = value.get("state")
+    state = validate_enum(
+        value.get("state"),
+        {"ready", "not-ready", "missing", "invalid"},
+        "effective_facts.environment_assessment.state",
+    )
     if state in {"ready", "not-ready"}:
         required = {"state", "subject", "evidence", "source_reference"}
         if state == "not-ready":
@@ -1819,7 +1900,13 @@ def validate_environment_fact(value: Any) -> dict[str, Any]:
         validate_subject(obj["subject"])
         validate_stable_reference(obj["source_reference"])
         allowed = {"assessment-schema-invalid", "assessment-reference-invalid", "assessment-identity-mismatch"}
-        require(isinstance(obj["errors"], list) and bool(obj["errors"]) and set(obj["errors"]) <= allowed, "effective_facts.environment_assessment.errors: invalid")
+        require(
+            isinstance(obj["errors"], list)
+            and bool(obj["errors"])
+            and all(isinstance(item, str) for item in obj["errors"])
+            and set(obj["errors"]) <= allowed,
+            "effective_facts.environment_assessment.errors: invalid",
+        )
     else:
         reject("effective_facts.environment_assessment.state: invalid")
     return value
@@ -1827,7 +1914,11 @@ def validate_environment_fact(value: Any) -> dict[str, Any]:
 
 def validate_setup_fact(value: Any) -> dict[str, Any]:
     require(isinstance(value, dict), "effective_facts.product_setup: expected object")
-    state = value.get("state")
+    state = validate_enum(
+        value.get("state"),
+        {"not-required", "complete", "incomplete", "missing", "invalid"},
+        "effective_facts.product_setup.state",
+    )
     if state == "not-required":
         obj = exact_keys(value, ("subject", "state", "requirement_reference", "contract"), where="effective_facts.product_setup")
         require(obj["contract"] is None, "effective_facts.product_setup.contract: expected null")
@@ -1842,16 +1933,31 @@ def validate_setup_fact(value: Any) -> dict[str, Any]:
         obj = exact_keys(value, ("subject", "state", "requirement_reference", "contract", "reason_code", "reason_source"), where="effective_facts.product_setup")
         validate_stable_reference(obj["requirement_reference"])
         validate_stable_reference(obj["contract"])
-        require(obj["reason_code"] in {"setup-not-run", "setup-failed"}, "effective_facts.product_setup.reason_code: invalid")
+        validate_enum(
+            obj["reason_code"],
+            {"setup-not-run", "setup-failed"},
+            "effective_facts.product_setup.reason_code",
+        )
         validate_stable_reference(obj["reason_source"])
     elif state == "missing":
         obj = exact_keys(value, ("subject", "state", "missing_kind", "source_reference"), where="effective_facts.product_setup")
-        require(obj["missing_kind"] in {"product-requirement", "completion-proof"}, "effective_facts.product_setup.missing_kind: invalid")
+        validate_enum(
+            obj["missing_kind"],
+            {"product-requirement", "completion-proof"},
+            "effective_facts.product_setup.missing_kind",
+        )
         validate_stable_reference(obj["source_reference"])
     elif state == "invalid":
         obj = exact_keys(value, ("subject", "state", "source_reference", "error_codes"), where="effective_facts.product_setup")
         allowed = {"product-requirement-invalid", "consumer-setup-fact-invalid", "setup-identity-mismatch"}
-        require(isinstance(obj["error_codes"], list) and bool(obj["error_codes"]) and len(obj["error_codes"]) == len(set(obj["error_codes"])) and set(obj["error_codes"]) <= allowed, "effective_facts.product_setup.error_codes: invalid")
+        require(
+            isinstance(obj["error_codes"], list)
+            and bool(obj["error_codes"])
+            and all(isinstance(item, str) for item in obj["error_codes"])
+            and len(obj["error_codes"]) == len(set(obj["error_codes"]))
+            and set(obj["error_codes"]) <= allowed,
+            "effective_facts.product_setup.error_codes: invalid",
+        )
         validate_stable_reference(obj["source_reference"])
     else:
         reject("effective_facts.product_setup.state: invalid")

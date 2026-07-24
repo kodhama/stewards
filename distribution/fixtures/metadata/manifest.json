@@ -105,14 +105,14 @@
       "guards": "repository quality gate"
     },
     {
-      "name": "provider-pipe-child-containment",
-      "test": "test_provider_kills_pipe_holding_child_with_bounded_join",
-      "expected_exit": "contract-failure-bounded-time",
+      "name": "provider-escaped-session-containment",
+      "test": "test_provider_capture_returns_with_setsid_descendant",
+      "expected_exit": "success-bounded-time",
       "guards": "complete product release inventory"
     },
     {
-      "name": "manifest-kind-type",
-      "test": "test_release_inventory_manifest_kind_type_fails_deterministically",
+      "name": "release-inventory-enum-types",
+      "test": "test_enum_and_set_membership_types_fail_deterministically",
       "expected_exit": "contract-failure",
       "guards": "S22 R39 schema shape only"
     },

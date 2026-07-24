@@ -56,9 +56,9 @@ Rules (the collective's):
   debt in `conductor/` loudly.
 - **Distribution quality gate:** changes under the install door run
   `distribution/check`. It executes the spec-anchored tests, door validation,
-  generated-file staleness check, Python compilation/typecheck, dependency-free
-  Python lint/format checks, JSON parsing, and both working-tree and committed
-  CI-range whitespace checks. This project-owned rule supersedes the managed
+  generated-file staleness check, Python compilation, annotation coverage,
+  dependency-free Python lint/format checks, JSON parsing, and both working-tree
+  and committed CI-range whitespace checks. This project-owned rule supersedes the managed
   block's older “no test/typecheck gates” description for distribution files;
   the next Grove refresh should update that adapter projection.
 

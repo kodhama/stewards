@@ -27,8 +27,8 @@ effective-support slice. It does not claim whole-spec conformance.
   including no-write stale checking: S11 and R18–R19, R36.
 - `.github/workflows/distribution-check.yml` runs `distribution/check` on
   pull requests and `main`; the gate covers executable fixtures, door
-  validation, generation staleness, Python compilation, dependency-free
-  lint/format checks, JSON parsing, working/staged diffs, and the committed
+  validation, generation staleness, Python compilation, annotation coverage,
+  dependency-free lint/format checks, JSON parsing, working/staged diffs, and the committed
   CI range from the event base SHA.
 - Product pre-tag version extraction/carrier parity and exact expected-tag
   derivation, plus release-phase peeling of only the computed Git ref: the
