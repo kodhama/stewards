@@ -730,6 +730,167 @@ class ProvisionContractTests(unittest.TestCase):
                 contradictory,
             )
 
+    # spec-0002@v1 S5, R27, R32; second code-review H1
+    def test_json_schema_literals_are_json_type_sensitive(self) -> None:
+        from distribution.lib import schema_validation
+
+        validator = schema_validation.Validator(
+            ROOT / "distribution" / "schemas"
+        )
+        for schema, instance in (
+            ({"const": 1}, True),
+            ({"enum": [0, 2]}, False),
+        ):
+            with self.subTest(
+                schema=schema,
+                instance=instance,
+            ), self.assertRaises(
+                schema_validation.SchemaValidationError
+            ):
+                validator.validate(schema, instance, "inline")
+
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request_value = request_for("codex", state_root)
+            request_value["schema_version"] = True
+            with self.assertRaises(schema_validation.SchemaValidationError):
+                schema_validation.validate_document(
+                    ROOT,
+                    "provision-request.v1.schema.json",
+                    request_value,
+                )
+
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_value)
+            result = run_provision(PROVISION, request, receipt, audit)
+
+            self.assertEqual(result.returncode, 2, result.stderr)
+            value = json.loads(receipt.read_text(encoding="utf-8"))
+            self.assertEqual(value["overall_outcome"], "invalid-request")
+            self.assertEqual(value["exit_code"], 2)
+            self.assertEqual(
+                value["diagnostics"][0]["causes"][0]["field_path"],
+                "/schema_version",
+            )
+            schema_validation.validate_document(
+                ROOT,
+                "provision-receipt.v1.schema.json",
+                value,
+            )
+
+    # spec-0002@v1 sealing order and output failure rule 3; second review H2
+    def test_audit_path_identity_is_revalidated_before_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            receipt_parent = temp / "receipt-output"
+            audit_parent = temp / "audit-output"
+            moved_audit_parent = temp / "moved-audit-output"
+            state_root.mkdir()
+            receipt_parent.mkdir()
+            audit_parent.mkdir()
+            request = temp / "request.json"
+            receipt = receipt_parent / "receipt.json"
+            audit = audit_parent / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            real_write_once = contract.write_once
+
+            def move_parent_after_audit(
+                target: contract.OutputTarget,
+                raw_bytes: bytes,
+            ) -> str:
+                digest = real_write_once(target, raw_bytes)
+                if target.label == "audit":
+                    audit_parent.rename(moved_audit_parent)
+                    audit_parent.mkdir()
+                return digest
+
+            stderr = io.StringIO()
+            with mock.patch.object(
+                contract,
+                "write_once",
+                side_effect=move_parent_after_audit,
+            ), redirect_stderr(stderr):
+                exit_code = contract.execute(
+                    ROOT,
+                    request,
+                    str(receipt),
+                    str(audit),
+                )
+
+            self.assertEqual(exit_code, 7)
+            self.assertFalse(audit.exists())
+            self.assertFalse((moved_audit_parent / "audit.json").exists())
+            value = json.loads(receipt.read_text(encoding="utf-8"))
+            self.assertEqual(value["overall_outcome"], "output-failure")
+            self.assertEqual(value["exit_code"], 7)
+            self.assertEqual(
+                value["diagnostics"][0]["code"],
+                "audit-seal-failed",
+            )
+            self.assertNotIn("write_events_reference", value)
+            self.assertNotIn("write_events_sha256", value)
+            self.assertIn("audit-seal-failed", stderr.getvalue())
+
+    # spec-0002@v1 Receipt grammar and phase-6 precedence; second review H3
+    def test_invalid_request_receipt_requires_a_request_failure_reason(self) -> None:
+        from distribution.lib import schema_validation
+
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_for("codex", state_root))
+            result = run_provision(PROVISION, request, receipt, audit)
+            self.assertEqual(result.returncode, 3, result.stderr)
+            route_failed = json.loads(receipt.read_text(encoding="utf-8"))
+
+        reasonless = dict(route_failed)
+        reasonless["overall_outcome"] = "invalid-request"
+        reasonless["exit_code"] = 2
+        reasonless["results"] = []
+        with self.assertRaises(schema_validation.SchemaValidationError):
+            schema_validation.validate_document(
+                ROOT,
+                "provision-receipt.v1.schema.json",
+                reasonless,
+            )
+
+        relabeled_route_failure = dict(route_failed)
+        relabeled_route_failure["overall_outcome"] = "invalid-request"
+        relabeled_route_failure["exit_code"] = 2
+        with self.assertRaises(schema_validation.SchemaValidationError):
+            schema_validation.validate_document(
+                ROOT,
+                "provision-receipt.v1.schema.json",
+                relabeled_route_failure,
+            )
+
+        with tempfile.TemporaryDirectory() as raw:
+            temp = Path(raw).resolve()
+            state_root = temp / "state"
+            state_root.mkdir()
+            request_value = request_for("codex", state_root)
+            request_value["targets"][0]["plugins"][0]["package_version"] = "latest"
+            request = temp / "request.json"
+            receipt = temp / "receipt.json"
+            audit = temp / "audit.json"
+            write_json(request, request_value)
+            result = run_provision(PROVISION, request, receipt, audit)
+            self.assertEqual(result.returncode, 2, result.stderr)
+            schema_validation.validate_document(
+                ROOT,
+                "provision-receipt.v1.schema.json",
+                json.loads(receipt.read_text(encoding="utf-8")),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

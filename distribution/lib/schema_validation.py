@@ -17,6 +17,44 @@ class SchemaValidationError(ValueError):
     """A document does not satisfy its complete checked-in schema."""
 
 
+def json_equal(left: Any, right: Any) -> bool:
+    """Compare JSON values without Python's bool/integer equivalence."""
+    if left is None or right is None:
+        return left is None and right is None
+    if isinstance(left, bool) or isinstance(right, bool):
+        return (
+            isinstance(left, bool)
+            and isinstance(right, bool)
+            and left is right
+        )
+    if isinstance(left, (int, float)) or isinstance(right, (int, float)):
+        return (
+            isinstance(left, (int, float))
+            and isinstance(right, (int, float))
+            and left == right
+        )
+    if isinstance(left, str) or isinstance(right, str):
+        return isinstance(left, str) and isinstance(right, str) and left == right
+    if isinstance(left, list) or isinstance(right, list):
+        return (
+            isinstance(left, list)
+            and isinstance(right, list)
+            and len(left) == len(right)
+            and all(
+                json_equal(left_item, right_item)
+                for left_item, right_item in zip(left, right)
+            )
+        )
+    if isinstance(left, dict) or isinstance(right, dict):
+        return (
+            isinstance(left, dict)
+            and isinstance(right, dict)
+            and set(left) == set(right)
+            and all(json_equal(left[key], right[key]) for key in left)
+        )
+    return type(left) is type(right) and left == right
+
+
 class Validator:
     """Resolve local schema references and validate the used 2020-12 subset."""
 
@@ -198,10 +236,12 @@ class Validator:
         ):
             self.fail(path, f"expected {expected_type}")
 
-        if "const" in schema and instance != schema["const"]:
+        if "const" in schema and not json_equal(instance, schema["const"]):
             self.fail(path, "const mismatch")
         enum = schema.get("enum")
-        if isinstance(enum, list) and instance not in enum:
+        if isinstance(enum, list) and not any(
+            json_equal(instance, candidate) for candidate in enum
+        ):
             self.fail(path, "value is not in enum")
 
         if isinstance(instance, str):

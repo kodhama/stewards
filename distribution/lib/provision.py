@@ -274,6 +274,71 @@ def output_is_within_state_root(target: OutputTarget, root_path: Path) -> bool:
     return is_within(resolved_output, resolved_root)
 
 
+def ensure_target_path_identity(
+    target: OutputTarget,
+    leaf_expected: bool,
+) -> None:
+    """Require the declared path to still name the retained parent/leaf."""
+    try:
+        current_parent_fd = open_directory_chain(
+            target.path.parent,
+            target.label,
+        )
+    except OutputContractError as exc:
+        raise OutputSealError(
+            "identity",
+            OSError(errno.ESTALE, "declared output parent is unavailable"),
+        ) from exc
+    try:
+        retained_parent = os.fstat(target.parent_fd)
+        current_parent = os.fstat(current_parent_fd)
+        if (retained_parent.st_dev, retained_parent.st_ino) != (
+            current_parent.st_dev,
+            current_parent.st_ino,
+        ):
+            raise OutputSealError(
+                "identity",
+                OSError(errno.ESTALE, "declared output parent identity changed"),
+            )
+        if leaf_expected:
+            try:
+                retained_leaf = os.stat(
+                    target.leaf,
+                    dir_fd=target.parent_fd,
+                    follow_symlinks=False,
+                )
+                current_leaf = os.stat(
+                    target.leaf,
+                    dir_fd=current_parent_fd,
+                    follow_symlinks=False,
+                )
+            except OSError as exc:
+                raise OutputSealError("identity", exc) from exc
+            if (retained_leaf.st_dev, retained_leaf.st_ino) != (
+                current_leaf.st_dev,
+                current_leaf.st_ino,
+            ):
+                raise OutputSealError(
+                    "identity",
+                    OSError(
+                        errno.ESTALE,
+                        "declared output leaf identity changed",
+                    ),
+                )
+    finally:
+        os.close(current_parent_fd)
+
+
+def unlink_output(target: OutputTarget) -> None:
+    """Remove one invalid sealed output relative to its retained parent."""
+    try:
+        os.unlink(target.leaf, dir_fd=target.parent_fd)
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise OutputSealError("cleanup", exc) from exc
+
+
 def write_once(target: OutputTarget, raw: bytes) -> str:
     """Create relative/no-follow and hash read-back bytes from the open leaf."""
     flags = (
@@ -461,7 +526,8 @@ def phase_one(
         envelope.append(cause("invalid-request", "request", f"/{field}"))
     for field in sorted(set(document) - expected):
         envelope.append(cause("invalid-request", "request", f"/{field}"))
-    if document.get("schema_version") != 1:
+    schema_version = document.get("schema_version")
+    if type(schema_version) is not int or schema_version != 1:
         envelope.append(cause("invalid-request", "request", "/schema_version"))
     if not isinstance(document.get("request_id"), str) or not UUID_V4.fullmatch(
         document["request_id"]
@@ -1320,9 +1386,21 @@ def execute(
             document,
             finished,
         )
+        audit_created = False
         try:
+            ensure_target_path_identity(audit_target, leaf_expected=False)
             audit_digest = write_once(audit_target, canonical_json(audit))
+            audit_created = True
+            ensure_target_path_identity(audit_target, leaf_expected=True)
         except OutputSealError as exc:
+            if audit_created:
+                try:
+                    unlink_output(audit_target)
+                except OutputSealError as cleanup_error:
+                    print(
+                        f"audit-seal-failed: {cleanup_error}",
+                        file=sys.stderr,
+                    )
             print(f"audit-seal-failed: {exc}", file=sys.stderr)
             try:
                 seal_minimal_output_failure(

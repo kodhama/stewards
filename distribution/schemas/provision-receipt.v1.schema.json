@@ -90,8 +90,105 @@
       "required": ["write_events_reference", "write_events_sha256"],
       "properties": {
         "overall_outcome": { "const": "invalid-request" },
-        "exit_code": { "const": 2 }
-      }
+        "exit_code": { "const": 2 },
+        "results": {
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/result" },
+              {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "phase": { "const": "request-validation" },
+                      "outcome": { "enum": ["failed", "skipped"] }
+                    },
+                    "required": ["phase", "outcome"]
+                  },
+                  {
+                    "properties": {
+                      "phase": { "const": "identity-resolution" },
+                      "outcome": { "const": "failed" }
+                    },
+                    "required": ["phase", "outcome"]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "diagnostics": {
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/diagnostic" },
+              {
+                "properties": {
+                  "code": {
+                    "enum": [
+                      "invalid-request",
+                      "unsafe-path",
+                      "duplicate-state-root",
+                      "duplicate-reference",
+                      "unused-reference"
+                    ]
+                  },
+                  "owner": { "const": "consumer/environment" }
+                },
+                "required": ["code", "owner"]
+              }
+            ]
+          }
+        }
+      },
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "properties": {
+                "diagnostics": { "minItems": 1 }
+              },
+              "required": ["diagnostics"]
+            },
+            {
+              "properties": {
+                "results": {
+                  "contains": {
+                    "properties": {
+                      "phase": { "const": "request-validation" },
+                      "outcome": { "const": "failed" }
+                    },
+                    "required": ["phase", "outcome"]
+                  },
+                  "minContains": 1
+                }
+              },
+              "required": ["results"]
+            }
+          ]
+        },
+        {
+          "if": {
+            "properties": {
+              "results": {
+                "contains": {
+                  "properties": {
+                    "phase": { "const": "identity-resolution" },
+                    "outcome": { "const": "failed" }
+                  },
+                  "required": ["phase", "outcome"]
+                },
+                "minContains": 1
+              }
+            },
+            "required": ["results"]
+          },
+          "then": {
+            "properties": {
+              "diagnostics": { "minItems": 1 }
+            },
+            "required": ["diagnostics"]
+          }
+        }
+      ]
     },
     {
       "required": ["write_events_reference", "write_events_sha256"],
