@@ -4,6 +4,7 @@ type: test-dependencies
 status: gated
 depends_on:
   - kodhama-spec-0001-family-plugin-release-and-distribution-metadata@v2
+  - kodhama-spec-0002-bounded-pre-agent-provisioner@v3
   - kodhama-0015-family-plugin-release-and-surface-contract
   - kodhama-0016-distribution-availability-and-effective-support
 owner: agent
@@ -25,3 +26,11 @@ tracked in `distribution/IMPLEMENTATION-STATUS.md`, including S28/R49's
 canonical Linux/macOS platform detection and pre-store rejection of Windows
 and other hosts, explicit content-addressed runtime-store resolution, and
 no-live-host-state projection boundary.
+
+No test in the landed package implements
+`kodhama-spec-0002-bounded-pre-agent-provisioner@v3`. Its S1–S32 and R1–R45
+remain tracked as unimplemented in `distribution/IMPLEMENTATION-STATUS.md`,
+including S27/S31 and R40/R44's canonical receipt commit witness,
+retained-state-only external validation, producer-obligation separation,
+same-invocation partial/invalid cleanup, and operator-owned uncertain or
+crash-debris contract.
