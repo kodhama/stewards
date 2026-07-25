@@ -40,7 +40,7 @@ Minimal supersession record by maintainer instruction (PR #35); the shaping hist
 Draft `kodhama-0022-propagate-collective-strategy` proposes to narrow only the
 implication that no hand-authored per-repository record may acknowledge a
 collective strategic decision. Under that proposal, affected plugin
-repositories receive short, reference-only strategy receipt memos. The ban on
-copying or redefining shared principles, operating mechanics, and canonical
+repositories receive thin, reference-only cross-link ADRs. The ban on copying
+or redefining shared principles, operating mechanics, and canonical
 terminology remains current. This annotation is non-operative unless decision
 0022 is ratified.

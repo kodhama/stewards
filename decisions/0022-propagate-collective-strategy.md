@@ -6,10 +6,10 @@ depends_on: [kodhama-0008-family-inheritance-restate-nothing, kodhama-0009-org-t
 informed_by: [kodhama-0021-separate-adoption-posture-from-support]
 owner: agent
 updated: 2026-07-25
-provenance: "maintainer shaping, 2026-07-25: establish durable top-down communication from Stewards through short, cross-linked memo ADRs whenever a strategic decision affects all plugins"
+provenance: "maintainer shaping, 2026-07-25: establish durable top-down communication from Stewards through thin, cross-linked ADRs whenever a strategic decision affects all plugins"
 ---
 
-# Decision: propagate collective strategy through local receipt memos
+# Decision: propagate collective strategy through local cross-link ADRs
 
 ## Decision state
 
@@ -17,14 +17,14 @@ provenance: "maintainer shaping, 2026-07-25: establish durable top-down communic
 
 - A Stewards strategic decision that affects all plugins must be propagated to
   every applicable plugin repository.
-- Each target receives a short, decision-corpus-native strategy receipt memo
-  with a qualified cross-link to the Stewards decision.
-- The memo records receipt and local applicability; Stewards remains the sole
-  authority for the shared strategy.
+- Each target receives a thin, decision-corpus-native cross-link ADR.
+- The local ADR points to the Stewards authority and records only local
+  applicability or follow-up; it does not summarize shared strategy.
 - A conductor brief owns the target list, downstream links, progress ledger,
   and closure report.
 - Receipt is distinct from product adoption, implementation authorization,
   release, support, or posture choices.
+- Decision `kodhama-0021` is the first application of this model.
 
 **Open** (1):
 
@@ -38,125 +38,123 @@ provenance: "maintainer shaping, 2026-07-25: establish durable top-down communic
   first use establishes the human-readable convention.
 - Communication rules for strategic decisions that affect only one product;
   ordinary product ownership already covers them.
-- Any implementation, release, support, or posture work discovered by a
-  receipt memo; each belongs to its own product decision.
+- Any implementation, release, support, or posture work discovered through a
+  cross-link; each belongs to its own product decision.
 
 ## Context
 
 Stewards is the home for cross-collective decisions, while product truths
-remain product-owned. A strategic decision can therefore become authoritative
-at the collective layer without becoming visible in each affected product's
-local decision graph until unrelated work happens to encounter it.
+remain product-owned. A collective strategy can therefore become
+authoritative without appearing in an affected plugin's local decision graph
+until unrelated work happens to encounter it.
 
-The adoption-posture decision, `kodhama-0021`, exposed that delay. Grove's
-product-owned dogfood decision is useful, but it serves a different purpose:
-it chooses Grove's local posture rather than recording the general route by
-which collective strategy reaches every affected plugin repository.
+Decision `kodhama-0021` exposed that delay. Grove's separate planner-dogfood
+ADR is useful, but it chooses a product posture. It is not the general
+communication record.
 
 Decision `kodhama-0008` correctly retired hand-authored copies of shared
-principles and operating mechanics because they drift. A receipt memo is not
-another copy. It is a local, durable edge to the single Stewards authority,
-plus the smallest statement of what that authority means—or does not mean—in
-that repository.
+principles and operating mechanics because they drift. A cross-link ADR is not
+another copy: it records one durable edge to the Stewards source of truth and
+only the local consequence of receiving it.
 
 ## Decision
 
-### 1. Collective-wide plugin strategy declares its propagation
+### 1. Collective-wide plugin strategy declares its targets
 
 Every new Stewards decision whose strategy explicitly affects all Kodhama
-plugins includes a short propagation section that identifies the applicable
-plugin repositories from the canonical topology and states that local receipt
-memos are required.
+plugins includes a short propagation section naming its applicable plugin
+repositories from the canonical topology.
 
-The Stewards decision may merge once it is independently sound and ratified.
-Its propagation is a follow-on communication wave, not a requirement to copy
-the decision into every repository before it can become authoritative.
+The Stewards decision may merge once independently sound and ratified.
+Propagation follows as communication work; downstream copies are never needed
+to make the upstream decision authoritative.
 
-### 2. Each target receives one short strategy receipt memo
+### 2. The downstream artifact is deliberately thin
 
-The memo is a normal local decision artifact and contains only:
+Each target repository receives one local cross-link ADR containing only:
 
-- a qualified relation and link to the approved Stewards decision;
-- one sentence recording that the repository received and is subject to the
-  strategy;
-- the exact local applicability or non-applicability boundary; and
-- any product-owned follow-up, explicitly marked as required, optional, or
-  parked.
+- frontmatter with a qualified dependency on the approved Stewards decision;
+- a direct link to that decision;
+- one short statement of local applicability or non-applicability;
+- any local follow-up named as required, optional, or parked; and
+- an explicit statement that the Stewards decision remains authoritative.
 
-It imports rather than repeats the shared strategy. Readers follow the link
-for definitions, rationale, and collective obligations.
+The ADR does not repeat definitions, rationale, acceptance criteria, or shared
+obligations. Local corpus rules may require headings or lifecycle notes, but
+they should remain minimal.
 
 ### 3. Receipt does not make a product decision
 
-A receipt memo does not by itself:
+A cross-link ADR does not by itself adopt or configure a plugin, authorize
+implementation, resolve a local conflict, change a package or release, make a
+support claim, select an adoption posture, or certify compliance.
 
-- adopt or configure a plugin;
-- authorize implementation;
-- change a package, release, catalog, support claim, or adoption posture;
-- resolve a conflict with an approved local decision; or
-- certify compliance.
-
-If the strategy requires a real product choice, that choice is recorded in a
-separate local decision. The receipt and product decision may share a PR when
-their distinction remains explicit, but neither substitutes for the other.
+When a real product choice is needed, it remains a separate local decision.
+The cross-link and product decision may share a PR if their distinct purposes
+stay explicit.
 
 ### 4. The conductor provides the return path
 
-One Stewards conductor brief lists the target repositories and links each
-receipt PR and final local artifact. It is the progress ledger and closure
-report; the approved strategic decision remains the policy authority.
+One Stewards conductor brief lists the targets and links each local PR and
+landed ADR. This produces bidirectional navigation without repeatedly editing
+an approved Stewards decision:
 
-This produces bidirectional navigation without editing the approved Stewards
-decision after every downstream PR:
+- each local ADR links upward to the Stewards authority; and
+- the conductor ledger links downward to every local ADR.
 
-- each receipt links upward to the Stewards decision; and
-- the conductor ledger links downward to every receipt.
-
-The first application is decision `kodhama-0021`. Grove's dogfood decision is
-tracked separately because it records a product posture, not merely receipt of
-the collective strategy.
+The conductor closes only after every target is linked or explicitly recorded
+as not applicable. It owns progress, not policy.
 
 ### 5. Narrow exception to “restate nothing”
 
 This partially supersedes only decision `kodhama-0008`'s implication that no
 hand-authored per-repository record may acknowledge collective operating
-strategy. A reference-only strategy receipt is required under this decision.
+strategy. Thin, reference-only cross-link ADRs are required here.
 
 Decision 0008's substantive rule remains current: repositories do not copy or
 redefine shared principles, operating mechanics, or canonical terminology.
 Those continue to arrive from their authoritative home.
 
+## Alternatives considered
+
+- **Conductor ledger only:** useful for central tracking, but leaves no durable
+  edge in the affected repository's own decision graph.
+- **README, issue, or PR notice:** easy to publish, but mutable or easy to
+  lose and not part of the local append-only decision record.
+- **Plugin-delivered notice:** useful as a future discovery aid, but receipt
+  would depend on installation and version timing and would not state local
+  applicability.
+- **Copied local summary:** locally readable, but recreates the drift problem
+  decision 0008 retired.
+
 ## Consequences
 
-- Collective strategy becomes discoverable from every affected plugin's local
-  decision graph soon after ratification.
-- The local memo remains small because it records receipt and impact, not a
+- Collective strategy becomes locally discoverable soon after ratification.
+- The added ADRs stay small because they carry links and local impact, not
   duplicate policy.
-- Product autonomy remains visible: communication never silently becomes
+- Product autonomy remains explicit: communication never silently becomes
   implementation or support.
-- Each collective-wide strategy adds a bounded documentation wave and one
-  small PR per applicable plugin repository.
+- Each collective-wide plugin strategy adds one bounded documentation wave.
 
 ## Acceptance criteria
 
-- **AC1:** Every future Stewards strategic decision that affects all plugins
-  declares its applicable propagation targets.
-- **AC2:** Every target receives a short local receipt memo with a qualified
-  link to the Stewards authority and an explicit local impact boundary.
-- **AC3:** Shared strategy is not copied or redefined downstream.
+- **AC1:** Every future Stewards strategic decision affecting all plugins
+  declares its propagation targets.
+- **AC2:** Every target receives a thin local ADR linking to the Stewards
+  authority and stating only local applicability and follow-up.
+- **AC3:** Shared strategy is not summarized, copied, or redefined downstream.
 - **AC4:** Product adoption, implementation, release, support, and posture
   decisions remain separate and product-owned.
 - **AC5:** A conductor brief provides the downstream link ledger and closure
   report.
 - **AC6:** No propagation schema, bot, CI gate, or certification machinery is
   introduced.
-- **AC7:** Decision 0021 is the first application, while Grove's planner
-  dogfood decision remains a separate product decision.
+- **AC7:** Decision 0021 is the first application; Grove's planner dogfood ADR
+  remains a separate product decision.
 
 ## Self-check
 
-The decision establishes a communication path rather than a second policy
-home. It reconciles the new receipt convention with decision 0008 by
-superseding only the no-hand-authored-record implication and preserving the
-no-restatement rule. Qualified cross-repository relations already have a
-settled grammar, and the conductor retains its existing ledger role.
+The decision creates a communication edge rather than a second policy home.
+It narrows decision 0008 only enough to permit receipt records, preserves the
+no-restatement rule, uses the settled qualified-link grammar, and keeps the
+conductor in its existing ledger role.
