@@ -43,17 +43,30 @@ Design System and Homebrew Tap are not plugin targets for this decision.
       [wisp PR #46](https://github.com/kodhama/wisp/pull/46).
 - [x] Wisp cross-link ADR independently reviewed:
       [SOUND](https://github.com/kodhama/wisp/pull/46#issuecomment-5080223713).
-- [ ] Maintainer ratification and merges recorded.
-- [ ] Closure report appended; original Grove plan resumed.
+- [x] Maintainer ratification and merges recorded:
+      [Grove #145](https://github.com/kodhama/grove/pull/145),
+      [Trellis #193](https://github.com/kodhama/trellis/pull/193), and
+      [Wisp #46](https://github.com/kodhama/wisp/pull/46).
+- [x] Closure report appended; original Grove plan resumed.
 
 ## Report
 
-Open. All three gated receipt ADRs are independently `SOUND`. Wisp was added
-after the conductor corrected its mistaken use of catalog presence as a proxy
-for plugin ownership; Wisp's product-owned dual-host package makes it an active
-target. No receipt makes a product choice. The receipts await the maintainer's
-exact ratification and merge.
+Closed 2026-07-25. The maintainer explicitly ratified and authorized all three
+receipts. Grove merged at `eec370b`, Trellis at `431407b`, and Wisp at
+`7112d26`. All were independently `SOUND`; Grove and Wisp CI passed. Trellis's
+human ratification guard passed, while its non-required Claude review action
+failed during model execution with no finding or comment and did not replace
+the independent soundness review.
+
+The conductor corrected its mistaken use of catalog presence as a proxy for
+plugin ownership before closure. Wisp's product-owned dual-host package made
+it an active target regardless of catalog presence. No receipt made a product
+choice.
 
 Catalog-admission simplification discovered during this wave is tracked
 separately in [Stewards issue #39](https://github.com/kodhama/stewards/issues/39).
 It does not block these communication-only receipts or authorize catalog work.
+
+The communication detour is complete. Work resumes at Grove
+[PR #144](https://github.com/kodhama/grove/pull/144), the separate
+planner-dogfood product decision.
