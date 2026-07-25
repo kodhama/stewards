@@ -32,8 +32,9 @@ checkpoint before another lane is unlocked.
 
 ### 1. Grove — active
 
-- [ ] Open a short Grove decision that classifies ordinary use of its
-      implemented `implementation-planner` as dogfood.
+- [x] Open a short Grove decision that classifies ordinary use of its
+      implemented `implementation-planner` as dogfood:
+      [grove PR #144](https://github.com/kodhama/grove/pull/144).
 - [ ] Preserve ADR-0037's routing and transient handoff unchanged.
 - [ ] Keep experiment metrics, release behavior, candidate surfaces, support
       promotion, and broader rollout parked.
@@ -85,4 +86,6 @@ After Grove's PR is open, record:
 
 ## Report
 
-Open. Grove is the only authorized product lane.
+Open. Grove is the only authorized product lane. Its draft is decision-only:
+ADR-0038 plus a proposed forward annotation on ADR-0037, with all generated
+projections and 172 tests passing. No later lane is unlocked.
