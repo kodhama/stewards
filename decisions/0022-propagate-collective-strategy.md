@@ -1,12 +1,12 @@
 ---
 id: kodhama-0022-propagate-collective-strategy
 type: decision
-status: gated
+status: approved
 depends_on: [kodhama-0008-family-inheritance-restate-nothing, kodhama/kodhama-0009-org-topology-spirit-stewards-trees, trellis/decision-0044]
 informed_by: [kodhama-0021-separate-adoption-posture-from-support]
 owner: agent
 updated: 2026-07-25
-provenance: "maintainer shaping, 2026-07-25: establish durable top-down communication from Stewards through thin, cross-linked ADRs whenever a strategic decision affects all plugins; exact hybrid-catch-up draft approved to proceed to independent soundness review"
+provenance: "maintainer shaping, 2026-07-25: establish durable top-down communication from Stewards through thin, cross-linked ADRs whenever a strategic decision affects all plugins; exact hybrid-catch-up draft approved to proceed to independent soundness review; first adversary review returned NEEDS-REVISION; reference repairs landed; re-review returned SOUND; maintainer ratified the exact decision"
 ---
 
 # Decision: propagate collective strategy through local cross-link ADRs
@@ -176,5 +176,7 @@ conductor in its existing ledger role.
 
 On 2026-07-25 the maintainer confirmed that the exact hybrid-catch-up draft
 captured the intended communication model and approved proceeding to
-independent soundness review. That advances the decision to `gated`; it is not
-yet ratified.
+independent soundness review. The first review returned `NEEDS-REVISION` on
+two reference-bookkeeping defects; after repair, fresh re-review returned
+`SOUND`. The maintainer then ratified the exact decision; the `approved`
+status records that human intent act.
