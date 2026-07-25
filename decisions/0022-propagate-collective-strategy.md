@@ -25,13 +25,13 @@ provenance: "maintainer shaping, 2026-07-25: establish durable top-down communic
 - Receipt is distinct from product adoption, implementation authorization,
   release, support, or posture choices.
 - Decision `kodhama-0021` is the first application of this model.
+- Immediate propagation targets current affected plugin repositories and
+  repositories explicitly entering the affected plugin scope; later plugin
+  entrants catch up on every still-current Stewards plugin strategy.
 
-**Open** (1):
+**Open** (0):
 
-- Target reach: propagate immediately to current/explicit plugin targets and
-  require later entrants to catch up on still-current strategy, or send a
-  receipt to every steward repository immediately regardless of present
-  relevance.
+- None.
 
 **Parked** (3):
 
@@ -65,6 +65,16 @@ only the local consequence of receiving it.
 Every new Stewards decision whose strategy explicitly affects all Kodhama
 plugins includes a short propagation section naming its applicable plugin
 repositories from the canonical topology.
+
+Immediate targets are repositories that own an affected plugin when the
+Stewards decision is ratified plus repositories that decision explicitly
+names as entering the affected plugin scope. Non-plugin steward repositories
+receive no cross-link ADR merely because they might become relevant later.
+
+When a repository later enters plugin scope, its entry decision inventories
+the still-current Stewards strategic decisions that affect its plugin. Any
+missing cross-link ADRs land as part of that entry work. Superseded strategy
+requires no retrospective receipt.
 
 The Stewards decision may merge once independently sound and ratified.
 Propagation follows as communication work; downstream copies are never needed
@@ -140,17 +150,19 @@ Those continue to arrive from their authoritative home.
 ## Acceptance criteria
 
 - **AC1:** Every future Stewards strategic decision affecting all plugins
-  declares its propagation targets.
+  declares its current and explicitly entering propagation targets.
 - **AC2:** Every target receives a thin local ADR linking to the Stewards
   authority and stating only local applicability and follow-up.
-- **AC3:** Shared strategy is not summarized, copied, or redefined downstream.
-- **AC4:** Product adoption, implementation, release, support, and posture
+- **AC3:** A later plugin entrant inventories still-current Stewards plugin
+  strategy and adds any missing cross-link ADRs during entry.
+- **AC4:** Shared strategy is not summarized, copied, or redefined downstream.
+- **AC5:** Product adoption, implementation, release, support, and posture
   decisions remain separate and product-owned.
-- **AC5:** A conductor brief provides the downstream link ledger and closure
+- **AC6:** A conductor brief provides the downstream link ledger and closure
   report.
-- **AC6:** No propagation schema, bot, CI gate, or certification machinery is
+- **AC7:** No propagation schema, bot, CI gate, or certification machinery is
   introduced.
-- **AC7:** Decision 0021 is the first application; Grove's planner dogfood ADR
+- **AC8:** Decision 0021 is the first application; Grove's planner dogfood ADR
   remains a separate product decision.
 
 ## Self-check
