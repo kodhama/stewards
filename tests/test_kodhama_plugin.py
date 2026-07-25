@@ -68,6 +68,32 @@ def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
 class PackageAndObservationTests(unittest.TestCase):
     """spec-0004 S10/R16-R17 and spec-0003 R1-R7."""
 
+    def test_wisp_preview_catalog_entries_disclose_no_support_claim(self) -> None:
+        """kodhama-0021 AC2: preview listings never imply support."""
+        claude = json.loads(
+            (ROOT / ".claude-plugin" / "marketplace.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        codex = json.loads(
+            (ROOT / ".agents" / "plugins" / "marketplace.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        expected_description = (
+            "Preview — project-scoped MCP lifecycle bus and dashboard; "
+            "support is not claimed."
+        )
+
+        claude_wisp = next(
+            entry for entry in claude["plugins"] if entry["name"] == "wisp"
+        )
+        codex_wisp = next(
+            entry for entry in codex["plugins"] if entry["name"] == "wisp"
+        )
+        self.assertEqual(expected_description, claude_wisp["description"])
+        self.assertEqual(expected_description, codex_wisp["description"])
+
     def test_repository_package_and_carrier_parity_validate(self) -> None:
         result = run("python3", str(VALIDATOR))
         self.assertIn("kodhama plugin validation passed", result.stdout)
@@ -330,6 +356,8 @@ class SkillContractTests(unittest.TestCase):
         for required in (
             "repository-validation:",
             "python3 -m unittest discover -s tests -v",
+            '".claude-plugin/marketplace.json"',
+            '".agents/plugins/marketplace.json"',
             "claude-marketplace:",
             "codex-marketplace:",
             "mixed-marketplace:",
