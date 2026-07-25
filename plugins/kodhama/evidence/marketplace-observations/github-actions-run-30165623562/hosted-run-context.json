@@ -40,10 +40,10 @@
         "kodhama_marketplace_kodhama_claude",
         "kodhama_marketplace_kodhama_codex"
       ],
-      "observations": [
-        "mixed-claude.json",
-        "mixed-codex.json"
-      ]
+      "observations": {
+        "kodhama_marketplace_kodhama_claude": "mixed-claude.json",
+        "kodhama_marketplace_kodhama_codex": "mixed-codex.json"
+      }
     }
   },
   "scope": "Marketplace registration evidence only; no plugin behavior or support conclusion."

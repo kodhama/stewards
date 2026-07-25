@@ -194,6 +194,9 @@ class PackageAndObservationTests(unittest.TestCase):
             execution = observation["execution"]
             self.assertEqual(context["run_id"], execution["run_id"], name)
             self.assertEqual(
+                context["run_attempt"], execution["run_attempt"], name
+            )
+            self.assertEqual(
                 context["runtime_commit"], execution["commit"], name
             )
             self.assertEqual(context["workflow"], execution["workflow"], name)
@@ -202,9 +205,13 @@ class PackageAndObservationTests(unittest.TestCase):
                 self.assertEqual(
                     job["setup_step_id"], execution["setup_step_id"], name
                 )
+                self.assertEqual(job["observation"], name)
             else:
                 self.assertIn(
                     execution["setup_step_id"], job["setup_step_ids"], name
+                )
+                self.assertEqual(
+                    job["observations"][execution["setup_step_id"]], name
                 )
 
 
