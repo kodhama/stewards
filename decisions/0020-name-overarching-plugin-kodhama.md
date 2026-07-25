@@ -1,7 +1,7 @@
 ---
 id: kodhama-0020-name-overarching-plugin-kodhama
 type: decision
-status: gated
+status: approved  # maintainer approved 2026-07-25 after the decision adversary returned SOUND
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package]
 changes: [kodhama-spec-0004-ci-marketplace-setup-skill@v2]
 owner: agent
@@ -127,3 +127,10 @@ resolves the observed cross-host adapter failure with the smallest shared
 syntax both hosts accept. It partially supersedes only 0018's `stewards`
 identity/path choice, preserves the approved packaging and ownership
 boundaries, and introduces no new distribution mechanism.
+
+## Lifecycle record
+
+The independent decision adversary returned `SOUND` after the partial-
+supersession pointer and workspace-root binding were made explicit. The
+maintainer then approved decision 0020 on 2026-07-25. The `approved` status
+records that human intent act.
