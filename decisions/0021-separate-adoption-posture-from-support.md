@@ -1,12 +1,12 @@
 ---
 id: kodhama-0021-separate-adoption-posture-from-support
 type: decision
-status: gated
+status: approved
 depends_on: [kodhama-0009-org-topology-spirit-stewards-trees, kodhama-0012-codex-marketplace-channel, kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package]
 informed_by: [kodhama-0013-family-codex-native-product-support]
 owner: agent
 updated: 2026-07-25
-provenance: "maintainer shaping, 2026-07-25: balance structured methodology with gradual exploration; stewards may cross-dogfood, trees such as math-quest may opt into preview, and support remains an earned public promise; start minimal and dogfood Grove first; exact draft approved to proceed to independent soundness review"
+provenance: "maintainer shaping, 2026-07-25: balance structured methodology with gradual exploration; stewards may cross-dogfood, trees such as math-quest may opt into preview, and support remains an earned public promise; start minimal and dogfood Grove first; exact draft approved to proceed to independent soundness review; independent decision adversary returned SOUND; maintainer ratified exact decision"
 ---
 
 # Decision: separate adoption posture from support
@@ -172,5 +172,6 @@ preserves product ownership and host-specific honesty, and adds no machinery.
 
 This began as the first durable shaping canvas. On 2026-07-25, after reviewing
 the exact draft, the maintainer confirmed that it captured the intended model
-and approved proceeding to independent soundness review. That advances the
-decision to `gated`; it is not yet ratified.
+and approved proceeding to independent soundness review. The independent
+decision adversary then returned `SOUND`. The maintainer subsequently ratified
+the exact decision; the `approved` status records that human intent act.
