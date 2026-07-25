@@ -32,13 +32,16 @@ Design System and Homebrew Tap are not plugin targets for this decision.
 
 ## Ledger
 
-- [ ] Grove cross-link ADR PR opened and linked.
+- [x] Grove cross-link ADR PR opened and linked:
+      [grove PR #145](https://github.com/kodhama/grove/pull/145).
 - [ ] Grove cross-link ADR independently reviewed.
-- [ ] Trellis cross-link ADR PR opened and linked.
+- [x] Trellis cross-link ADR PR opened and linked:
+      [trellis PR #193](https://github.com/kodhama/trellis/pull/193).
 - [ ] Trellis cross-link ADR independently reviewed.
 - [ ] Maintainer ratification and merges recorded.
 - [ ] Closure report appended; original Grove plan resumed.
 
 ## Report
 
-Open. No product receipt has landed yet.
+Open. Both gated receipt ADRs are awaiting independent review; neither makes a
+product choice or has landed.
