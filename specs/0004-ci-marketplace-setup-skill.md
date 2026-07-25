@@ -1,7 +1,7 @@
 ---
 id: kodhama-spec-0004-ci-marketplace-setup-skill
 type: spec
-status: gated
+status: approved  # maintainer approved v2 on 2026-07-25 after independent spec, conformance, and corpus review
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-spec-0003-marketplace-test-observation@v1]
 implements: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 owner: agent
@@ -516,5 +516,7 @@ Version 1 was approved by the maintainer on 2026-07-24 after the spec adversary
 returned `APPROVE-READY`, the conformance reviewer returned `PASS`, and the
 change-scoped corpus review returned `PASS`.
 
-The version 2 amendment implements approved decision 0020 and is self-checked
-`gated` pending independent review and the human spec gate.
+The version 2 amendment implements approved decision 0020. The spec adversary
+returned `APPROVE-READY`, the conformance reviewer returned `PASS`, and the
+change-scoped corpus review returned `PASS`. The maintainer then approved v2
+on 2026-07-25; the `approved` status records that human spec-gate act.
