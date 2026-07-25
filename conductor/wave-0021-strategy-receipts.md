@@ -34,14 +34,16 @@ Design System and Homebrew Tap are not plugin targets for this decision.
 
 - [x] Grove cross-link ADR PR opened and linked:
       [grove PR #145](https://github.com/kodhama/grove/pull/145).
-- [ ] Grove cross-link ADR independently reviewed.
+- [x] Grove cross-link ADR independently reviewed:
+      [SOUND](https://github.com/kodhama/grove/pull/145#issuecomment-5080201927).
 - [x] Trellis cross-link ADR PR opened and linked:
       [trellis PR #193](https://github.com/kodhama/trellis/pull/193).
-- [ ] Trellis cross-link ADR independently reviewed.
+- [x] Trellis cross-link ADR independently reviewed:
+      [SOUND](https://github.com/kodhama/trellis/pull/193#issuecomment-5080202446).
 - [ ] Maintainer ratification and merges recorded.
 - [ ] Closure report appended; original Grove plan resumed.
 
 ## Report
 
-Open. Both gated receipt ADRs are awaiting independent review; neither makes a
-product choice or has landed.
+Open. Both gated receipt ADRs are independently `SOUND`; neither makes a
+product choice. They await the maintainer's exact ratification and merge.
