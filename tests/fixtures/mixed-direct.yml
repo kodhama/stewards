@@ -15,7 +15,11 @@ jobs:
         run: npm install --global @openai/codex@0.145.0
       - name: Run Claude
         id: run-claude
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
         run: claude -p "review"
       - name: Run Codex
         id: run-codex
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex
         run: codex exec --skip-git-repo-check "review"

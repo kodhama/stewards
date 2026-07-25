@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "skill": "kodhama:setup-ci-marketplace",
+  "invoking_host": "codex",
+  "confirmed_plan": {
+    "marketplace_name": "kodhama",
+    "marketplace_repository": "kodhama/stewards",
+    "marketplace_revision": "fa862cadf37ad85f71d233a8ec8ecef0c4539ff4",
+    "checkout_action_revision": "11bd71901bbe5b1630ceea73d27597364c9af683",
+    "claude_version": "2.1.199",
+    "codex_version": "0.145.0",
+    "claude_state": "${{ runner.temp }}/claude",
+    "codex_state": "${{ runner.temp }}/codex",
+    "registration_working_directory": "${{ github.workspace }}",
+    "managed_checkout_root": ".kodhama/marketplaces/kodhama"
+  },
+  "cases": {
+    "claude-direct": {
+      "classification": "claude",
+      "changed": true,
+      "first_pass_sha256": "dcd452eda571bc604a6ad5c710665c0eb1671d36482df9c856306eb5d88d12fc",
+      "second_pass_sha256": "dcd452eda571bc604a6ad5c710665c0eb1671d36482df9c856306eb5d88d12fc"
+    },
+    "codex-direct": {
+      "classification": "codex",
+      "changed": true,
+      "first_pass_sha256": "a2f56d93694e05182e2f2f5b5506ee4ef55f404e0001bcbfa38c85f88dcc8309",
+      "second_pass_sha256": "a2f56d93694e05182e2f2f5b5506ee4ef55f404e0001bcbfa38c85f88dcc8309"
+    },
+    "mixed-direct": {
+      "classification": "claude+codex",
+      "changed": true,
+      "first_pass_sha256": "ea6c88e97422d10f13fb8ebc975c97fe1542a98b038ce175cee8b705db1e7466",
+      "second_pass_sha256": "ea6c88e97422d10f13fb8ebc975c97fe1542a98b038ce175cee8b705db1e7466"
+    },
+    "unrelated": {
+      "classification": "unrelated",
+      "changed": false,
+      "reason": "no Claude or Codex invocation",
+      "first_pass_sha256": "57771ed1c2a5743bb9be358d697cc5f71974f4f89c9d9fec1ba8c32f221764ec",
+      "second_pass_sha256": "57771ed1c2a5743bb9be358d697cc5f71974f4f89c9d9fec1ba8c32f221764ec"
+    },
+    "ambiguous-wrapper": {
+      "classification": "ambiguous",
+      "changed": false,
+      "reason": "dynamic local wrapper does not prove the invoked host",
+      "first_pass_sha256": "f8af35edae3f1a628cc1f4ba5e8ea244405523334069c13442a159fa40b6c48c",
+      "second_pass_sha256": "f8af35edae3f1a628cc1f4ba5e8ea244405523334069c13442a159fa40b6c48c"
+    },
+    "external-reusable": {
+      "classification": "external",
+      "changed": false,
+      "reason": "external reusable workflows are read-only",
+      "first_pass_sha256": "fa7e7615ec35432732b738c2d043da245820276733e5c88f467e450454e92af4",
+      "second_pass_sha256": "fa7e7615ec35432732b738c2d043da245820276733e5c88f467e450454e92af4"
+    },
+    "conditional-direct": {
+      "classification": "ambiguous",
+      "changed": false,
+      "reason": "relevant step-level if condition is unsupported in version 2",
+      "first_pass_sha256": "996a5cfe27d488dec7507bc83909f7659b3d388b565e1eebfd99c36a7dbc025c",
+      "second_pass_sha256": "996a5cfe27d488dec7507bc83909f7659b3d388b565e1eebfd99c36a7dbc025c"
+    },
+    "codex-action": {
+      "classification": "unsupported",
+      "changed": false,
+      "reason": "opaque host action needs a later action-native adapter",
+      "first_pass_sha256": "2f2f682f9299ea922dcceea066e82a0b447964f755c109fc2c1bfabd8916eea8",
+      "second_pass_sha256": "2f2f682f9299ea922dcceea066e82a0b447964f755c109fc2c1bfabd8916eea8"
+    }
+  }
+}

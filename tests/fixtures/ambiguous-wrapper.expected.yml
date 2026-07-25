@@ -1,0 +1,12 @@
+name: Ambiguous wrapper fixture
+on: workflow_dispatch
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1111111111111111111111111111111111111111
+      - name: Install Codex
+        run: npm install --global @openai/codex@0.145.0
+      - name: Invoke local wrapper
+        run: ./scripts/run-agent.sh "${AGENT_HOST}" review

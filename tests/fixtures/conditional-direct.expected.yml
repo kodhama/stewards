@@ -1,17 +1,15 @@
-name: Codex direct fixture
+name: Conditional direct fixture
 on: workflow_dispatch
 
 jobs:
   codex:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout product
-        uses: actions/checkout@1111111111111111111111111111111111111111
+      - uses: actions/checkout@1111111111111111111111111111111111111111
       - name: Install Codex
         id: install-codex
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: npm install --global @openai/codex@0.145.0
       - name: Run Codex
         id: run-codex
-        env:
-          CODEX_HOME: ${{ runner.temp }}/codex
         run: codex exec --skip-git-repo-check "review"

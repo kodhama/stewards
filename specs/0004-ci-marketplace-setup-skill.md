@@ -115,7 +115,7 @@ entries but do not decide whether an absent entry is ready for admission.
 ```json
 {
   "schema_version": 1,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "rows": [
     {
       "surface_id": "github-actions/codex-marketplace-setup-skill",

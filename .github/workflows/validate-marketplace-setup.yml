@@ -1,0 +1,286 @@
+name: Validate marketplace setup
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/validate-marketplace-setup.yml"
+      - "plugins/kodhama/**"
+      - "scripts/emit_marketplace_observation.py"
+      - "scripts/validate_kodhama_plugin.py"
+      - "tests/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  claude-marketplace:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout validation code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install Claude Code
+        id: install-claude
+        run: npm install --global @anthropic-ai/claude-code@2.1.199
+      - name: "Kodhama marketplace: checkout kodhama"
+        id: kodhama_marketplace_kodhama_checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: kodhama/stewards
+          ref: fa862cadf37ad85f71d233a8ec8ecef0c4539ff4
+          path: .kodhama/marketplaces/kodhama
+          persist-credentials: false
+      - name: "Kodhama marketplace: register kodhama for Claude"
+        id: kodhama_marketplace_kodhama_claude
+        working-directory: ${{ github.workspace }}
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
+        run: |
+          set -euo pipefail
+          checkout_root=".kodhama/marketplaces/kodhama"
+          origin="$(git -C "$checkout_root" remote get-url origin)"
+          origin="${origin%.git}"
+          test "$origin" = "https://github.com/kodhama/stewards"
+          revision="$(git -C "$checkout_root" rev-parse HEAD)"
+          test "$revision" = "fa862cadf37ad85f71d233a8ec8ecef0c4539ff4"
+          listing="$(mktemp)"
+          trap 'rm -f "$listing"' EXIT
+          claude plugin marketplace add ./.kodhama/marketplaces/kodhama --scope local
+          claude plugin marketplace list --json > "$listing"
+          node - "$listing" "$checkout_root" <<'NODE'
+          const fs = require("node:fs");
+          const [listing, checkout] = process.argv.slice(2);
+          const rows = JSON.parse(fs.readFileSync(listing, "utf8"));
+          const expected = fs.realpathSync(checkout);
+          const row = rows.find((item) => item.name === "kodhama");
+          if (!row) throw new Error("Claude marketplace missing");
+          const root = Object.hasOwn(row, "path") ? row.path : row.installLocation;
+          if (typeof root !== "string" || fs.realpathSync(root) !== expected) {
+            throw new Error("Claude marketplace root mismatch");
+          }
+          NODE
+          python3 scripts/emit_marketplace_observation.py \
+            --host claude \
+            --surface-id github-actions/claude-marketplace-setup-skill \
+            --marketplace-name kodhama \
+            --marketplace-repository kodhama/stewards \
+            --marketplace-revision fa862cadf37ad85f71d233a8ec8ecef0c4539ff4 \
+            --workflow .github/workflows/validate-marketplace-setup.yml \
+            --job claude-marketplace \
+            --setup-step-id kodhama_marketplace_kodhama_claude \
+            --output artifacts/marketplace-observations/claude.json
+      - name: Validate and describe Claude evidence
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_kodhama_plugin.py \
+            --observation artifacts/marketplace-observations/claude.json
+          {
+            echo "runner=${ImageOS:-unknown}@${ImageVersion:-unknown}"
+            echo "claude=$(claude --version)"
+            echo "claude_config_dir=$CLAUDE_CONFIG_DIR"
+          } > artifacts/marketplace-observations/claude-evidence.txt
+      - name: Upload Claude marketplace evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: claude-marketplace-evidence
+          path: artifacts/marketplace-observations/
+
+  codex-marketplace:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout validation code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install Codex
+        id: install-codex
+        run: npm install --global @openai/codex@0.145.0
+      - name: "Kodhama marketplace: checkout kodhama"
+        id: kodhama_marketplace_kodhama_checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: kodhama/stewards
+          ref: fa862cadf37ad85f71d233a8ec8ecef0c4539ff4
+          path: .kodhama/marketplaces/kodhama
+          persist-credentials: false
+      - name: "Kodhama marketplace: register kodhama for Codex"
+        id: kodhama_marketplace_kodhama_codex
+        working-directory: ${{ github.workspace }}
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex
+        run: |
+          set -euo pipefail
+          checkout_root=".kodhama/marketplaces/kodhama"
+          origin="$(git -C "$checkout_root" remote get-url origin)"
+          origin="${origin%.git}"
+          test "$origin" = "https://github.com/kodhama/stewards"
+          revision="$(git -C "$checkout_root" rev-parse HEAD)"
+          test "$revision" = "fa862cadf37ad85f71d233a8ec8ecef0c4539ff4"
+          listing="$(mktemp)"
+          trap 'rm -f "$listing"' EXIT
+          codex plugin marketplace add ./.kodhama/marketplaces/kodhama --json
+          codex plugin marketplace list --json > "$listing"
+          node - "$listing" "$checkout_root" <<'NODE'
+          const fs = require("node:fs");
+          const [listing, checkout] = process.argv.slice(2);
+          const payload = JSON.parse(fs.readFileSync(listing, "utf8"));
+          const expected = fs.realpathSync(checkout);
+          const row = payload.marketplaces.find((item) => item.name === "kodhama");
+          if (!row || typeof row.root !== "string" ||
+              fs.realpathSync(row.root) !== expected) {
+            throw new Error("Codex marketplace root mismatch");
+          }
+          NODE
+          python3 scripts/emit_marketplace_observation.py \
+            --host codex \
+            --surface-id github-actions/codex-marketplace-setup-skill \
+            --marketplace-name kodhama \
+            --marketplace-repository kodhama/stewards \
+            --marketplace-revision fa862cadf37ad85f71d233a8ec8ecef0c4539ff4 \
+            --workflow .github/workflows/validate-marketplace-setup.yml \
+            --job codex-marketplace \
+            --setup-step-id kodhama_marketplace_kodhama_codex \
+            --output artifacts/marketplace-observations/codex.json
+      - name: Validate and describe Codex evidence
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_kodhama_plugin.py \
+            --observation artifacts/marketplace-observations/codex.json
+          {
+            echo "runner=${ImageOS:-unknown}@${ImageVersion:-unknown}"
+            echo "codex=$(codex --version)"
+            echo "codex_home=$CODEX_HOME"
+          } > artifacts/marketplace-observations/codex-evidence.txt
+      - name: Upload Codex marketplace evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: codex-marketplace-evidence
+          path: artifacts/marketplace-observations/
+
+  mixed-marketplace:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout validation code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install Claude Code
+        id: install-claude
+        run: npm install --global @anthropic-ai/claude-code@2.1.199
+      - name: Install Codex
+        id: install-codex
+        run: npm install --global @openai/codex@0.145.0
+      - name: "Kodhama marketplace: checkout kodhama"
+        id: kodhama_marketplace_kodhama_checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: kodhama/stewards
+          ref: fa862cadf37ad85f71d233a8ec8ecef0c4539ff4
+          path: .kodhama/marketplaces/kodhama
+          persist-credentials: false
+      - name: "Kodhama marketplace: register kodhama for Claude"
+        id: kodhama_marketplace_kodhama_claude
+        working-directory: ${{ github.workspace }}
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
+        run: |
+          set -euo pipefail
+          checkout_root=".kodhama/marketplaces/kodhama"
+          origin="$(git -C "$checkout_root" remote get-url origin)"
+          origin="${origin%.git}"
+          test "$origin" = "https://github.com/kodhama/stewards"
+          revision="$(git -C "$checkout_root" rev-parse HEAD)"
+          test "$revision" = "fa862cadf37ad85f71d233a8ec8ecef0c4539ff4"
+          listing="$(mktemp)"
+          trap 'rm -f "$listing"' EXIT
+          claude plugin marketplace add ./.kodhama/marketplaces/kodhama --scope local
+          claude plugin marketplace list --json > "$listing"
+          node - "$listing" "$checkout_root" <<'NODE'
+          const fs = require("node:fs");
+          const [listing, checkout] = process.argv.slice(2);
+          const rows = JSON.parse(fs.readFileSync(listing, "utf8"));
+          const expected = fs.realpathSync(checkout);
+          const row = rows.find((item) => item.name === "kodhama");
+          if (!row) throw new Error("Claude marketplace missing");
+          const root = Object.hasOwn(row, "path") ? row.path : row.installLocation;
+          if (typeof root !== "string" || fs.realpathSync(root) !== expected) {
+            throw new Error("Claude marketplace root mismatch");
+          }
+          NODE
+          python3 scripts/emit_marketplace_observation.py \
+            --host claude \
+            --surface-id github-actions/claude-marketplace-setup-skill \
+            --marketplace-name kodhama \
+            --marketplace-repository kodhama/stewards \
+            --marketplace-revision fa862cadf37ad85f71d233a8ec8ecef0c4539ff4 \
+            --workflow .github/workflows/validate-marketplace-setup.yml \
+            --job mixed-marketplace \
+            --setup-step-id kodhama_marketplace_kodhama_claude \
+            --output artifacts/marketplace-observations/mixed-claude.json
+      - name: "Kodhama marketplace: register kodhama for Codex"
+        id: kodhama_marketplace_kodhama_codex
+        working-directory: ${{ github.workspace }}
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex
+        run: |
+          set -euo pipefail
+          checkout_root=".kodhama/marketplaces/kodhama"
+          origin="$(git -C "$checkout_root" remote get-url origin)"
+          origin="${origin%.git}"
+          test "$origin" = "https://github.com/kodhama/stewards"
+          revision="$(git -C "$checkout_root" rev-parse HEAD)"
+          test "$revision" = "fa862cadf37ad85f71d233a8ec8ecef0c4539ff4"
+          listing="$(mktemp)"
+          trap 'rm -f "$listing"' EXIT
+          codex plugin marketplace add ./.kodhama/marketplaces/kodhama --json
+          codex plugin marketplace list --json > "$listing"
+          node - "$listing" "$checkout_root" <<'NODE'
+          const fs = require("node:fs");
+          const [listing, checkout] = process.argv.slice(2);
+          const payload = JSON.parse(fs.readFileSync(listing, "utf8"));
+          const expected = fs.realpathSync(checkout);
+          const row = payload.marketplaces.find((item) => item.name === "kodhama");
+          if (!row || typeof row.root !== "string" ||
+              fs.realpathSync(row.root) !== expected) {
+            throw new Error("Codex marketplace root mismatch");
+          }
+          NODE
+          python3 scripts/emit_marketplace_observation.py \
+            --host codex \
+            --surface-id github-actions/codex-marketplace-setup-skill \
+            --marketplace-name kodhama \
+            --marketplace-repository kodhama/stewards \
+            --marketplace-revision fa862cadf37ad85f71d233a8ec8ecef0c4539ff4 \
+            --workflow .github/workflows/validate-marketplace-setup.yml \
+            --job mixed-marketplace \
+            --setup-step-id kodhama_marketplace_kodhama_codex \
+            --output artifacts/marketplace-observations/mixed-codex.json
+      - name: Validate and describe mixed evidence
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
+          CODEX_HOME: ${{ runner.temp }}/codex
+        run: |
+          set -euo pipefail
+          test "$CLAUDE_CONFIG_DIR" != "$CODEX_HOME"
+          python3 scripts/validate_kodhama_plugin.py \
+            --observation artifacts/marketplace-observations/mixed-claude.json
+          python3 scripts/validate_kodhama_plugin.py \
+            --observation artifacts/marketplace-observations/mixed-codex.json
+          {
+            echo "runner=${ImageOS:-unknown}@${ImageVersion:-unknown}"
+            echo "claude=$(claude --version)"
+            echo "codex=$(codex --version)"
+            echo "claude_config_dir=$CLAUDE_CONFIG_DIR"
+            echo "codex_home=$CODEX_HOME"
+          } > artifacts/marketplace-observations/mixed-evidence.txt
+      - name: Upload mixed marketplace evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mixed-marketplace-evidence
+          path: artifacts/marketplace-observations/
