@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "skill": "kodhama:setup-ci-marketplace",
+  "invoking_host": "codex",
+  "method": "Two authoring passes were performed against the retained fixtures; the second pass inspected the first-pass bytes and made no edit.",
+  "confirmed_plan": {
+    "marketplace_name": "kodhama",
+    "marketplace_repository": "kodhama/stewards",
+    "marketplace_revision": "fa862cadf37ad85f71d233a8ec8ecef0c4539ff4",
+    "checkout_action_revision": "11bd71901bbe5b1630ceea73d27597364c9af683",
+    "claude_version": "2.1.199",
+    "codex_version": "0.145.0",
+    "claude_state": "${{ runner.temp }}/claude",
+    "codex_state": "${{ runner.temp }}/codex",
+    "registration_working_directory": "${{ github.workspace }}",
+    "managed_checkout_root": ".kodhama/marketplaces/kodhama"
+  },
+  "inspected_workflows": [
+    "tests/fixtures/ambiguous-wrapper.yml",
+    "tests/fixtures/caller-default-working-directory.yml",
+    "tests/fixtures/claude-direct.yml",
+    "tests/fixtures/codex-action.yml",
+    "tests/fixtures/codex-direct.yml",
+    "tests/fixtures/conditional-direct.yml",
+    "tests/fixtures/external-reusable.yml",
+    "tests/fixtures/local-reusable-caller.yml",
+    "tests/fixtures/local-reusable.yml",
+    "tests/fixtures/mixed-direct.yml",
+    "tests/fixtures/unowned-equivalent.yml",
+    "tests/fixtures/unrelated.yml"
+  ],
+  "authoring_boundary": {
+    "launched_host": false,
+    "ran_product_test": false,
+    "installed_plugin": false,
+    "emitted_support_state": false,
+    "created_marketplace_observation": false
+  },
+  "cases": {
+    "claude-direct": {
+      "classification": "claude",
+      "changed": true,
+      "inspected": {
+        "workflow": "tests/fixtures/claude-direct.yml",
+        "job": "claude"
+      },
+      "prerequisites": {
+        "install-claude": "@anthropic-ai/claude-code@2.1.199",
+        "CLAUDE_CONFIG_DIR": "${{ runner.temp }}/claude"
+      },
+      "generated_step_ids": [
+        "kodhama_marketplace_kodhama_checkout",
+        "kodhama_marketplace_kodhama_claude"
+      ],
+      "first_pass_sha256": "dcd452eda571bc604a6ad5c710665c0eb1671d36482df9c856306eb5d88d12fc",
+      "second_pass_sha256": "dcd452eda571bc604a6ad5c710665c0eb1671d36482df9c856306eb5d88d12fc",
+      "converged": true
+    },
+    "codex-direct": {
+      "classification": "codex",
+      "changed": true,
+      "inspected": {
+        "workflow": "tests/fixtures/codex-direct.yml",
+        "job": "codex"
+      },
+      "prerequisites": {
+        "install-codex": "@openai/codex@0.145.0",
+        "CODEX_HOME": "${{ runner.temp }}/codex",
+        "state_initialization": "mkdir -p \"$CODEX_HOME\""
+      },
+      "generated_step_ids": [
+        "kodhama_marketplace_kodhama_checkout",
+        "kodhama_marketplace_kodhama_codex"
+      ],
+      "first_pass_sha256": "bcab7a055a569afb539ee3699e6e29ba6bf7b1349eb27b93b31e4550153228ca",
+      "second_pass_sha256": "bcab7a055a569afb539ee3699e6e29ba6bf7b1349eb27b93b31e4550153228ca",
+      "converged": true
+    },
+    "mixed-direct": {
+      "classification": "claude+codex",
+      "changed": true,
+      "inspected": {
+        "workflow": "tests/fixtures/mixed-direct.yml",
+        "job": "agents"
+      },
+      "prerequisites": {
+        "install-claude": "@anthropic-ai/claude-code@2.1.199",
+        "install-codex": "@openai/codex@0.145.0",
+        "CLAUDE_CONFIG_DIR": "${{ runner.temp }}/claude",
+        "CODEX_HOME": "${{ runner.temp }}/codex",
+        "codex_state_initialization": "mkdir -p \"$CODEX_HOME\""
+      },
+      "generated_step_ids": [
+        "kodhama_marketplace_kodhama_checkout",
+        "kodhama_marketplace_kodhama_claude",
+        "kodhama_marketplace_kodhama_codex"
+      ],
+      "first_pass_sha256": "4ae2b4dc74ddf3136edcdb9938fc1b7442d6d32c2ccba6eaff775b6f74264a5a",
+      "second_pass_sha256": "4ae2b4dc74ddf3136edcdb9938fc1b7442d6d32c2ccba6eaff775b6f74264a5a",
+      "converged": true
+    },
+    "caller-default-working-directory": {
+      "classification": "codex",
+      "changed": true,
+      "inspected": {
+        "workflow": "tests/fixtures/caller-default-working-directory.yml",
+        "job": "codex"
+      },
+      "prerequisites": {
+        "install-codex": "@openai/codex@0.145.0",
+        "CODEX_HOME": "${{ runner.temp }}/codex",
+        "state_initialization": "mkdir -p \"$CODEX_HOME\"",
+        "caller_default_working_directory": "tools"
+      },
+      "generated_step_ids": [
+        "kodhama_marketplace_kodhama_checkout",
+        "kodhama_marketplace_kodhama_codex"
+      ],
+      "first_pass_sha256": "9fd8252049c9d24a1eb65e9231917cbb5f6b954de417a86098b29703ea3dedd4",
+      "second_pass_sha256": "9fd8252049c9d24a1eb65e9231917cbb5f6b954de417a86098b29703ea3dedd4",
+      "converged": true
+    },
+    "local-reusable": {
+      "classification": "claude",
+      "changed": true,
+      "inspected": {
+        "workflow": "tests/fixtures/local-reusable.yml",
+        "job": "agent",
+        "selected_callers": [
+          "tests/fixtures/local-reusable-caller.yml"
+        ]
+      },
+      "prerequisites": {
+        "install-claude": "@anthropic-ai/claude-code@2.1.199",
+        "CLAUDE_CONFIG_DIR": "${{ runner.temp }}/claude"
+      },
+      "generated_step_ids": [
+        "kodhama_marketplace_kodhama_checkout",
+        "kodhama_marketplace_kodhama_claude"
+      ],
+      "first_pass_sha256": "b8e85415e07b8beba695a9a6a342247088a6250930284af5ae4d9359b1cf3c19",
+      "second_pass_sha256": "b8e85415e07b8beba695a9a6a342247088a6250930284af5ae4d9359b1cf3c19",
+      "converged": true
+    },
+    "unrelated": {
+      "classification": "unrelated",
+      "changed": false,
+      "reason": "no Claude or Codex invocation",
+      "inspected": {
+        "workflow": "tests/fixtures/unrelated.yml",
+        "job": "build"
+      },
+      "prerequisites": {},
+      "generated_step_ids": [],
+      "first_pass_sha256": "57771ed1c2a5743bb9be358d697cc5f71974f4f89c9d9fec1ba8c32f221764ec",
+      "second_pass_sha256": "57771ed1c2a5743bb9be358d697cc5f71974f4f89c9d9fec1ba8c32f221764ec",
+      "converged": true
+    },
+    "ambiguous-wrapper": {
+      "classification": "ambiguous",
+      "changed": false,
+      "reason": "dynamic local wrapper does not prove the invoked host",
+      "inspected": {
+        "workflow": "tests/fixtures/ambiguous-wrapper.yml",
+        "job": "agent"
+      },
+      "prerequisites": {},
+      "generated_step_ids": [],
+      "first_pass_sha256": "f8af35edae3f1a628cc1f4ba5e8ea244405523334069c13442a159fa40b6c48c",
+      "second_pass_sha256": "f8af35edae3f1a628cc1f4ba5e8ea244405523334069c13442a159fa40b6c48c",
+      "converged": true
+    },
+    "external-reusable": {
+      "classification": "external",
+      "changed": false,
+      "reason": "external reusable workflows are read-only",
+      "inspected": {
+        "workflow": "tests/fixtures/external-reusable.yml",
+        "job": "agent"
+      },
+      "prerequisites": {},
+      "generated_step_ids": [],
+      "first_pass_sha256": "fa7e7615ec35432732b738c2d043da245820276733e5c88f467e450454e92af4",
+      "second_pass_sha256": "fa7e7615ec35432732b738c2d043da245820276733e5c88f467e450454e92af4",
+      "converged": true
+    },
+    "conditional-direct": {
+      "classification": "ambiguous",
+      "changed": false,
+      "reason": "relevant step-level if condition is unsupported in version 2",
+      "inspected": {
+        "workflow": "tests/fixtures/conditional-direct.yml",
+        "job": "codex"
+      },
+      "prerequisites": {
+        "install-codex": "@openai/codex@0.145.0"
+      },
+      "generated_step_ids": [],
+      "first_pass_sha256": "996a5cfe27d488dec7507bc83909f7659b3d388b565e1eebfd99c36a7dbc025c",
+      "second_pass_sha256": "996a5cfe27d488dec7507bc83909f7659b3d388b565e1eebfd99c36a7dbc025c",
+      "converged": true
+    },
+    "codex-action": {
+      "classification": "unsupported",
+      "changed": false,
+      "reason": "opaque host action needs a later action-native adapter",
+      "inspected": {
+        "workflow": "tests/fixtures/codex-action.yml",
+        "job": "codex"
+      },
+      "prerequisites": {},
+      "generated_step_ids": [],
+      "first_pass_sha256": "2f2f682f9299ea922dcceea066e82a0b447964f755c109fc2c1bfabd8916eea8",
+      "second_pass_sha256": "2f2f682f9299ea922dcceea066e82a0b447964f755c109fc2c1bfabd8916eea8",
+      "converged": true
+    },
+    "unowned-equivalent": {
+      "classification": "collision",
+      "changed": false,
+      "reason": "caller-owned equivalent setup cannot be adopted or duplicated",
+      "inspected": {
+        "workflow": "tests/fixtures/unowned-equivalent.yml",
+        "job": "codex"
+      },
+      "prerequisites": {
+        "install-codex": "@openai/codex@0.145.0",
+        "CODEX_HOME": "${{ runner.temp }}/codex"
+      },
+      "generated_step_ids": [],
+      "first_pass_sha256": "3079e101d8cfc309247fec661ad152389bfe12bb04b1283ce42653424e166a5c",
+      "second_pass_sha256": "3079e101d8cfc309247fec661ad152389bfe12bb04b1283ce42653424e166a5c",
+      "converged": true
+    }
+  }
+}

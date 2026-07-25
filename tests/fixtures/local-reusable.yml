@@ -1,8 +1,13 @@
-name: Claude direct fixture
-on: workflow_dispatch
+name: Local reusable workflow fixture
+on:
+  workflow_call:
+    inputs:
+      host:
+        required: true
+        type: string
 
 jobs:
-  claude:
+  agent:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout product

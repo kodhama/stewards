@@ -1,15 +1,39 @@
 ---
 id: kodhama-spec-0004-ci-marketplace-setup-skill
 type: spec
-status: approved  # maintainer approved checkpoint 1 on 2026-07-24
-depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-spec-0003-marketplace-test-observation@v1]
-implements: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package]
+status: approved  # maintainer approved v2 on 2026-07-25 after independent spec, conformance, and corpus review
+depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-spec-0003-marketplace-test-observation@v1]
+implements: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 owner: agent
-updated: 2026-07-24
-version: 1
+updated: 2026-07-25
+version: 2
 ---
 
 # GitHub Actions marketplace-setup skill
+
+> **Amended 2026-07-25 — decision 0020**
+>
+> **WHAT:** Renamed the public dual-host plugin, package source, skill
+> namespace, generated identifiers, and managed checkout namespace from
+> Stewards to Kodhama; made the local marketplace argument explicitly
+> relative and bound registration run steps to the GitHub workspace root.
+>
+> **WHY:** The maintainer chose Kodhama as the overarching plugin identity,
+> and exact Claude Code `2.1.199` and Codex CLI `0.145.0` runs rejected the
+> v1 bare dot-directory argument as a non-local marketplace source.
+>
+> **SCOPE:** Plugin exposure and carrier parity, catalog-admission fixture
+> paths, canonical generated block ownership, command adapter, convergence,
+> package acceptance, and dependent test/index pins.
+>
+> **POINTER:** Issue #14 hosted validation and
+> `kodhama-0020-name-overarching-plugin-kodhama`.
+>
+> **VALUE:** A consumer invokes one consistently named Kodhama skill whose
+> generated setup resolves the verified marketplace checkout regardless of
+> caller working-directory defaults.
+>
+> **CONFIDENCE:** verified.
 
 ## Scope
 
@@ -28,31 +52,31 @@ invocation, assertions, and evidence. The skill must behave identically whether
 Claude Code or Codex invokes it; the invoking host is never evidence of which
 host a target job uses.
 
-## Stewards plugin exposure
+## Kodhama plugin exposure
 
-The skill is exposed from the independently versioned Stewards plugin defined
-by `kodhama-0018`:
+The skill is exposed from the independently versioned Kodhama plugin defined
+by `kodhama-0018` and renamed by `kodhama-0020`:
 
-- `plugins/stewards/VERSION`;
-- `plugins/stewards/.claude-plugin/plugin.json`;
-- `plugins/stewards/.codex-plugin/plugin.json`;
-- `plugins/stewards/surfaces.json`; and
-- `plugins/stewards/skills/setup-ci-marketplace/SKILL.md`.
+- `plugins/kodhama/VERSION`;
+- `plugins/kodhama/.claude-plugin/plugin.json`;
+- `plugins/kodhama/.codex-plugin/plugin.json`;
+- `plugins/kodhama/surfaces.json`; and
+- `plugins/kodhama/skills/setup-ci-marketplace/SKILL.md`.
 
 The plugin's Claude manifest, Codex manifest, and `surfaces.json` version shall
 equal its own SemVer `VERSION`.
 
 The Claude catalog is `.claude-plugin/marketplace.json`; the Codex catalog is
 `.agents/plugins/marketplace.json`. An admitted Claude entry uses the relative
-source string `"./plugins/stewards"`. An admitted Codex entry uses this exact
+source string `"./plugins/kodhama"`. An admitted Codex entry uses this exact
 host-specific subset:
 
 ```json
 {
-  "name": "stewards",
+  "name": "kodhama",
   "source": {
     "source": "local",
-    "path": "./plugins/stewards"
+    "path": "./plugins/kodhama"
   },
   "policy": {
     "installation": "AVAILABLE",
@@ -65,17 +89,18 @@ host-specific subset:
 Catalog admission is governed by decisions 0012 and 0018, not inferred by the
 parity validator. A catalog-changing PR shall retain and review a bounded smoke
 report at
-`plugins/stewards/reference/surfaces/<host>-catalog-admission-<version>.md`.
+`plugins/kodhama/reference/surfaces/<host>-catalog-admission-<version>.md`.
 The report passes only when it identifies the host/CLI version, plugin version,
 Stewards commit, commands with secrets redacted, and outputs proving all of:
 
 1. an isolated fresh host state added the proposed local marketplace;
-2. the host discovered and installed `stewards@kodhama`;
-3. a fresh host process exposed the namespaced `setup-ci-marketplace` skill;
+2. the host discovered and installed `kodhama@kodhama`;
+3. a fresh host process exposed the namespaced
+   `kodhama:setup-ci-marketplace` skill;
 4. invoking the skill on
-   `plugins/stewards/tests/fixtures/direct-cli-workflow.yml` produced the
+   `plugins/kodhama/tests/fixtures/direct-cli-workflow.yml` produced the
    semantic result recorded in
-   `plugins/stewards/tests/fixtures/direct-cli-workflow.expected.yml`;
+   `plugins/kodhama/tests/fixtures/direct-cli-workflow.expected.yml`;
 5. invoking it again produced no diff; and
 6. the report was generated for the same host catalog changed by the PR.
 
@@ -83,14 +108,14 @@ Any failure or missing item keeps that host entry absent. The other host's
 report cannot substitute. Repository parity checks the shape of present
 entries but do not decide whether an absent entry is ready for admission.
 
-## Stewards surface metadata
+## Kodhama surface metadata
 
-`plugins/stewards/surfaces.json` uses this closed product-local shape:
+`plugins/kodhama/surfaces.json` uses this closed product-local shape:
 
 ```json
 {
   "schema_version": 1,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "rows": [
     {
       "surface_id": "github-actions/codex-marketplace-setup-skill",
@@ -115,10 +140,10 @@ release approval.
 
 ## Supported authoring target
 
-Version 1 supports GitHub Actions jobs with direct Claude Code `2.1.199` or
+Version 2 supports GitHub Actions jobs with direct Claude Code `2.1.199` or
 Codex CLI `0.145.0` invocations and GitHub-hosted Git marketplace repositories.
 Host actions that install and invoke a CLI inside one opaque action step are
-detected but unsupported in version 1: the skill does not split, wrap, or guess
+detected but unsupported in version 2: the skill does not split, wrap, or guess
 their host-specific inputs. It uses an exact local checkout as the common
 immutable boundary because the two host CLIs do not expose the same remote
 pinning interface.
@@ -130,15 +155,23 @@ The generated block uses:
    `persist-credentials: false`;
 2. `git -C <path> rev-parse HEAD` and an exact comparison with the selected
    revision before registration;
-3. `claude plugin marketplace add <path> --scope local` followed by
+3. `claude plugin marketplace add ./.kodhama/marketplaces/<m> --scope local`
+   followed by
    `claude plugin marketplace list --json` for Claude; or
-4. `codex plugin marketplace add <path> --json` followed by
+4. `codex plugin marketplace add ./.kodhama/marketplaces/<m> --json`
+   followed by
    `codex plugin marketplace list --json` for Codex.
 
 The host listing must be parsed and must contain the requested marketplace
-name rooted at the verified checkout. Command success alone is insufficient.
+name rooted at the verified checkout. For Claude, the root is the string value
+of `path`, falling back to `installLocation` only when `path` is absent. For
+Codex, it is the string value of `root`. The setup step resolves that value and
+the checkout path with the host filesystem's real-path operation and requires
+byte-identical absolute results. An absent, non-string, nonexistent, or
+non-matching root fails. No other listing field is accepted. Command success
+alone is insufficient.
 
-This command mapping and the two exact CLI versions are the version-1 adapter.
+This command mapping and the two exact CLI versions are the version-2 adapter.
 The skill determines compatibility offline from the caller-owned pinned
 install declaration; it does not launch either host while authoring. It shall
 not substitute a remembered command or silently fall back to a mutable remote
@@ -183,6 +216,13 @@ conflicting host state, or conflicting caller configuration is ambiguous. The
 skill shall report the affected workflow/job and make no edit to that target;
 caller input cannot make an external workflow repository-owned.
 
+A selected target is also ambiguous when the relevant CLI prerequisite,
+first product-owned plugin-install step, or first host invocation carries a
+step-level `if:` condition. Version 2 does not copy, combine, or attempt to
+prove condition equivalence. A job-level `if:` remains supported because it
+governs the generated and caller-owned steps together and is preserved
+unchanged.
+
 The skill may patch a repository-local reusable workflow only after inspecting
 every repository-local caller and confirming that every caller is selected and
 supplies identical marketplace, host-state, and observation inputs. Otherwise
@@ -194,13 +234,13 @@ for setup inside a separately executing reusable-workflow job.
 
 For marketplace slug `<m>` and host `<h>`, the owned identifiers and names are:
 
-- checkout: `id: stewards_marketplace_<m>_checkout`;
-- host registration: `id: stewards_marketplace_<m>_<h>`; and
-- checkout name: `Stewards marketplace: checkout <m>`;
-- Claude name: `Stewards marketplace: register <m> for Claude`; and
-- Codex name: `Stewards marketplace: register <m> for Codex`.
+- checkout: `id: kodhama_marketplace_<m>_checkout`;
+- host registration: `id: kodhama_marketplace_<m>_<h>`; and
+- checkout name: `Kodhama marketplace: checkout <m>`;
+- Claude name: `Kodhama marketplace: register <m> for Claude`; and
+- Codex name: `Kodhama marketplace: register <m> for Codex`.
 
-The checkout path is `.stewards/marketplaces/<m>`. The skill validates that
+The checkout path is `.kodhama/marketplaces/<m>`. The skill validates that
 `<m>` is the lowercase marketplace name with each hyphen preserved and rejects
 any name that cannot form the identifiers above.
 
@@ -211,24 +251,29 @@ and revision. Each host gets its own registration step. Registration steps:
   prerequisite;
 - run before the first corresponding host or product-owned plugin-install
   invocation;
+- set `working-directory: ${{ github.workspace }}` so the managed checkout
+  remains workspace-rooted even when the caller declares a job or workflow
+  `defaults.run.working-directory`;
 - inherit the job environment plus the exact caller-confirmed host-state
   mapping used by the later invocation;
-- compare normalized checkout origin and HEAD to the selected repository and
-  revision before calling the host;
-- call only the version-1 commands above;
+- read the checkout origin, remove only one optional terminal `.git`, and
+  require exact equality with `https://github.com/<owner>/<repository>`;
+- require the checkout HEAD to equal the selected revision before calling the
+  host;
+- call only the version-2 commands above;
 - parse the machine-readable listing and fail if name or root differs; and
 - optionally emit a spec-0003 runtime observation only after all checks pass.
 
 The skill parses existing YAML and compares the owned steps against the
 confirmed plan: exact ids/names, checkout action commit, checkout inputs,
-dependency order, host command sequence, environment mapping, and optional
-observation `surface_id`/path pair. A semantic match is converged and the skill
-writes no file, so the existing bytes remain unchanged. An owned id with
-differing semantics, or an unowned block that appears equivalent, is a
-conflict: preserve it, make no target edit, and report the collision. Field
-order, quoting, indentation, and unrelated comments are not convergence
-inputs. The skill never adopts, rewrites, or deletes caller-owned setup
-implicitly.
+dependency order, workspace-root working directory, host command sequence,
+environment mapping, and optional observation `surface_id`/path pair. A
+semantic match is converged and the skill writes no file, so the existing bytes
+remain unchanged. An owned id with differing semantics, or an unowned block
+that appears equivalent, is a conflict: preserve it, make no target edit, and
+report the collision. Field order, quoting, indentation, and unrelated comments
+are not convergence inputs. The skill never adopts, rewrites, or deletes
+caller-owned setup implicitly.
 
 ## Authoring behavior
 
@@ -304,6 +349,15 @@ claims remain independent for every product.
 - **Then** it shares one verified checkout and creates independent host
   registration steps without sharing host state.
 
+**S3a — Caller working-directory defaults**
+
+- **Given** a selected job or workflow whose caller-owned
+  `defaults.run.working-directory` is not the repository root,
+- **When** the skill authors marketplace registration,
+- **Then** each generated registration step overrides its working directory to
+  `${{ github.workspace }}` and resolves `./.kodhama/marketplaces/<m>` to the
+  checkout action's workspace-rooted path.
+
 **S4 — Invoker independence**
 
 - **Given** the same repository and confirmed plan,
@@ -333,6 +387,15 @@ claims remain independent for every product.
 - **Then** it makes no edit and reports that action-native configuration needs
   a later adapter contract.
 
+**S6b — Conditional insertion boundary**
+
+- **Given** a selected job whose relevant CLI prerequisite, first
+  product-owned plugin-install step, or first host invocation carries a
+  step-level `if:` condition,
+- **When** the skill classifies the job,
+- **Then** it makes no edit and reports that version 2 cannot safely preserve
+  the conditional insertion boundary.
+
 **S7 — Idempotent repeat**
 
 - **Given** a canonical owned block already equal to the confirmed plan,
@@ -343,7 +406,7 @@ claims remain independent for every product.
 **S8 — Existing unowned equivalent**
 
 - **Given** caller-owned steps that appear to perform equivalent setup,
-- **When** no exact Stewards-owned canonical block exists,
+- **When** no exact Kodhama-owned canonical block exists,
 - **Then** the skill preserves the steps, makes no target edit, and reports a
   collision rather than duplicating or adopting them.
 
@@ -356,10 +419,10 @@ claims remain independent for every product.
 
 **S10 — Dual-host package parity**
 
-- **Given** the Stewards plugin's `VERSION`, two host manifests,
+- **Given** the Kodhama plugin's `VERSION`, two host manifests,
   `surfaces.json`, and zero, one, or two catalog entries,
 - **When** repository parity validation runs,
-- **Then** the four version carriers match, both manifests name `stewards`,
+- **Then** the four version carriers match, both manifests name `kodhama`,
   every present Claude or Codex entry uses its exact local source shape, every
   surface observation reference validates and matches its row, and no other
   product version is read or compared.
@@ -386,17 +449,19 @@ claims remain independent for every product.
   shall share only the verified checkout and keep host registration/state
   separate.
 - **R5 (unwanted behavior):** If ownership, classification, CLI compatibility,
-  state binding, existing-step ownership, or caller configuration is
-  ambiguous, the skill shall leave the affected target unchanged and report
-  the ambiguity.
+  state binding, conditional insertion boundary, existing-step ownership, or
+  caller configuration is ambiguous, the skill shall leave the affected
+  target unchanged and report the ambiguity.
 - **R6 (ubiquitous):** External reusable workflows shall never be edited.
 - **R7 (state-driven):** While any repository-local caller is unselected or
   supplies differing inputs, its shared local callee shall remain unchanged.
 - **R8 (ubiquitous):** The generated checkout shall use the caller-selected
   immutable action commit and verify the exact normalized GitHub repository
   origin and full commit SHA before host registration.
-- **R9 (ubiquitous):** Host registration shall use only the version-1 command
-  adapter and shall verify the machine-readable name and checkout root.
+- **R9 (ubiquitous):** Host registration shall run from the GitHub workspace
+  root, use only the version-2 command adapter, accept only Claude `path` or
+  fallback `installLocation` and Codex `root`, and require the listing root's
+  real path to equal the checkout's real path.
 - **R10 (ubiquitous):** The skill shall preserve unrelated workflow semantics,
   caller-owned CLI/plugin/test steps, and YAML outside the smallest insertion.
 - **R11 (ubiquitous):** Reapplying the same confirmed plan to a canonical owned
@@ -412,14 +477,14 @@ claims remain independent for every product.
 - **R15 (ubiquitous):** The completion report shall enumerate changed,
   converged, ambiguous, external, conflicting, unsupported, and skipped
   targets.
-- **R16 (ubiquitous):** The Stewards plugin shall satisfy
+- **R16 (ubiquitous):** The Kodhama plugin shall satisfy
   `kodhama-0018`'s local VERSION, dual-manifest, surface-version, and
   present-catalog-source parity without imposing that package shape on a
   consumer.
-- **R17 (ubiquitous):** Stewards surface rows shall link only matching
+- **R17 (ubiquitous):** Kodhama surface rows shall link only matching
   spec-0003 observations and shall encode no support, admission, or release
   conclusion.
-- **R18 (event-driven):** When a PR adds a Stewards host catalog entry, it
+- **R18 (event-driven):** When a PR adds a Kodhama host catalog entry, it
   shall retain the matching passing admission report at the exact product-local
   path above and review it with that change.
 
@@ -432,11 +497,14 @@ None.
 No dedicated spec rubric or `.grove/config.toml` exists. Against
 `specs/README.md`, the contract-author role, and the installed lifecycle and
 versioning companions: required frontmatter is complete; approved upstreams
-are declared through `depends_on` and `implements`; version `1` is initialized;
-the immutable checkout, exact host adapters, ownership markers, reusable
-workflow boundary, and failure behavior are testable; both GWT and EARS
-acceptance grammars are present; and no unresolved design choice is hidden.
-Result: **PASS**, promoting this artifact from `draft` to `gated`.
+are declared through `depends_on` and `implements`; the significant Kodhama
+identity/adapter amendment advances the behavioral counter to version `2` and
+includes the required section-level delta note; the immutable checkout, exact
+host adapters, workspace-root binding, closed listing-root normalization,
+conditional-boundary rejection, ownership markers, reusable-workflow boundary,
+and failure behavior are testable; both GWT and EARS acceptance grammars are
+present; and no unresolved design choice is hidden. Result:
+**PASS**, promoting the v2 amendment from `draft` to `gated`.
 
 This is a change-scoped self-check only. It does not claim that the malformed
 legacy metadata tracked by issue #20 has been repaired or that the full corpus
@@ -444,7 +512,11 @@ passes strict validation.
 
 ## Lifecycle record
 
-The maintainer explicitly approved checkpoint 1 on 2026-07-24 after the spec
-adversary returned `APPROVE-READY`, the conformance reviewer returned `PASS`,
-and the change-scoped corpus review returned `PASS`. The `approved` status
-records that human spec-gate act.
+Version 1 was approved by the maintainer on 2026-07-24 after the spec adversary
+returned `APPROVE-READY`, the conformance reviewer returned `PASS`, and the
+change-scoped corpus review returned `PASS`.
+
+The version 2 amendment implements approved decision 0020. The spec adversary
+returned `APPROVE-READY`, the conformance reviewer returned `PASS`, and the
+change-scoped corpus review returned `PASS`. The maintainer then approved v2
+on 2026-07-25; the `approved` status records that human spec-gate act.

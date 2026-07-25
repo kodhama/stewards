@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the Stewards plugin carriers and marketplace observations."""
+"""Validate the Kodhama plugin carriers and marketplace observations."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from typing import Any, Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PLUGIN = ROOT / "plugins" / "stewards"
+PLUGIN = ROOT / "plugins" / "kodhama"
 SEMVER = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
     r"(?:-((?:0|[1-9]\d*|[A-Za-z-][0-9A-Za-z-]*)"
@@ -198,8 +198,8 @@ def validate_observation(value: Any, label: str) -> dict[str, Any]:
 
 def validate_manifest(path: Path, version: str) -> None:
     manifest = require_object(load_json(path), str(path))
-    if manifest.get("name") != "stewards":
-        raise Invalid(f"{path}: name must equal 'stewards'")
+    if manifest.get("name") != "kodhama":
+        raise Invalid(f"{path}: name must equal 'kodhama'")
     if manifest.get("version") != version:
         raise Invalid(f"{path}: version must equal VERSION {version!r}")
 
@@ -212,10 +212,10 @@ def find_catalog_entry(path: Path) -> dict[str, Any] | None:
     entries = [
         require_object(item, f"{path}.plugins[{index}]")
         for index, item in enumerate(plugins)
-        if isinstance(item, dict) and item.get("name") == "stewards"
+        if isinstance(item, dict) and item.get("name") == "kodhama"
     ]
     if len(entries) > 1:
-        raise Invalid(f"{path}: duplicate stewards catalog entries")
+        raise Invalid(f"{path}: duplicate kodhama catalog entries")
     return entries[0] if entries else None
 
 
@@ -226,13 +226,13 @@ def validate_catalogs(version: str) -> None:
     codex = find_catalog_entry(codex_path)
     if claude is not None:
         expected = {
-            "name": "stewards",
-            "source": "./plugins/stewards",
+            "name": "kodhama",
+            "source": "./plugins/kodhama",
         }
         if {key: claude.get(key) for key in expected} != expected:
             raise Invalid(
-                f"{claude_path}: stewards entry must use source "
-                "'./plugins/stewards'"
+                f"{claude_path}: kodhama entry must use source "
+                "'./plugins/kodhama'"
             )
         report = (
             PLUGIN
@@ -244,8 +244,8 @@ def validate_catalogs(version: str) -> None:
             raise Invalid(f"{claude_path}: missing admission report {report}")
     if codex is not None:
         expected = {
-            "name": "stewards",
-            "source": {"source": "local", "path": "./plugins/stewards"},
+            "name": "kodhama",
+            "source": {"source": "local", "path": "./plugins/kodhama"},
             "policy": {
                 "installation": "AVAILABLE",
                 "authentication": "ON_INSTALL",
@@ -254,7 +254,7 @@ def validate_catalogs(version: str) -> None:
         }
         if codex != expected:
             raise Invalid(
-                f"{codex_path}: stewards entry does not match the exact "
+                f"{codex_path}: kodhama entry does not match the exact "
                 "Codex local-source shape"
             )
         report = (
@@ -355,7 +355,7 @@ def main() -> int:
             )
         else:
             validate_repository()
-            print("stewards plugin validation passed")
+            print("kodhama plugin validation passed")
     except Invalid as error:
         print(f"validation failed: {error}", file=sys.stderr)
         return 1

@@ -47,7 +47,7 @@ The canonical JSON shape is:
     "job": "codex-marketplace",
     "run_id": 123456789,
     "run_attempt": 1,
-    "setup_step_id": "stewards_marketplace_kodhama_codex"
+    "setup_step_id": "kodhama_marketplace_kodhama_codex"
   },
   "observed_at": "2026-07-24T12:34:56.789Z"
 }

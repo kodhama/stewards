@@ -1,6 +1,6 @@
 {
-  "name": "stewards",
-  "version": "0.1.0",
+  "name": "kodhama",
+  "version": "0.2.0",
   "description": "Author verified Claude and Codex marketplace setup in repository-owned GitHub Actions workflows.",
   "author": {
     "name": "kodhama"

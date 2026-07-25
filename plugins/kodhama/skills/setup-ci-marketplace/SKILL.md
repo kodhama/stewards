@@ -9,7 +9,7 @@ Author marketplace registration in repository-owned workflows. This skill
 changes CI configuration only. It never installs a CLI or plugin, launches a
 host, runs a product test, claims support, or treats authored YAML as evidence.
 
-Version 1 supports direct invocations provisioned as exactly Claude Code `2.1.199`
+Version 2 supports direct invocations provisioned as exactly Claude Code `2.1.199`
 or Codex CLI `0.145.0`. An opaque host action is detected and
 reported as unsupported; do not split, wrap, or guess its inputs.
 
@@ -38,13 +38,18 @@ jobs—or detected candidates the caller will confirm—record:
 - job and relevant step `env` mappings;
 - local and external reusable-workflow relationships;
 - opaque host actions, dynamic wrappers, and existing marketplace-like steps;
-- canonical Stewards-owned ids already present.
+- canonical Kodhama-owned ids already present.
 
 A direct shell invocation is supported only when the same job has a
 caller-owned prerequisite proving the exact supported version. An official or
 third-party action that invokes the host internally is an **opaque host
 action**, not a direct target. An external reusable workflow is always
 read-only.
+
+If the relevant CLI prerequisite, first product-owned plugin-install step, or
+first host invocation has a step-level `if:`, classify the target as
+ambiguous and make no edit. Version 2 does not copy or combine step conditions.
+A job-level `if:` remains supported because it governs all steps together.
 
 ## 2. Resolve and confirm the plan
 
@@ -70,20 +75,21 @@ candidates and classifications for confirmation.
 
 ## 3. Check ownership and convergence
 
-For marketplace `<m>` and host `<h>`, Stewards owns only:
+For marketplace `<m>` and host `<h>`, Kodhama owns only:
 
-- `stewards_marketplace_<m>_checkout`;
-- `stewards_marketplace_<m>_<h>`;
-- `Stewards marketplace: checkout <m>`;
-- `Stewards marketplace: register <m> for Claude`; and
-- `Stewards marketplace: register <m> for Codex`.
+- `kodhama_marketplace_<m>_checkout`;
+- `kodhama_marketplace_<m>_<h>`;
+- `Kodhama marketplace: checkout <m>`;
+- `Kodhama marketplace: register <m> for Claude`; and
+- `Kodhama marketplace: register <m> for Codex`.
 
-The path is `.stewards/marketplaces/<m>`. Preserve hyphens in `<m>` and reject
+The path is `.kodhama/marketplaces/<m>`. Preserve hyphens in `<m>` and reject
 any name that cannot form those identifiers.
 
 Parse the YAML semantically. If all owned steps already equal the confirmed
 plan—including ids, names, action pin, checkout inputs, order, commands,
-environment, and observation pair—the target is idempotent and converged:
+workspace-root working directory, environment, and observation pair—the target
+is idempotent and converged:
 write no file, preserving every byte. If an owned id differs, or an unowned
 block appears equivalent, report a collision and make no target edit. Never
 adopt, rewrite, or delete caller-owned setup implicitly.
@@ -99,23 +105,25 @@ step. Keep Claude and Codex registration and host state separate.
 The checkout step is:
 
 ```yaml
-- name: "Stewards marketplace: checkout <m>"
-  id: stewards_marketplace_<m>_checkout
+- name: "Kodhama marketplace: checkout <m>"
+  id: kodhama_marketplace_<m>_checkout
   uses: actions/checkout@<caller-approved-40-character-commit>
   with:
     repository: <owner/repository>
     ref: <marketplace-40-character-commit>
-    path: .stewards/marketplaces/<m>
+    path: .kodhama/marketplaces/<m>
     persist-credentials: false
 ```
 
-Each registration step must fail closed and, before invoking its host:
+Each registration step sets
+`working-directory: ${{ github.workspace }}` and must fail closed before
+invoking its host:
 
 1. obtain the checkout origin with
-   `git -C .stewards/marketplaces/<m> remote get-url origin`;
+   `git -C .kodhama/marketplaces/<m> remote get-url origin`;
 2. normalize only one terminal `.git`;
 3. compare it exactly with `https://github.com/<owner>/<repository>`;
-4. obtain `git -C .stewards/marketplaces/<m> rev-parse HEAD`;
+4. obtain `git -C .kodhama/marketplaces/<m> rev-parse HEAD`;
 5. compare it exactly with the selected revision; and
 6. leave no observation behind if any check fails.
 
@@ -125,24 +133,27 @@ These are the checkout-scoped forms of `git remote get-url origin` and
 For Claude, use exactly:
 
 ```text
-claude plugin marketplace add .stewards/marketplaces/<m> --scope local
+claude plugin marketplace add ./.kodhama/marketplaces/<m> --scope local
 claude plugin marketplace list --json
 ```
 
-Parse the JSON list and require marketplace `<m>` whose `path` or
-`installLocation`, after filesystem normalization, equals the verified
-checkout root.
+Parse the JSON list and find marketplace `<m>`. Use its string `path`, falling
+back to string `installLocation` only when `path` is absent. Resolve that value
+and the checkout with the filesystem real-path operation and require
+byte-identical absolute results. Missing, non-string, nonexistent, or
+non-matching roots fail; accept no other field.
 
 For Codex, use exactly:
 
 ```text
-codex plugin marketplace add .stewards/marketplaces/<m> --json
+codex plugin marketplace add ./.kodhama/marketplaces/<m> --json
 codex plugin marketplace list --json
 ```
 
-Parse the JSON object's `marketplaces` array and require marketplace `<m>`
-whose `root`, after filesystem normalization, equals the verified checkout
-root. Command success alone is insufficient for either host.
+Parse the JSON object's `marketplaces` array and find marketplace `<m>`. Its
+`root` must be a string whose filesystem real path byte-equals the checkout's
+real path. Missing, non-string, nonexistent, or non-matching roots fail;
+accept no other field. Command success alone is insufficient for either host.
 
 Use a temporary file for listing output and remove it on exit. Quote shell
 values. Do not print environment values or secrets. The registration step
