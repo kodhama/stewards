@@ -140,10 +140,10 @@ release approval.
 
 ## Supported authoring target
 
-Version 1 supports GitHub Actions jobs with direct Claude Code `2.1.199` or
+Version 2 supports GitHub Actions jobs with direct Claude Code `2.1.199` or
 Codex CLI `0.145.0` invocations and GitHub-hosted Git marketplace repositories.
 Host actions that install and invoke a CLI inside one opaque action step are
-detected but unsupported in version 1: the skill does not split, wrap, or guess
+detected but unsupported in version 2: the skill does not split, wrap, or guess
 their host-specific inputs. It uses an exact local checkout as the common
 immutable boundary because the two host CLIs do not expose the same remote
 pinning interface.
@@ -163,7 +163,13 @@ The generated block uses:
    `codex plugin marketplace list --json` for Codex.
 
 The host listing must be parsed and must contain the requested marketplace
-name rooted at the verified checkout. Command success alone is insufficient.
+name rooted at the verified checkout. For Claude, the root is the string value
+of `path`, falling back to `installLocation` only when `path` is absent. For
+Codex, it is the string value of `root`. The setup step resolves that value and
+the checkout path with the host filesystem's real-path operation and requires
+byte-identical absolute results. An absent, non-string, nonexistent, or
+non-matching root fails. No other listing field is accepted. Command success
+alone is insufficient.
 
 This command mapping and the two exact CLI versions are the version-2 adapter.
 The skill determines compatibility offline from the caller-owned pinned
@@ -210,6 +216,13 @@ conflicting host state, or conflicting caller configuration is ambiguous. The
 skill shall report the affected workflow/job and make no edit to that target;
 caller input cannot make an external workflow repository-owned.
 
+A selected target is also ambiguous when the relevant CLI prerequisite,
+first product-owned plugin-install step, or first host invocation carries a
+step-level `if:` condition. Version 2 does not copy, combine, or attempt to
+prove condition equivalence. A job-level `if:` remains supported because it
+governs the generated and caller-owned steps together and is preserved
+unchanged.
+
 The skill may patch a repository-local reusable workflow only after inspecting
 every repository-local caller and confirming that every caller is selected and
 supplies identical marketplace, host-state, and observation inputs. Otherwise
@@ -243,8 +256,10 @@ and revision. Each host gets its own registration step. Registration steps:
   `defaults.run.working-directory`;
 - inherit the job environment plus the exact caller-confirmed host-state
   mapping used by the later invocation;
-- compare normalized checkout origin and HEAD to the selected repository and
-  revision before calling the host;
+- read the checkout origin, remove only one optional terminal `.git`, and
+  require exact equality with `https://github.com/<owner>/<repository>`;
+- require the checkout HEAD to equal the selected revision before calling the
+  host;
 - call only the version-2 commands above;
 - parse the machine-readable listing and fail if name or root differs; and
 - optionally emit a spec-0003 runtime observation only after all checks pass.
@@ -372,6 +387,15 @@ claims remain independent for every product.
 - **Then** it makes no edit and reports that action-native configuration needs
   a later adapter contract.
 
+**S6b — Conditional insertion boundary**
+
+- **Given** a selected job whose relevant CLI prerequisite, first
+  product-owned plugin-install step, or first host invocation carries a
+  step-level `if:` condition,
+- **When** the skill classifies the job,
+- **Then** it makes no edit and reports that version 2 cannot safely preserve
+  the conditional insertion boundary.
+
 **S7 — Idempotent repeat**
 
 - **Given** a canonical owned block already equal to the confirmed plan,
@@ -425,9 +449,9 @@ claims remain independent for every product.
   shall share only the verified checkout and keep host registration/state
   separate.
 - **R5 (unwanted behavior):** If ownership, classification, CLI compatibility,
-  state binding, existing-step ownership, or caller configuration is
-  ambiguous, the skill shall leave the affected target unchanged and report
-  the ambiguity.
+  state binding, conditional insertion boundary, existing-step ownership, or
+  caller configuration is ambiguous, the skill shall leave the affected
+  target unchanged and report the ambiguity.
 - **R6 (ubiquitous):** External reusable workflows shall never be edited.
 - **R7 (state-driven):** While any repository-local caller is unselected or
   supplies differing inputs, its shared local callee shall remain unchanged.
@@ -435,8 +459,9 @@ claims remain independent for every product.
   immutable action commit and verify the exact normalized GitHub repository
   origin and full commit SHA before host registration.
 - **R9 (ubiquitous):** Host registration shall run from the GitHub workspace
-  root, use only the version-2 command
-  adapter and shall verify the machine-readable name and checkout root.
+  root, use only the version-2 command adapter, accept only Claude `path` or
+  fallback `installLocation` and Codex `root`, and require the listing root's
+  real path to equal the checkout's real path.
 - **R10 (ubiquitous):** The skill shall preserve unrelated workflow semantics,
   caller-owned CLI/plugin/test steps, and YAML outside the smallest insertion.
 - **R11 (ubiquitous):** Reapplying the same confirmed plan to a canonical owned
@@ -475,9 +500,10 @@ versioning companions: required frontmatter is complete; approved upstreams
 are declared through `depends_on` and `implements`; the significant Kodhama
 identity/adapter amendment advances the behavioral counter to version `2` and
 includes the required section-level delta note; the immutable checkout, exact
-host adapters, workspace-root binding, ownership markers, reusable-workflow
-boundary, and failure behavior are testable; both GWT and EARS acceptance
-grammars are present; and no unresolved design choice is hidden. Result:
+host adapters, workspace-root binding, closed listing-root normalization,
+conditional-boundary rejection, ownership markers, reusable-workflow boundary,
+and failure behavior are testable; both GWT and EARS acceptance grammars are
+present; and no unresolved design choice is hidden. Result:
 **PASS**, promoting the v2 amendment from `draft` to `gated`.
 
 This is a change-scoped self-check only. It does not claim that the malformed

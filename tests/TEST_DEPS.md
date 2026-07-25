@@ -1,7 +1,7 @@
 ---
 id: stewards-plugin-tests
 type: test-deps
-status: active
+status: approved  # introduced and ratified by the maintainer's merge of PR #33
 depends_on:
   - kodhama-spec-0003-marketplace-test-observation@v1
   - kodhama-spec-0004-ci-marketplace-setup-skill@v2
