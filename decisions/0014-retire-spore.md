@@ -119,8 +119,8 @@ human-owned ship act specified above; the `approved` frontmatter records it.
 
 ## Forward annotation — kodhama-0019 (2026-07-25)
 
-Draft `kodhama-0019-spore-handoff-capsules` selects a prospective new direction
-for the Spore name: target-specific bundles of Kodhama functionality vendored
-into other repositories. It does not reverse this retirement, readmit Spore to
-the stewards, restore a marketplace entry, or inherit the retired session
+`kodhama-0019-spore-handoff-capsules` selects a prospective new direction for
+the Spore name: target-specific bundles of Kodhama functionality vendored into
+other repositories. It does not reverse this retirement, readmit Spore to the
+stewards, restore a marketplace entry, or inherit the retired session
 machinery.

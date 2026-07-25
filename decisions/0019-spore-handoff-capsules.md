@@ -1,12 +1,12 @@
 ---
 id: kodhama-0019-spore-handoff-capsules
 type: decision
-status: draft
+status: gated
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0014-retire-spore]
 informed_by: [kodhama-0012-codex-marketplace-channel, kodhama-0013-family-codex-native-product-support]
 owner: agent
 updated: 2026-07-25
-provenance: maintainer direction 2026-07-25 that a future Spore should produce a bundle of specific Kodhama functionality for vendoring elsewhere, composed either through interactive conversation or a fixed design; refresh semantics explicitly deferred.
+provenance: maintainer direction 2026-07-25 that a future Spore should produce a bundle of specific Kodhama functionality for vendoring elsewhere, composed either through interactive conversation or a fixed design; refresh semantics explicitly deferred; maintainer approved this as a direction-only decision while keeping Spore retired.
 ---
 
 # Decision: direct Spore toward portable handoff capsules
@@ -26,12 +26,12 @@ provenance: maintainer direction 2026-07-25 that a future Spore should produce a
 - This is a new direction, not a continuation of the retired macOS
   Terminal/Claude Remote-Control machinery. It inherits no code, membership,
   delivery channel, or support claim from the retired Spore.
+- **This is direction only. Spore remains retired** until a later decision
+  explicitly readmits it with a concrete product contract and standing.
 
-**Open** (1):
+**Open** (0):
 
-- **Family standing:** does this directional commitment merely reserve a
-  product thesis while Spore remains retired, or does it readmit Spore as an
-  active steward before a concrete capsule contract and implementation exist?
+- None.
 
 **Parked** (4):
 
@@ -97,8 +97,8 @@ the material remains *provenance-linked* for optional maintenance is parked.
 
 ## Consequences
 
-- `kodhama-0014`'s retirement remains in force until family standing is
-  decided explicitly; this draft does not silently readmit Spore.
+- `kodhama-0014`'s retirement remains in force. A later decision must
+  explicitly readmit Spore; this direction decision does not do so.
 - The name now has a recorded problem/function direction, but no implementation
   is authorized and no delivery claim is created.
 - Product-specific recipes may eventually make capsule production
@@ -123,9 +123,10 @@ the material remains *provenance-linked* for optional maintenance is parked.
 
 ## Self-check
 
-This draft records the maintainer's chosen direction without inventing the
+This decision records the maintainer's chosen direction without inventing the
 deferred refresh policy or reversing `kodhama-0014`. It distinguishes the
 concept from standing marketplace and product-ownership decisions, gives both
 composition modes one output boundary, and leaves implementation contingent
-on a forcing case. Keep at `draft` until the family-standing question is
-answered.
+on a forcing case. There are no open decision items. Promote `draft → gated`
+and route to independent decision-adversary review before recording the
+maintainer's approval in lifecycle status.
