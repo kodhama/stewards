@@ -142,12 +142,16 @@ class PackageAndObservationTests(unittest.TestCase):
             rows["codex"]["marketplace_test_observations"],
         )
 
+        observations = {}
         for name in (
             "claude.json",
             "codex.json",
             "mixed-claude.json",
             "mixed-codex.json",
         ):
+            observations[name] = json.loads(
+                (HOSTED_EVIDENCE / name).read_text(encoding="utf-8")
+            )
             run(
                 "python3",
                 str(VALIDATOR),
@@ -183,6 +187,25 @@ class PackageAndObservationTests(unittest.TestCase):
             },
             set(context["jobs"]),
         )
+        for job in context["jobs"].values():
+            self.assertEqual("success", job["conclusion"])
+
+        for name, observation in observations.items():
+            execution = observation["execution"]
+            self.assertEqual(context["run_id"], execution["run_id"], name)
+            self.assertEqual(
+                context["runtime_commit"], execution["commit"], name
+            )
+            self.assertEqual(context["workflow"], execution["workflow"], name)
+            job = context["jobs"][execution["job"]]
+            if "setup_step_id" in job:
+                self.assertEqual(
+                    job["setup_step_id"], execution["setup_step_id"], name
+                )
+            else:
+                self.assertIn(
+                    execution["setup_step_id"], job["setup_step_ids"], name
+                )
 
 
 class SkillContractTests(unittest.TestCase):
