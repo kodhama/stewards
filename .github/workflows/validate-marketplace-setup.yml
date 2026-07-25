@@ -3,6 +3,8 @@ name: Validate marketplace setup
 on:
   pull_request:
     paths:
+      - ".agents/plugins/marketplace.json"
+      - ".claude-plugin/marketplace.json"
       - ".github/workflows/validate-marketplace-setup.yml"
       - "plugins/kodhama/**"
       - "scripts/emit_marketplace_observation.py"
