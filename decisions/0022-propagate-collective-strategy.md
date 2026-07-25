@@ -28,9 +28,10 @@ provenance: "maintainer shaping, 2026-07-25: establish durable top-down communic
 
 **Open** (1):
 
-- Does “applicable plugin repository” mean only repositories that currently
-  own or are explicitly entering the affected plugin scope, or every steward
-  repository even when it has no plugin applicability?
+- Target reach: propagate immediately to current/explicit plugin targets and
+  require later entrants to catch up on still-current strategy, or send a
+  receipt to every steward repository immediately regardless of present
+  relevance.
 
 **Parked** (3):
 
