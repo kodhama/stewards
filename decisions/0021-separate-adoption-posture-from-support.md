@@ -1,12 +1,12 @@
 ---
 id: kodhama-0021-separate-adoption-posture-from-support
 type: decision
-status: draft
+status: gated
 depends_on: [kodhama-0009-org-topology-spirit-stewards-trees, kodhama-0012-codex-marketplace-channel, kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package]
 informed_by: [kodhama-0013-family-codex-native-product-support]
 owner: agent
 updated: 2026-07-25
-provenance: "maintainer shaping, 2026-07-25: balance structured methodology with gradual exploration; stewards may cross-dogfood, trees such as math-quest may opt into preview, and support remains an earned public promise; start minimal and dogfood Grove first"
+provenance: "maintainer shaping, 2026-07-25: balance structured methodology with gradual exploration; stewards may cross-dogfood, trees such as math-quest may opt into preview, and support remains an earned public promise; start minimal and dogfood Grove first; exact draft approved to proceed to independent soundness review"
 ---
 
 # Decision: separate adoption posture from support
@@ -163,14 +163,14 @@ None.
 
 ## Self-check
 
-This draft records the maintainer's agreed gradual-adoption model at the
+This decision records the maintainer's agreed gradual-adoption model at the
 cross-collective layer, where shared catalog and steward/tree meanings belong.
 It changes only the admission/support coupling that conflicts with that model,
 preserves product ownership and host-specific honesty, and adds no machinery.
 
 ## Lifecycle record
 
-This is the first durable shaping canvas. The maintainer has agreed to the
-model and minimal-first direction in conversation, but has not yet explicitly
-ratified this exact artifact. It remains `draft` until that intent act is
-unambiguous and independent soundness review is complete.
+This began as the first durable shaping canvas. On 2026-07-25, after reviewing
+the exact draft, the maintainer confirmed that it captured the intended model
+and approved proceeding to independent soundness review. That advances the
+decision to `gated`; it is not yet ratified.
