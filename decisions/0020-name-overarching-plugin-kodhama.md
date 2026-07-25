@@ -13,7 +13,7 @@ provenance: "maintainer intent, 2026-07-25: use Kodhama, with an h, for both the
 
 ## Decision state
 
-**Decided** (4):
+**Decided** (5):
 
 - The public plugin identity is lowercase `kodhama`; human-facing labels use
   `Kodhama`.
@@ -22,6 +22,8 @@ provenance: "maintainer intent, 2026-07-25: use Kodhama, with an h, for both the
 - Generated marketplace checkouts use `.kodhama/marketplaces/<m>`, and
   marketplace-add commands identify them as
   `./.kodhama/marketplaces/<m>`.
+- Generated registration steps explicitly run from the GitHub workspace root,
+  so caller-owned `defaults.run.working-directory` cannot redirect that path.
 
 **Open** (0):
 
@@ -63,6 +65,8 @@ entries use that identity and source.
 Generated marketplace checkouts use the product-neutral managed location
 `.kodhama/marketplaces/<m>`. Both host adapters pass the exact explicit local
 argument `./.kodhama/marketplaces/<m>` to their marketplace-add command.
+Each generated registration step sets its working directory to the GitHub
+workspace root before resolving that argument.
 
 The explicit `./` is part of the adapter command, not the checkout path. The
 repository remains `kodhama/stewards`: repository role and plugin identity are
@@ -84,6 +88,8 @@ remain unchanged.
   `plugins/kodhama/` identity.
 - The shipped skill, expected fixtures, and hosted workflow use the
   `.kodhama` managed location and explicit-relative command form.
+- The owned registration step's workspace-root binding becomes part of
+  convergence comparison and is independent of caller-owned run defaults.
 - Existing v1 consumers need to regenerate a matching block before expecting
   marketplace registration to pass on the supported CLIs.
 - No plugin installation, host invocation, provisioning service, or new
@@ -102,10 +108,12 @@ remain unchanged.
   `./.kodhama/marketplaces/<m>`.
 - **AC4:** The checkout remains `.kodhama/marketplaces/<m>` and retains exact
   origin and revision verification.
-- **AC5:** The change adds no plugin installation or product behavior.
-- **AC6:** The exact supported Claude and Codex versions accept the generated
+- **AC5:** Every generated registration step runs from the GitHub workspace
+  root before resolving the explicit-relative marketplace path.
+- **AC6:** The change adds no plugin installation or product behavior.
+- **AC7:** The exact supported Claude and Codex versions accept the generated
   local source and expose its verified root in their machine-readable listing.
-- **AC7:** Decision 0018's independent version, dual-host carriers, parity,
+- **AC8:** Decision 0018's independent version, dual-host carriers, parity,
   admission, and product-ownership clauses remain in force.
 
 ## Open questions

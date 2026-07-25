@@ -3,12 +3,19 @@ id: kodhama-0018-stewards-dual-host-plugin-package
 type: decision
 status: approved  # maintainer approved the plan on 2026-07-24; independent adversary returned SOUND
 depends_on: [kodhama-0017-retire-family-release-certification]
+superseded_in_part_by: [kodhama-0020-name-overarching-plugin-kodhama]  # public plugin/package/skill identity and managed path only; independent version, dual-host package, parity, admission, and ownership stand
 owner: agent
 updated: 2026-07-24
 provenance: "maintainer intent, 2026-07-24: replicate Grove's small SemVer, VERSION, surface-metadata, and dual-plugin-declaration approach while keeping every product's version and release independent"
 ---
 
 # Decision: package the Stewards skill as an independent dual-host plugin
+
+> **Superseded in part by
+> `kodhama-0020-name-overarching-plugin-kodhama`.** The public plugin identity,
+> package source directory, skill namespace, and managed marketplace path are
+> now Kodhama. This decision's independent version, dual-host package, local
+> parity, per-host admission, and product-ownership rulings remain current.
 
 ## Decision state
 
