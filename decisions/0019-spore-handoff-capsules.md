@@ -1,7 +1,7 @@
 ---
 id: kodhama-0019-spore-handoff-capsules
 type: decision
-status: gated
+status: approved  # maintainer approved the direction-only decision on 2026-07-25; Spore remains retired
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0007-one-render-many-copiers, kodhama-0014-retire-spore]
 informed_by: [kodhama-0012-codex-marketplace-channel, kodhama-0013-family-codex-native-product-support]
 owner: agent
@@ -136,3 +136,10 @@ content-authoring writers, and leaves implementation contingent on a forcing
 case. There are no open decision items. Promote `draft → gated` and route to
 independent decision-adversary review before recording the maintainer's
 approval in lifecycle status.
+
+## Lifecycle record
+
+The maintainer approved this as a direction-only decision on 2026-07-25 and
+explicitly kept Spore retired. Independent decision-adversary re-review found
+the reconciled decision `SOUND` at commit `67fc2ee`; the subsequent PR merge is
+the delivery act, not a readmission or implementation authorization.
