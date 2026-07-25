@@ -248,6 +248,7 @@ class SkillContractTests(unittest.TestCase):
             3,
             text.count("id: kodhama_marketplace_kodhama_checkout"),
         )
+        self.assertEqual(2, text.count('mkdir -p "$CODEX_HOME"'))
 
     def test_authoring_report_retains_two_pass_hashes(self) -> None:
         report = json.loads(
@@ -281,6 +282,18 @@ class SkillContractTests(unittest.TestCase):
             self.assertIn("job", result["inspected"])
             self.assertIn("generated_step_ids", result)
             self.assertIn("prerequisites", result)
+
+        for stem in (
+            "codex-direct",
+            "mixed-direct",
+            "caller-default-working-directory",
+        ):
+            source = (FIXTURES / f"{stem}.yml").read_text(encoding="utf-8")
+            expected = (FIXTURES / f"{stem}.expected.yml").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn('mkdir -p "$CODEX_HOME"', source)
+            self.assertIn('mkdir -p "$CODEX_HOME"', expected)
 
         self.assertEqual(
             {

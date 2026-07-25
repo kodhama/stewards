@@ -9,7 +9,11 @@ jobs:
         uses: actions/checkout@1111111111111111111111111111111111111111
       - name: Install Codex
         id: install-codex
-        run: npm install --global @openai/codex@0.145.0
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex
+        run: |
+          mkdir -p "$CODEX_HOME"
+          npm install --global @openai/codex@0.145.0
       - name: "Kodhama marketplace: checkout kodhama"
         id: kodhama_marketplace_kodhama_checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683

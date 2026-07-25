@@ -12,7 +12,11 @@ jobs:
         run: npm install --global @anthropic-ai/claude-code@2.1.199
       - name: Install Codex
         id: install-codex
-        run: npm install --global @openai/codex@0.145.0
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex
+        run: |
+          mkdir -p "$CODEX_HOME"
+          npm install --global @openai/codex@0.145.0
       - name: Run Claude
         id: run-claude
         env:

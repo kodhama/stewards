@@ -65,14 +65,15 @@
       },
       "prerequisites": {
         "install-codex": "@openai/codex@0.145.0",
-        "CODEX_HOME": "${{ runner.temp }}/codex"
+        "CODEX_HOME": "${{ runner.temp }}/codex",
+        "state_initialization": "mkdir -p \"$CODEX_HOME\""
       },
       "generated_step_ids": [
         "kodhama_marketplace_kodhama_checkout",
         "kodhama_marketplace_kodhama_codex"
       ],
-      "first_pass_sha256": "a2f56d93694e05182e2f2f5b5506ee4ef55f404e0001bcbfa38c85f88dcc8309",
-      "second_pass_sha256": "a2f56d93694e05182e2f2f5b5506ee4ef55f404e0001bcbfa38c85f88dcc8309",
+      "first_pass_sha256": "bcab7a055a569afb539ee3699e6e29ba6bf7b1349eb27b93b31e4550153228ca",
+      "second_pass_sha256": "bcab7a055a569afb539ee3699e6e29ba6bf7b1349eb27b93b31e4550153228ca",
       "converged": true
     },
     "mixed-direct": {
@@ -86,15 +87,16 @@
         "install-claude": "@anthropic-ai/claude-code@2.1.199",
         "install-codex": "@openai/codex@0.145.0",
         "CLAUDE_CONFIG_DIR": "${{ runner.temp }}/claude",
-        "CODEX_HOME": "${{ runner.temp }}/codex"
+        "CODEX_HOME": "${{ runner.temp }}/codex",
+        "codex_state_initialization": "mkdir -p \"$CODEX_HOME\""
       },
       "generated_step_ids": [
         "kodhama_marketplace_kodhama_checkout",
         "kodhama_marketplace_kodhama_claude",
         "kodhama_marketplace_kodhama_codex"
       ],
-      "first_pass_sha256": "ea6c88e97422d10f13fb8ebc975c97fe1542a98b038ce175cee8b705db1e7466",
-      "second_pass_sha256": "ea6c88e97422d10f13fb8ebc975c97fe1542a98b038ce175cee8b705db1e7466",
+      "first_pass_sha256": "4ae2b4dc74ddf3136edcdb9938fc1b7442d6d32c2ccba6eaff775b6f74264a5a",
+      "second_pass_sha256": "4ae2b4dc74ddf3136edcdb9938fc1b7442d6d32c2ccba6eaff775b6f74264a5a",
       "converged": true
     },
     "caller-default-working-directory": {
@@ -107,14 +109,15 @@
       "prerequisites": {
         "install-codex": "@openai/codex@0.145.0",
         "CODEX_HOME": "${{ runner.temp }}/codex",
+        "state_initialization": "mkdir -p \"$CODEX_HOME\"",
         "caller_default_working_directory": "tools"
       },
       "generated_step_ids": [
         "kodhama_marketplace_kodhama_checkout",
         "kodhama_marketplace_kodhama_codex"
       ],
-      "first_pass_sha256": "da9e547226b370e47ab3f6b82b5dfc30a55d9f82a387dce2df2985294fb4765b",
-      "second_pass_sha256": "da9e547226b370e47ab3f6b82b5dfc30a55d9f82a387dce2df2985294fb4765b",
+      "first_pass_sha256": "9fd8252049c9d24a1eb65e9231917cbb5f6b954de417a86098b29703ea3dedd4",
+      "second_pass_sha256": "9fd8252049c9d24a1eb65e9231917cbb5f6b954de417a86098b29703ea3dedd4",
       "converged": true
     },
     "local-reusable": {
