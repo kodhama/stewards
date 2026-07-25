@@ -11,11 +11,10 @@ Create thin cross-link ADRs in the current downstream plugin repositories
 affected by decision 0021:
 
 - Grove; and
-- Trellis.
+- Trellis; and
+- Wisp.
 
 Stewards owns the upstream decision and therefore needs no downstream receipt.
-Wisp is not currently a distributed plugin in the merged Stewards catalogs; it
-will catch up on still-current strategy if and when it enters plugin scope.
 Design System and Homebrew Tap are not plugin targets for this decision.
 
 ## Boundaries
@@ -40,10 +39,17 @@ Design System and Homebrew Tap are not plugin targets for this decision.
       [trellis PR #193](https://github.com/kodhama/trellis/pull/193).
 - [x] Trellis cross-link ADR independently reviewed:
       [SOUND](https://github.com/kodhama/trellis/pull/193#issuecomment-5080202446).
+- [x] Wisp cross-link ADR PR opened and linked:
+      [wisp PR #46](https://github.com/kodhama/wisp/pull/46).
+- [x] Wisp cross-link ADR independently reviewed:
+      [SOUND](https://github.com/kodhama/wisp/pull/46#issuecomment-5080223713).
 - [ ] Maintainer ratification and merges recorded.
 - [ ] Closure report appended; original Grove plan resumed.
 
 ## Report
 
-Open. Both gated receipt ADRs are independently `SOUND`; neither makes a
-product choice. They await the maintainer's exact ratification and merge.
+Open. All three gated receipt ADRs are independently `SOUND`. Wisp was added
+after the conductor corrected its mistaken use of catalog presence as a proxy
+for plugin ownership; Wisp's product-owned dual-host package makes it an active
+target. No receipt makes a product choice. The receipts await the maintainer's
+exact ratification and merge.
