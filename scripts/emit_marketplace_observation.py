@@ -20,6 +20,43 @@ def required_environment(name: str) -> str:
     return value
 
 
+def clear_selected_output(output: Path) -> None:
+    if output.exists() or output.is_symlink():
+        if output.is_dir() and not output.is_symlink():
+            raise SystemExit("refusing observation output path that is a directory")
+        output.unlink()
+
+
+def write_observation(output: Path, observation: dict) -> None:
+    clear_selected_output(output)
+    try:
+        validate_observation(observation, "marketplace observation")
+    except Invalid as error:
+        raise SystemExit(f"refusing to emit invalid observation: {error}") from error
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(observation, indent=2) + "\n"
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=output.parent,
+            prefix=f".{output.name}.",
+            delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            temporary.write(payload)
+        validate_observation(
+            json.loads(temporary_path.read_text(encoding="utf-8")),
+            "serialized marketplace observation",
+        )
+        os.replace(temporary_path, output)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", choices=("claude", "codex"), required=True)
@@ -33,10 +70,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    if args.output.exists() or args.output.is_symlink():
-        if args.output.is_dir() and not args.output.is_symlink():
-            raise SystemExit("refusing observation output path that is a directory")
-        args.output.unlink()
+    clear_selected_output(args.output)
 
     observation = {
         "schema_version": 1,
@@ -61,32 +95,7 @@ def main() -> int:
         .replace("+00:00", "Z"),
     }
 
-    try:
-        validate_observation(observation, "marketplace observation")
-    except Invalid as error:
-        raise SystemExit(f"refusing to emit invalid observation: {error}") from error
-
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(observation, indent=2) + "\n"
-    temporary_path = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            "w",
-            encoding="utf-8",
-            dir=args.output.parent,
-            prefix=f".{args.output.name}.",
-            delete=False,
-        ) as temporary:
-            temporary.write(payload)
-            temporary_path = Path(temporary.name)
-        validate_observation(
-            json.loads(temporary_path.read_text(encoding="utf-8")),
-            "serialized marketplace observation",
-        )
-        os.replace(temporary_path, args.output)
-    finally:
-        if temporary_path is not None:
-            temporary_path.unlink(missing_ok=True)
+    write_observation(args.output, observation)
     return 0
 
 

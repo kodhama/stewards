@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +30,22 @@ HOSTED_WORKFLOW = (
     ROOT / ".github" / "workflows" / "validate-marketplace-setup.yml"
 )
 OBSERVATION_EMITTER = ROOT / "scripts" / "emit_marketplace_observation.py"
+
+
+def load_observation_emitter():
+    scripts = str(ROOT / "scripts")
+    sys.path.insert(0, scripts)
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "kodhama_observation_emitter", OBSERVATION_EMITTER
+        )
+        if spec is None or spec.loader is None:
+            raise AssertionError("cannot load observation emitter")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        sys.path.remove(scripts)
 
 
 def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -417,6 +436,59 @@ class SkillContractTests(unittest.TestCase):
             )
             self.assertNotEqual(0, emitted.returncode)
             self.assertEqual([], list(Path(tmp).glob(".observation.json.*")))
+
+    def test_runtime_observation_emitter_cleans_up_on_temporary_write_failure(
+        self,
+    ) -> None:
+        emitter = load_observation_emitter()
+        observation = {
+            "schema_version": 1,
+            "host": "codex",
+            "surface_id": "github-actions/codex-marketplace-setup-skill",
+            "marketplace": {
+                "name": "kodhama",
+                "repository": "kodhama/stewards",
+                "revision": "0" * 40,
+            },
+            "execution": {
+                "repository": "kodhama/stewards",
+                "commit": "1" * 40,
+                "workflow": ".github/workflows/validate-marketplace-setup.yml",
+                "job": "codex-marketplace",
+                "run_id": 123,
+                "run_attempt": 1,
+                "setup_step_id": "kodhama_marketplace_kodhama_codex",
+            },
+            "observed_at": "2026-07-25T12:34:56.789Z",
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "observation.json"
+            temporary = Path(tmp) / ".observation.json.injected"
+
+            class FailingTemporary:
+                name = str(temporary)
+
+                def __enter__(self):
+                    temporary.write_text("", encoding="utf-8")
+                    return self
+
+                def __exit__(self, *_args):
+                    return False
+
+                def write(self, _payload):
+                    raise OSError("injected temporary write failure")
+
+            with mock.patch.object(
+                emitter.tempfile,
+                "NamedTemporaryFile",
+                return_value=FailingTemporary(),
+            ):
+                with self.assertRaises(OSError):
+                    emitter.write_observation(output, observation)
+
+            self.assertFalse(output.exists())
+            self.assertFalse(temporary.exists())
 
     def test_optional_observation_contract_is_shipped_with_the_skill(self) -> None:
         text = OBSERVATION_REFERENCE.read_text(encoding="utf-8")
