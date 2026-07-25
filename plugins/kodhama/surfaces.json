@@ -5,12 +5,18 @@
     {
       "surface_id": "github-actions/claude-marketplace-setup-skill",
       "host": "claude",
-      "marketplace_test_observations": []
+      "marketplace_test_observations": [
+        "plugins/kodhama/evidence/marketplace-observations/github-actions-run-30165623562/claude.json",
+        "plugins/kodhama/evidence/marketplace-observations/github-actions-run-30165623562/mixed-claude.json"
+      ]
     },
     {
       "surface_id": "github-actions/codex-marketplace-setup-skill",
       "host": "codex",
-      "marketplace_test_observations": []
+      "marketplace_test_observations": [
+        "plugins/kodhama/evidence/marketplace-observations/github-actions-run-30165623562/codex.json",
+        "plugins/kodhama/evidence/marketplace-observations/github-actions-run-30165623562/mixed-codex.json"
+      ]
     }
   ]
 }

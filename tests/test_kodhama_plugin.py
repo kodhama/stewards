@@ -30,6 +30,12 @@ HOSTED_WORKFLOW = (
     ROOT / ".github" / "workflows" / "validate-marketplace-setup.yml"
 )
 OBSERVATION_EMITTER = ROOT / "scripts" / "emit_marketplace_observation.py"
+HOSTED_EVIDENCE = (
+    PLUGIN
+    / "evidence"
+    / "marketplace-observations"
+    / "github-actions-run-30165623562"
+)
 
 
 def load_observation_emitter():
@@ -111,6 +117,72 @@ class PackageAndObservationTests(unittest.TestCase):
             )
             self.assertIn("structural validation passed", accepted.stdout)
             self.assertIn("runtime provenance unverified", accepted.stdout)
+
+    def test_successful_hosted_observations_and_context_are_retained(self) -> None:
+        surfaces = json.loads(
+            (PLUGIN / "surfaces.json").read_text(encoding="utf-8")
+        )
+        rows = {row["host"]: row for row in surfaces["rows"]}
+        self.assertEqual(
+            [
+                "plugins/kodhama/evidence/marketplace-observations/"
+                "github-actions-run-30165623562/claude.json",
+                "plugins/kodhama/evidence/marketplace-observations/"
+                "github-actions-run-30165623562/mixed-claude.json",
+            ],
+            rows["claude"]["marketplace_test_observations"],
+        )
+        self.assertEqual(
+            [
+                "plugins/kodhama/evidence/marketplace-observations/"
+                "github-actions-run-30165623562/codex.json",
+                "plugins/kodhama/evidence/marketplace-observations/"
+                "github-actions-run-30165623562/mixed-codex.json",
+            ],
+            rows["codex"]["marketplace_test_observations"],
+        )
+
+        for name in (
+            "claude.json",
+            "codex.json",
+            "mixed-claude.json",
+            "mixed-codex.json",
+        ):
+            run(
+                "python3",
+                str(VALIDATOR),
+                "--observation",
+                str(HOSTED_EVIDENCE / name),
+            )
+
+        context = json.loads(
+            (HOSTED_EVIDENCE / "hosted-run-context.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(30165623562, context["run_id"])
+        self.assertEqual(
+            "ae386f47f2736881620a6145c8dff0c5c2ec3052",
+            context["pr_head_sha"],
+        )
+        self.assertEqual(
+            "90722cc1c9b7e7b484bfcf6ab4abb113c862d7b1",
+            context["runtime_commit"],
+        )
+        self.assertEqual("ubuntu24@20260720.247.2", context["runner"])
+        self.assertEqual(
+            {"claude": "2.1.199 (Claude Code)", "codex": "codex-cli 0.145.0"},
+            context["cli_versions"],
+        )
+        self.assertEqual(
+            {
+                "repository-validation",
+                "claude-marketplace",
+                "codex-marketplace",
+                "mixed-marketplace",
+            },
+            set(context["jobs"]),
+        )
 
 
 class SkillContractTests(unittest.TestCase):

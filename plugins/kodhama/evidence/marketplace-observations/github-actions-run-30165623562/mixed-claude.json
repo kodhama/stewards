@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "host": "claude",
+  "surface_id": "github-actions/claude-marketplace-setup-skill",
+  "marketplace": {
+    "name": "kodhama",
+    "repository": "kodhama/stewards",
+    "revision": "90722cc1c9b7e7b484bfcf6ab4abb113c862d7b1"
+  },
+  "execution": {
+    "repository": "kodhama/stewards",
+    "commit": "90722cc1c9b7e7b484bfcf6ab4abb113c862d7b1",
+    "workflow": ".github/workflows/validate-marketplace-setup.yml",
+    "job": "mixed-marketplace",
+    "run_id": 30165623562,
+    "run_attempt": 1,
+    "setup_step_id": "kodhama_marketplace_kodhama_claude"
+  },
+  "observed_at": "2026-07-25T16:26:29.143Z"
+}
