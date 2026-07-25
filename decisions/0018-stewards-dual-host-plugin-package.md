@@ -191,3 +191,14 @@ directed the wave to start on 2026-07-24. After two bounded revisions preserved
 the standing host-specific catalog-admission boundary, the independent
 decision adversary returned `SOUND`. The `approved` status records that human
 intent act; the adversary judgment informs it and does not substitute for it.
+
+## Proposed forward annotation — kodhama-0021 (draft, 2026-07-25)
+
+Draft `kodhama-0021-separate-adoption-posture-from-support` proposes to
+partially supersede only section 3 and AC3's requirement that catalog admission
+wait for an already supported host surface. Under that proposal, a host-valid
+package may be listed for clearly disclosed dogfood or preview use without
+claiming support. Independent versioning, dual-host carriers, local parity,
+host separation, product-owned surfaces, and the ban on inferred cross-host
+support remain current. This annotation is non-operative unless decision 0021
+is ratified.
