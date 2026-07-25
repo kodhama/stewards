@@ -34,3 +34,11 @@ kodhama-0004 (approved) fixed the approval mechanic family-wide (*"`approved` = 
 ## Self-check (gate)
 
 Minimal supersession record by maintainer instruction (PR #35); the shaping history, both adversary verdicts (rounds 1 and 2, each NEEDS-REVISION, all findings folded before the cut), and the rollout program live on the PR and in the wave brief, not here. Supersession is scoped clause-by-clause; the enum and the append-only rule are preserved; nothing consumed is a draft (all four `depends_on` are approved). An independent look at the final one-page shape was offered and waived by the maintainer at approval — stated here, not silently skipped; both earlier shapes were independently adversaried. **Approved** — the maintainer's intent act (2026-07-12, PR #35: "approved. flip it and merge after") is recorded by this in-PR flip; both parked questions were answered in the same act. The builder did not grade its own decision and did not open the gate.
+
+## Forward annotation — kodhama-0022 (2026-07-25)
+
+Approved `kodhama-0022-propagate-collective-strategy` narrows only the
+implication that no hand-authored per-repository record may acknowledge a
+collective strategic decision. Affected plugin repositories receive thin,
+reference-only cross-link ADRs. The ban on copying or redefining shared
+principles, operating mechanics, and canonical terminology remains current.
