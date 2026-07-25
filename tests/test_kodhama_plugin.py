@@ -207,6 +207,8 @@ class SkillContractTests(unittest.TestCase):
     def test_hosted_workflow_runs_each_host_with_separate_state(self) -> None:
         text = HOSTED_WORKFLOW.read_text(encoding="utf-8")
         for required in (
+            "repository-validation:",
+            "python3 -m unittest discover -s tests -v",
             "claude-marketplace:",
             "codex-marketplace:",
             "mixed-marketplace:",
@@ -272,7 +274,7 @@ class SkillContractTests(unittest.TestCase):
             report["authoring_boundary"],
         )
         self.assertEqual(
-            3,
+            4,
             HOSTED_WORKFLOW.read_text(encoding="utf-8").count(
                 "python3 scripts/validate_kodhama_plugin.py\n"
             ),
@@ -336,6 +338,7 @@ class SkillContractTests(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "invalid.json"
+            output.write_text("stale observation\n", encoding="utf-8")
             emitted = subprocess.run(
                 [
                     "python3",
@@ -368,6 +371,52 @@ class SkillContractTests(unittest.TestCase):
             )
             self.assertNotEqual(0, emitted.returncode)
             self.assertFalse(output.exists())
+
+    def test_runtime_observation_emitter_cleans_up_on_output_failure(
+        self,
+    ) -> None:
+        env = {
+            **os.environ,
+            "GITHUB_REPOSITORY": "kodhama/stewards",
+            "GITHUB_SHA": "1" * 40,
+            "GITHUB_RUN_ID": "123",
+            "GITHUB_RUN_ATTEMPT": "2",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "observation.json"
+            output.mkdir()
+            emitted = subprocess.run(
+                [
+                    "python3",
+                    str(OBSERVATION_EMITTER),
+                    "--host",
+                    "codex",
+                    "--surface-id",
+                    "github-actions/codex-marketplace-setup-skill",
+                    "--marketplace-name",
+                    "kodhama",
+                    "--marketplace-repository",
+                    "kodhama/stewards",
+                    "--marketplace-revision",
+                    "0" * 40,
+                    "--workflow",
+                    ".github/workflows/validate-marketplace-setup.yml",
+                    "--job",
+                    "codex-marketplace",
+                    "--setup-step-id",
+                    "kodhama_marketplace_kodhama_codex",
+                    "--output",
+                    str(output),
+                ],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(0, emitted.returncode)
+            self.assertEqual([], list(Path(tmp).glob(".observation.json.*")))
 
     def test_optional_observation_contract_is_shipped_with_the_skill(self) -> None:
         text = OBSERVATION_REFERENCE.read_text(encoding="utf-8")

@@ -33,6 +33,11 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
+    if args.output.exists() or args.output.is_symlink():
+        if args.output.is_dir() and not args.output.is_symlink():
+            raise SystemExit("refusing observation output path that is a directory")
+        args.output.unlink()
+
     observation = {
         "schema_version": 1,
         "host": args.host,
@@ -63,16 +68,25 @@ def main() -> int:
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(observation, indent=2) + "\n"
-    with tempfile.NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
-        dir=args.output.parent,
-        prefix=f".{args.output.name}.",
-        delete=False,
-    ) as temporary:
-        temporary.write(payload)
-        temporary_path = Path(temporary.name)
-    os.replace(temporary_path, args.output)
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=args.output.parent,
+            prefix=f".{args.output.name}.",
+            delete=False,
+        ) as temporary:
+            temporary.write(payload)
+            temporary_path = Path(temporary.name)
+        validate_observation(
+            json.loads(temporary_path.read_text(encoding="utf-8")),
+            "serialized marketplace observation",
+        )
+        os.replace(temporary_path, args.output)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
     return 0
 
 
