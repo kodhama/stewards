@@ -2,7 +2,7 @@
 id: kodhama-0022-propagate-collective-strategy
 type: decision
 status: gated
-depends_on: [kodhama-0008-family-inheritance-restate-nothing, kodhama-0009-org-topology-spirit-stewards-trees, trellis/decision-0044]
+depends_on: [kodhama-0008-family-inheritance-restate-nothing, kodhama/kodhama-0009-org-topology-spirit-stewards-trees, trellis/decision-0044]
 informed_by: [kodhama-0021-separate-adoption-posture-from-support]
 owner: agent
 updated: 2026-07-25
