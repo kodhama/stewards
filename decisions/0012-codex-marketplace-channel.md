@@ -79,3 +79,12 @@ availability/effective-support model are therefore retired; this decision's
 catalog-admission and thin-catalog boundaries stand again. The narrow
 marketplace-tested metadata authorized by `kodhama-0017` records which
 marketplace a test exercised and creates no admission or support exception.
+
+## Forward annotation — kodhama-0021 (2026-07-25)
+
+Approved `kodhama-0021-separate-adoption-posture-from-support` partially
+supersedes only this decision's supported-Codex-surface prerequisite for
+catalog admission. A host-valid package may be listed
+for clearly disclosed dogfood or preview use before support is claimed.
+Catalog presence still proves neither behavior nor support; the thin-catalog,
+host-separation, product-ownership, and evidence-non-transfer boundaries stand.
