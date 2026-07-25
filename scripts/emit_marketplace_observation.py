@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 import tempfile
 
+from validate_kodhama_plugin import Invalid, validate_observation
+
 
 def required_environment(name: str) -> str:
     value = os.environ.get(name)
@@ -53,6 +55,11 @@ def main() -> int:
         .isoformat(timespec="milliseconds")
         .replace("+00:00", "Z"),
     }
+
+    try:
+        validate_observation(observation, "marketplace observation")
+    except Invalid as error:
+        raise SystemExit(f"refusing to emit invalid observation: {error}") from error
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(observation, indent=2) + "\n"

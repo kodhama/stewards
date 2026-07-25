@@ -146,6 +146,9 @@ class SkillContractTests(unittest.TestCase):
             "ambiguous-wrapper.yml",
             "external-reusable.yml",
             "conditional-direct.yml",
+            "caller-default-working-directory.yml",
+            "local-reusable.yml",
+            "unowned-equivalent.yml",
         ):
             self.assertTrue((FIXTURES / name).is_file(), name)
 
@@ -160,6 +163,16 @@ class SkillContractTests(unittest.TestCase):
                 "kodhama_marketplace_kodhama_codex",
                 "run-claude",
                 "run-codex",
+            ),
+            "caller-default-working-directory": (
+                "install-codex",
+                "kodhama_marketplace_kodhama_codex",
+                "run-codex",
+            ),
+            "local-reusable": (
+                "install-claude",
+                "kodhama_marketplace_kodhama_claude",
+                "run-claude",
             ),
         }
         for stem, ordered_ids in supported.items():
@@ -185,6 +198,7 @@ class SkillContractTests(unittest.TestCase):
             "external-reusable",
             "codex-action",
             "conditional-direct",
+            "unowned-equivalent",
         ):
             source = (FIXTURES / f"{stem}.yml").read_bytes()
             expected = (FIXTURES / f"{stem}.expected.yml").read_bytes()
@@ -205,6 +219,8 @@ class SkillContractTests(unittest.TestCase):
             "CODEX_HOME:",
             "actions/upload-artifact@",
             "scripts/emit_marketplace_observation.py",
+            "ref: ${{ github.sha }}",
+            'test "$revision" = "$GITHUB_SHA"',
         ):
             self.assertIn(required, text)
         self.assertEqual(
@@ -212,11 +228,12 @@ class SkillContractTests(unittest.TestCase):
             text.count("id: kodhama_marketplace_kodhama_checkout"),
         )
 
-    def test_authoring_report_proves_byte_identical_reapplication(self) -> None:
+    def test_authoring_report_retains_two_pass_hashes(self) -> None:
         report = json.loads(
             (FIXTURES / "authoring-report.json").read_text(encoding="utf-8")
         )
         self.assertEqual(1, report["schema_version"])
+        self.assertIn("second pass", report["method"].lower())
         self.assertEqual(
             {
                 "claude-direct",
@@ -227,6 +244,9 @@ class SkillContractTests(unittest.TestCase):
                 "external-reusable",
                 "conditional-direct",
                 "codex-action",
+                "caller-default-working-directory",
+                "local-reusable",
+                "unowned-equivalent",
             },
             set(report["cases"]),
         )
@@ -235,6 +255,28 @@ class SkillContractTests(unittest.TestCase):
             digest = hashlib.sha256(expected).hexdigest()
             self.assertEqual(digest, result["first_pass_sha256"], stem)
             self.assertEqual(digest, result["second_pass_sha256"], stem)
+            self.assertTrue(result["converged"], stem)
+            self.assertIn("workflow", result["inspected"])
+            self.assertIn("job", result["inspected"])
+            self.assertIn("generated_step_ids", result)
+            self.assertIn("prerequisites", result)
+
+        self.assertEqual(
+            {
+                "launched_host": False,
+                "ran_product_test": False,
+                "installed_plugin": False,
+                "emitted_support_state": False,
+                "created_marketplace_observation": False,
+            },
+            report["authoring_boundary"],
+        )
+        self.assertEqual(
+            3,
+            HOSTED_WORKFLOW.read_text(encoding="utf-8").count(
+                "python3 scripts/validate_kodhama_plugin.py\n"
+            ),
+        )
 
     def test_runtime_observation_emitter_writes_a_valid_closed_record(self) -> None:
         env = {
@@ -281,6 +323,51 @@ class SkillContractTests(unittest.TestCase):
                 "python3", str(VALIDATOR), "--observation", str(output)
             )
             self.assertIn("structural validation passed", validated.stdout)
+
+    def test_runtime_observation_emitter_fails_before_writing_invalid_record(
+        self,
+    ) -> None:
+        env = {
+            **os.environ,
+            "GITHUB_REPOSITORY": "not-a-repository",
+            "GITHUB_SHA": "not-a-sha",
+            "GITHUB_RUN_ID": "0",
+            "GITHUB_RUN_ATTEMPT": "-1",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "invalid.json"
+            emitted = subprocess.run(
+                [
+                    "python3",
+                    str(OBSERVATION_EMITTER),
+                    "--host",
+                    "codex",
+                    "--surface-id",
+                    "github-actions/codex-marketplace-setup-skill",
+                    "--marketplace-name",
+                    "kodhama",
+                    "--marketplace-repository",
+                    "not-a-repository",
+                    "--marketplace-revision",
+                    "not-a-sha",
+                    "--workflow",
+                    "not-a-workflow",
+                    "--job",
+                    "",
+                    "--setup-step-id",
+                    "not a step id",
+                    "--output",
+                    str(output),
+                ],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(0, emitted.returncode)
+            self.assertFalse(output.exists())
 
     def test_optional_observation_contract_is_shipped_with_the_skill(self) -> None:
         text = OBSERVATION_REFERENCE.read_text(encoding="utf-8")
