@@ -53,3 +53,7 @@ after the conductor corrected its mistaken use of catalog presence as a proxy
 for plugin ownership; Wisp's product-owned dual-host package makes it an active
 target. No receipt makes a product choice. The receipts await the maintainer's
 exact ratification and merge.
+
+Catalog-admission simplification discovered during this wave is tracked
+separately in [Stewards issue #39](https://github.com/kodhama/stewards/issues/39).
+It does not block these communication-only receipts or authorize catalog work.
