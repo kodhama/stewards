@@ -68,6 +68,57 @@ def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
 class PackageAndObservationTests(unittest.TestCase):
     """spec-0004 S10/R16-R17 and spec-0003 R1-R7."""
 
+    def test_trellis_codex_preview_catalog_entry_makes_no_support_claim(
+        self,
+    ) -> None:
+        """trellis decision-0063 and kodhama-0021 AC2."""
+        claude = json.loads(
+            (ROOT / ".claude-plugin" / "marketplace.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        codex = json.loads(
+            (ROOT / ".agents" / "plugins" / "marketplace.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        codex_trellis = next(
+            entry for entry in codex["plugins"] if entry["name"] == "trellis"
+        )
+        self.assertEqual(
+            {
+                "category": "Developer Tools",
+                "description": (
+                    "Preview — Trellis governance with live project rules. "
+                    "This catalog listing makes no support claim; consult "
+                    "Trellis product documentation for exact host and "
+                    "surface boundaries."
+                ),
+                "name": "trellis",
+                "policy": {
+                    "authentication": "ON_INSTALL",
+                    "installation": "AVAILABLE",
+                },
+                "source": {
+                    "path": "plugins/trellis",
+                    "source": "git-subdir",
+                    "url": "kodhama/trellis",
+                },
+            },
+            codex_trellis,
+        )
+
+        claude_trellis = next(
+            entry for entry in claude["plugins"] if entry["name"] == "trellis"
+        )
+        self.assertEqual(
+            (
+                "Install and consult Trellis in a Claude Code project: "
+                "the invariants, expressed at your strength."
+            ),
+            claude_trellis["description"],
+        )
+
     def test_wisp_preview_catalog_entries_disclose_no_support_claim(self) -> None:
         """kodhama-0021 AC2: preview listings never imply support."""
         claude = json.loads(
