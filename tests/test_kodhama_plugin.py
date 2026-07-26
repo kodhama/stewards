@@ -82,9 +82,10 @@ class PackageAndObservationTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        codex_trellis = next(
+        codex_trellis = [
             entry for entry in codex["plugins"] if entry["name"] == "trellis"
-        )
+        ]
+        self.assertEqual(1, len(codex_trellis))
         self.assertEqual(
             {
                 "category": "Developer Tools",
@@ -105,18 +106,19 @@ class PackageAndObservationTests(unittest.TestCase):
                     "url": "kodhama/trellis",
                 },
             },
-            codex_trellis,
+            codex_trellis[0],
         )
 
-        claude_trellis = next(
+        claude_trellis = [
             entry for entry in claude["plugins"] if entry["name"] == "trellis"
-        )
+        ]
+        self.assertEqual(1, len(claude_trellis))
         self.assertEqual(
             (
                 "Install and consult Trellis in a Claude Code project: "
                 "the invariants, expressed at your strength."
             ),
-            claude_trellis["description"],
+            claude_trellis[0]["description"],
         )
 
     def test_wisp_preview_catalog_entries_disclose_no_support_claim(self) -> None:
