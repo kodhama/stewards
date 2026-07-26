@@ -1,7 +1,7 @@
 ---
 id: kodhama-0023-separate-operational-availability-from-support
 type: decision
-status: draft
+status: gated
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0021-separate-adoption-posture-from-support, kodhama-0022-propagate-collective-strategy]
 informed_by: [grove/discovery-surface-support-and-setup-eligibility]
 owner: agent
@@ -17,27 +17,29 @@ updated: 2026-07-26
 - The family needs shared grammar that does not make a support claim decide
   whether a plugin can be installed, set up, or used.
 - `candidate` will not remain a durable common support category.
+- Every product-declared exact surface row will carry the two-field common
+  grammar:
+  - `availability_state: available | unavailable`; and
+  - `support_claim: supported | none`.
+- The common grammar stops at those two fields and their invariants. Products
+  continue to own paths, evidence, qualification, behavior, and validation.
 - Grove will be the first product to apply the distinction through its own
   planner-dogfood setup work.
 - After ratification, the strategy will propagate under decision 0022 through
   thin local receipts in Grove, Trellis, and Wisp. Retired Spore is excluded.
 
-**Open** (1):
+**Open** (0):
 
-- Whether Stewards owns only the semantic distinction, leaving machine field
-  names and enforcement product-owned, or reinstates a mandatory family
-  surface schema by partially reversing decision 0017.
+- None.
 
-**Parked** (4):
+**Parked** (3):
 
-- Grove's exact `setup_state` / support carrier, eligible rows, confirmation
-  behavior, lifecycle operations, migration, validation, and tests.
-- Any Trellis metadata migration from its current `behavior_state` model.
+- Grove's eligible rows, confirmation behavior, lifecycle operations,
+  migration, validation, and tests.
+- Trellis's product-specific migration from its current `behavior_state`
+  model.
 - Any Wisp metadata change; Wisp currently has qualification metadata but no
   project setup operation or support-state field.
-- Shared schemas, registries, cross-product validators, transition engines,
-  or support certification unless the maintainer deliberately chooses the
-  machine-schema option above.
 
 ## Context
 
@@ -62,10 +64,11 @@ There is also a standing boundary to preserve. Decision 0015 formerly made a
 common surface schema Stewards-owned, including
 `supported | candidate | unsupported`. Decision 0017 superseded that
 architecture in full and expressly returned surface contracts, product setup,
-and support machinery to products. A shared semantic rule fits that reset; a
-mandatory JSON schema would intentionally reverse part of it.
+and support machinery to products. This decision deliberately restores only
+two common row fields and their meanings. It leaves the discarded registry,
+certification, release, evidence, and validator machinery retired.
 
-## Working proposal
+## Decision
 
 ### 1. Operational availability and support are independent
 
@@ -81,9 +84,11 @@ the ordinary shape of disclosed dogfood or preview use. Conversely, no support
 claim does not establish non-functionality; it records the absence of the
 promise.
 
-Neither fact implies the other. Catalog presence, installation success,
-qualification progress, versioning, release tags, or an adoption posture may
-not silently substitute for either fact.
+Operational availability does not imply support. A support claim requires
+operational availability, but it does not create that availability: the
+product must establish and record both facts. Catalog presence, installation
+success, qualification progress, versioning, release tags, or an adoption
+posture may not silently substitute for either fact.
 
 ### 2. `candidate` is not a durable shared support category
 
@@ -92,27 +97,59 @@ candidate, or qualification work in a product's evidence. It does not sit
 between “support claimed” and “no support claim” in the shared semantic model,
 and it may not implicitly authorize or refuse a distinct product operation.
 
-### 3. Products own carriers and behavior
+### 3. Exact surface rows use two common fields
 
-Under the proposed minimal boundary, this decision would define concepts and
-invariants, not required JSON fields. Each product would continue to own:
+Every machine-readable exact surface row declared by an active distributed
+Kodhama plugin carries:
 
-- whether it needs machine-readable availability or support carriers;
-- the carrier names, schema, and exact states;
+```json
+{
+  "availability_state": "available",
+  "support_claim": "none"
+}
+```
+
+The closed values are:
+
+- `availability_state: available | unavailable`; and
+- `support_claim: supported | none`.
+
+`available` means the product offers a bounded, disclosed operational path for
+that exact surface. `unavailable` means it does not currently offer such a
+path; it does not assert that operation is technically impossible.
+
+`supported` means the product makes an affirmative, evidence-backed public
+support promise for that exact surface. `none` means no such claim exists; it
+does not assert failure or non-functionality.
+
+Three combinations are coherent:
+
+| Availability | Support claim | Meaning |
+|---|---|---|
+| `available` | `supported` | An operational path and a support promise both exist. |
+| `available` | `none` | Disclosed dogfood or preview use can proceed without support. |
+| `unavailable` | `none` | The product offers neither an operational path nor support. |
+
+`unavailable + supported` is invalid because a product cannot honestly promise
+support while offering no operational path on the same exact surface.
+
+The two fields are a common minimum. Products continue to own:
+
 - surface rows and technical prerequisites;
 - setup, refresh, installation, or use behavior;
+- load paths, bridge state, and qualification state;
 - disclosures, confirmation UX, and rollback;
 - behavioral evidence and support promotion; and
 - validation and tests.
 
-A product that records both facts shall keep them independently readable and
-shall not use the absence of a support claim as the sole reason to refuse an
-otherwise product-authorized operation.
+A product may add fields suited to its own behavior. Stewards creates no
+common surface registry, file path, evidence schema, transition engine,
+cross-product validator, release gate, or certification service.
 
-This preserves decision 0017's rejection of universal surface contracts,
-registries, and certification machinery. Choosing a mandatory shared schema
-instead would require an explicit, narrow partial supersession of that
-decision.
+This partially supersedes only decision 0017's blanket exclusion of a
+universal surface contract, narrowly permitting these two row fields and their
+invariants. Every other retirement and product-ownership boundary in decision
+0017 remains current.
 
 ### 4. Propagation
 
@@ -150,8 +187,9 @@ implementation, release, setup, or support change.
   machine refusal.
 - Qualification may still use candidate terminology without turning it into
   durable support grammar.
-- Under the working proposal, products remain free to choose minimal carriers
-  suited to their actual operations.
+- Surface rows become comparable on the two facts that must not be conflated,
+  while all operational details remain product-owned.
+- Adopters owe a small field migration, but no common runtime or validator.
 - The first rollout adds three thin receipts but no family registry,
   validator, or certification service.
 
@@ -166,21 +204,38 @@ implementation, release, setup, or support change.
 - **AC4:** `candidate` is not a durable shared support category or an implicit
   operation gate.
 - **AC5:** Adoption posture remains separate and follows decision 0021.
-- **AC6:** The final ownership choice explicitly preserves or narrowly
-  supersedes decision 0017.
+- **AC6:** Every active plugin's declared exact surface rows use
+  `availability_state: available | unavailable` and
+  `support_claim: supported | none`; `unavailable + supported` is invalid.
 - **AC7:** Propagation targets Grove, Trellis, and Wisp through decision 0022;
   retired Spore is explicitly excluded.
 - **AC8:** Receipts authorize no product implementation, setup, release, or
   support change.
+- **AC9:** Decision 0017 is superseded only enough to permit the two-field
+  common grammar; no registry, file path, evidence schema, transition engine,
+  cross-product validator, release gate, or certification service returns.
 
 ## Open questions
 
-The one live ownership question is maintained in `## Decision state`.
+None.
+
+## Self-check
+
+The two fields encode independent facts and the valid-combination table closes
+the only incoherent pairing. `candidate` remains available for transient
+qualification without becoming support grammar. Decision 0021's adoption
+postures remain separate, product-owned evidence and behavior remain local,
+and decision 0017 is narrowed explicitly rather than contradicted silently.
+The rollout follows decision 0022 and excludes retired Spore. No open question
+remains, so the author promotes this decision from `draft` to `gated` for
+independent soundness review.
 
 ## Lifecycle record
 
 This is the upstream shaping canvas requested after Grove selected an
 independent support/setup architecture and asked whether the distinction was
 collective grammar. Read-only audits covered the current Stewards boundary and
-the live surface models in Grove, Trellis, Wisp, and retired Spore. No product
-implementation or rollout memo is part of this draft.
+the live surface models in Grove, Trellis, Wisp, and retired Spore. On
+2026-07-26 the maintainer selected a uniform two-field grammar while retaining
+the minimal boundary around it. No product implementation or rollout memo is
+part of this decision PR.
