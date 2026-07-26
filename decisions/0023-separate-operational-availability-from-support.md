@@ -1,7 +1,7 @@
 ---
 id: kodhama-0023-separate-operational-availability-from-support
 type: decision
-status: gated
+status: approved
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0021-separate-adoption-posture-from-support, kodhama-0022-propagate-collective-strategy]
 informed_by: [grove/discovery-surface-support-and-setup-eligibility]
 owner: agent
@@ -261,5 +261,9 @@ independent support/setup architecture and asked whether the distinction was
 collective grammar. Read-only audits covered the current Stewards boundary and
 the live surface models in Grove, Trellis, Wisp, and retired Spore. On
 2026-07-26 the maintainer selected a uniform two-field grammar while retaining
-the minimal boundary around it. No product implementation or rollout memo is
-part of this decision PR.
+the minimal boundary around it. Independent review returned `NEEDS-REVISION`
+at `7e16c9a`; the schema-token, rationale, and active-package scope findings
+were repaired, and fresh re-review returned `SOUND` at `1a33e26`. The
+maintainer then explicitly ratified that exact decision; `approved` records
+the human intent act. No product implementation or rollout memo is part of
+this decision PR.
