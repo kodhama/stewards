@@ -34,16 +34,41 @@ the communication wave. Retired Spore is not a target.
 
 ## Ledger
 
-- [ ] Grove cross-link ADR PR opened and linked.
-- [ ] Grove cross-link ADR independently reviewed and landed.
-- [ ] Trellis cross-link ADR PR opened and linked.
-- [ ] Trellis cross-link ADR independently reviewed and landed.
-- [ ] Wisp cross-link ADR PR opened and linked.
-- [ ] Wisp cross-link ADR independently reviewed and landed.
+- [x] Grove cross-link ADR PR opened and linked:
+      [Grove PR #147](https://github.com/kodhama/grove/pull/147).
+- [x] Grove cross-link ADR independently reviewed and landed:
+      [SOUND](https://github.com/kodhama/grove/pull/147#issuecomment-5082269216),
+      merge `a8f18a5`.
+- [x] Trellis cross-link ADR PR opened and linked:
+      [Trellis PR #195](https://github.com/kodhama/trellis/pull/195).
+- [x] Trellis cross-link ADR independently reviewed and landed:
+      [SOUND](https://github.com/kodhama/trellis/pull/195#pullrequestreview-4781086284),
+      merge `9995337`.
+- [x] Wisp cross-link ADR PR opened and linked:
+      [Wisp PR #47](https://github.com/kodhama/wisp/pull/47).
+- [x] Wisp cross-link ADR independently reviewed and landed:
+      [SOUND](https://github.com/kodhama/wisp/pull/47#issuecomment-5082266778),
+      merge `ad8730b`.
 - [x] Kodhama plugin product migration recorded separately:
       [Stewards issue #42](https://github.com/kodhama/stewards/issues/42).
-- [ ] Closure report appended; Grove PR #146 resumed.
+- [x] Closure report appended; Grove PR #146 resumed.
 
 ## Report
 
-Open.
+Closed 2026-07-26. The maintainer ratified decision 0023 and directed the
+receipt rollout. Grove merged at `a8f18a5`, Trellis at `9995337`, and Wisp at
+`ad8730b`. Every receipt was independently `SOUND` and remained a thin
+cross-link with product implementation explicitly separate.
+
+Grove and Wisp required checks passed. Trellis's ratification guard passed;
+its optional Claude Code Review workflow failed without producing a review
+comment and did not replace or invalidate the separately persisted independent
+soundness review.
+
+The same-repository Kodhama plugin needs no receipt. Its product migration is
+tracked in [Stewards issue #42](https://github.com/kodhama/stewards/issues/42).
+Retired Spore was excluded as directed by decision 0023.
+
+The communication wave is complete. Product work resumes at Grove
+[PR #146](https://github.com/kodhama/grove/pull/146), which owns the planner
+dogfood setup behavior.
