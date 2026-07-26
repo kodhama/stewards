@@ -20,20 +20,25 @@ updated: 2026-07-26
 - Every product-declared exact surface row will carry the two-field common
   grammar:
   - `availability_state: available | unavailable`; and
-  - `support_claim: supported | none`.
+  - `support_claim: claimed | none`.
 - The common grammar stops at those two fields and their invariants. Products
   continue to own paths, evidence, qualification, behavior, and validation.
 - Grove will be the first product to apply the distinction through its own
   planner-dogfood setup work.
 - After ratification, the strategy will propagate under decision 0022 through
   thin local receipts in Grove, Trellis, and Wisp. Retired Spore is excluded.
+- The active Kodhama plugin in this repository follows the same grammar but
+  needs no cross-repository receipt; its field migration remains separate
+  product implementation.
 
 **Open** (0):
 
 - None.
 
-**Parked** (3):
+**Parked** (4):
 
+- The Kodhama plugin's product-specific migration of
+  `plugins/kodhama/surfaces.json`.
 - Grove's eligible rows, confirmation behavior, lifecycle operations,
   migration, validation, and tests.
 - Trellis's product-specific migration from its current `behavior_state`
@@ -58,7 +63,15 @@ This looks like collective grammar because the ambiguity is not Grove-specific:
 availability does not itself create a support promise. Trellis currently uses
 a three-value behavioral surface state while independently deciding setup
 feasibility. Wisp records qualification rather than support and has no project
-setup operation.
+setup operation. The active Kodhama plugin records exact surface rows without
+either fact.
+
+All four active plugin packages therefore expose machine-readable surface rows
+but express these two cross-product facts differently or not at all. Shared
+semantics with product-chosen carriers would preserve that translation burden
+and allow the same conflation to recur under different field names. The
+maintainer selected identical field names and closed values so a reader or
+tool can interpret the two facts without product-specific mapping.
 
 There is also a standing boundary to preserve. Decision 0015 formerly made a
 common surface schema Stewards-owned, including
@@ -112,13 +125,13 @@ Kodhama plugin carries:
 The closed values are:
 
 - `availability_state: available | unavailable`; and
-- `support_claim: supported | none`.
+- `support_claim: claimed | none`.
 
 `available` means the product offers a bounded, disclosed operational path for
 that exact surface. `unavailable` means it does not currently offer such a
 path; it does not assert that operation is technically impossible.
 
-`supported` means the product makes an affirmative, evidence-backed public
+`claimed` means the product makes an affirmative, evidence-backed public
 support promise for that exact surface. `none` means no such claim exists; it
 does not assert failure or non-functionality.
 
@@ -126,11 +139,11 @@ Three combinations are coherent:
 
 | Availability | Support claim | Meaning |
 |---|---|---|
-| `available` | `supported` | An operational path and a support promise both exist. |
+| `available` | `claimed` | An operational path and a support promise both exist. |
 | `available` | `none` | Disclosed dogfood or preview use can proceed without support. |
 | `unavailable` | `none` | The product offers neither an operational path nor support. |
 
-`unavailable + supported` is invalid because a product cannot honestly promise
+`unavailable + claimed` is invalid because a product cannot honestly promise
 support while offering no operational path on the same exact surface.
 
 The two fields are a common minimum. Products continue to own:
@@ -155,6 +168,9 @@ invariants. Every other retirement and product-ownership boundary in decision
 
 Once ratified, this strategy applies to the active Kodhama plugins:
 
+- **Kodhama plugin:** the product package in this repository adopts the common
+  fields through separate product implementation. It needs no thin receipt
+  because this repository owns the upstream decision.
 - **Grove:** receive the strategy, then separately decide and implement its
   exact support/setup model.
 - **Trellis:** receive the strategy; any reconciliation of its current
@@ -167,8 +183,9 @@ distribution or surface model. Future plugin entrants catch up under decision
 0022.
 
 One conductor brief will track the three thin cross-link ADRs and their landed
-links. Receipt communicates the strategy but authorizes no product
-implementation, release, setup, or support change.
+links, plus the same-repository Kodhama plugin follow-up. Receipt communicates
+the strategy but authorizes no product implementation, release, setup, or
+support change.
 
 ## Rejected options
 
@@ -178,6 +195,11 @@ implementation, release, setup, or support change.
 - **Make adoption posture the missing machine state.** Rejected by decision
   0021: dogfood, preview, and supported are reliance postures, not universal
   schema values or machine gates.
+- **Share only the meanings and let products choose field names.** Rejected by
+  the maintainer: every active plugin already has machine-readable exact
+  surface rows, while their current carriers differ or omit these facts.
+  Product-specific carrier translation would defeat the purpose of a common
+  grammar and permit the same coupling under different names.
 
 ## Consequences
 
@@ -206,9 +228,10 @@ implementation, release, setup, or support change.
 - **AC5:** Adoption posture remains separate and follows decision 0021.
 - **AC6:** Every active plugin's declared exact surface rows use
   `availability_state: available | unavailable` and
-  `support_claim: supported | none`; `unavailable + supported` is invalid.
+  `support_claim: claimed | none`; `unavailable + claimed` is invalid.
 - **AC7:** Propagation targets Grove, Trellis, and Wisp through decision 0022;
-  retired Spore is explicitly excluded.
+  the same-repository Kodhama plugin is an explicit implementation follow-up,
+  and retired Spore is excluded.
 - **AC8:** Receipts authorize no product implementation, setup, release, or
   support change.
 - **AC9:** Decision 0017 is superseded only enough to permit the two-field
@@ -221,14 +244,15 @@ None.
 
 ## Self-check
 
-The two fields encode independent facts and the valid-combination table closes
-the only incoherent pairing. `candidate` remains available for transient
-qualification without becoming support grammar. Decision 0021's adoption
-postures remain separate, product-owned evidence and behavior remain local,
-and decision 0017 is narrowed explicitly rather than contradicted silently.
-The rollout follows decision 0022 and excludes retired Spore. No open question
-remains, so the author promotes this decision from `draft` to `gated` for
-independent soundness review.
+The two fields encode distinct facts and the valid-combination table closes
+the only incoherent pairing. `support_claim: claimed` avoids reusing decision
+0021's `supported` adoption-posture value. `candidate` remains available for
+transient qualification without becoming support grammar. Product-owned
+evidence and behavior remain local, and decision 0017 is narrowed explicitly
+rather than contradicted silently. The rollout covers all four active plugin
+packages, follows decision 0022 for cross-repository receipts, and excludes
+retired Spore. No open question remains, so the artifact stays `gated` for
+fresh independent soundness review.
 
 ## Lifecycle record
 
