@@ -11,6 +11,13 @@ provenance: "approved maintainer intent, 2026-07-24: retire the oversized family
 
 # Decision: retire family release certification; keep only narrow marketplace-test setup
 
+> **Partially superseded by
+> `kodhama-0023-separate-operational-availability-from-support`.** Its blanket
+> exclusion of every universal surface contract is narrowed only enough to
+> permit the two common exact-surface row fields `availability_state` and
+> `support_claim`; all registry, evidence, release, validation, and
+> certification machinery retired here remains retired.
+
 ## Decision state
 
 **Decided** (approved maintainer intent, 2026-07-24):
