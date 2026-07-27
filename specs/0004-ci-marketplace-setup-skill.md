@@ -1,7 +1,7 @@
 ---
 id: kodhama-spec-0004-ci-marketplace-setup-skill
 type: spec
-status: approved  # maintainer approved v2 on 2026-07-25 after independent spec, conformance, and corpus review; v3 and v4 are agent-drafted amendments awaiting the maintainer's intent act
+status: approved  # maintainer approved v2 on 2026-07-25 after independent spec, conformance, and corpus review; v3-v5 are agent-drafted amendments awaiting the maintainer's intent act
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 implements: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 owner: agent
@@ -280,12 +280,13 @@ and revision. Each host gets its own registration step. Registration steps:
 - require the checkout HEAD to equal the selected revision before calling the
   host;
 - call only the version-2 commands above;
-- parse the machine-readable listing and fail if name or root differs; and
+- parse the machine-readable listing and fail if name or root differs.
 
 The skill parses existing YAML and compares the owned steps against the
 confirmed plan: exact ids/names, checkout action commit, checkout inputs,
-dependency order, workspace-root working directory, host command sequence,
-semantic match is converged and the skill writes no file, so the existing bytes
+dependency order, workspace-root working directory, host command sequence, and
+environment mapping. A semantic match is converged and the skill writes no file,
+so the existing bytes
 remain unchanged. An owned id with differing semantics, or an unowned block
 that appears equivalent, is a conflict: preserve it, make no target edit, and
 report the collision. Field order, quoting, indentation, and unrelated comments
@@ -327,9 +328,6 @@ After editing, the skill shall report:
 
 The authoring invocation shall not launch a host, run or judge a product test,
 install a plugin or emit support state.
-Only a generated runtime setup step may create a
-`` record, after the workflow
-runs and satisfies that record's provenance procedure.
 
 ## Consumer packaging boundary
 
@@ -438,7 +436,7 @@ claims remain independent for every product.
 - **Given** the Kodhama plugin's `VERSION`, two host manifests,
   and zero, one, or two catalog entries,
 - **When** repository parity validation runs,
-- **Then** the four version carriers match, both manifests name `kodhama`,
+- **Then** the three version carriers match, both manifests name `kodhama`,
   every present Claude or Codex entry uses its exact local source shape and
   carries a nonblank `description`, a present Codex entry carries no field
   beyond those, and no other product version is read or compared.
@@ -485,8 +483,8 @@ claims remain independent for every product.
 - **R12 (unwanted behavior):** The skill shall not expose, copy, create, or
   cache credentials, authentication, trust, or session state.
 - **R13 (unwanted behavior):** The authoring invocation shall not launch a
-  host, install a CLI or plugin, run or judge product tests, emit support state,
-  or itself emit support state.
+  host, install a CLI or plugin, run or judge product tests, or emit support
+  state.
 - **R14 (ubiquitous):** Products shall own CLI provisioning, plugin selection
   and installation, CI environment, tests, evidence, versions, releases, and
   support claims.
@@ -494,9 +492,9 @@ claims remain independent for every product.
   converged, ambiguous, external, conflicting, unsupported, and skipped
   targets.
 - **R16 (ubiquitous):** The Kodhama plugin shall satisfy
-  `kodhama-0018`'s local VERSION, dual-manifest, surface-version, and
-  present-catalog-source parity without imposing that package shape on a
-  consumer.
+  `kodhama-0018`'s local VERSION, dual-manifest, and present-catalog-source
+  parity without imposing that package shape on a consumer. *(v5: surface-version
+  parity went with `surfaces.json`; `kodhama-0025` supersedes `kodhama-0018` AC2.)*
 - **R18 (event-driven):** When a PR adds a Kodhama host catalog entry, it
   shall run `scripts/keyless_admission_check.py` and review its result with
   that change. *(v3 → v4: this named "the exact product-local path above",

@@ -2,6 +2,7 @@
 id: kodhama-0023-separate-operational-availability-from-support
 type: decision
 status: superseded  # by kodhama-0025, 2026-07-27
+superseded_by: [kodhama-0025-retire-the-surface-matrix]
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0021-separate-adoption-posture-from-support, kodhama-0022-propagate-collective-strategy]
 informed_by: [grove/discovery-surface-support-and-setup-eligibility]
 owner: agent

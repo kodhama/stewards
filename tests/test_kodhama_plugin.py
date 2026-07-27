@@ -243,12 +243,19 @@ class PackageAndCatalogTests(unittest.TestCase):
         """
         readme = PLUGIN / "README.md"
         self.assertTrue(readme.is_file(), "the shipped package must carry a README")
-        text = readme.read_text(encoding="utf-8")
+        # Normalised, so a line wrap in the source cannot make a required
+        # sentence "absent" and quietly weaken the guard.
+        text = " ".join(readme.read_text(encoding="utf-8").split())
         for required in (
             "Support is not claimed",
             "keyless_admission_check.py",
             "codex plugin marketplace add",
-            "does **not** establish" if "does **not** establish" in text else "none of that establishes",
+            # The sentences that keep the claim honest. An earlier version of
+            # this test asserted `X if X in text else Y`, which is a tautology
+            # — it cannot fail, and it guarded exactly the paragraph that stops
+            # the README overclaiming. Assert the literals.
+            "closer to a layout check than a load check",
+            "that the skill *runs*",
         ):
             self.assertIn(required, text)
 
@@ -259,16 +266,23 @@ class PackageAndCatalogTests(unittest.TestCase):
         matrix has not returned. A tree-wide check is cheap and catches a
         reintroduction by any route, including a well-meaning propagation wave.
         """
+        # Matching two exact filenames let a rename walk straight past this —
+        # `surface-matrix.json`, `emit_observation.py`, or a fresh
+        # `evidence/run-1/claude.json` all reintroduced the retired shape with
+        # the suite green. Match the shape, not the spelling.
         offenders = []
         for path in ROOT.rglob("*"):
-            if not path.is_file() or ".git" in path.parts:
+            rel = path.relative_to(ROOT)
+            if ".git" in rel.parts or not path.is_file():
                 continue
-            if path.name == "surfaces.json":
-                offenders.append(path.relative_to(ROOT))
-        self.assertEqual([], offenders, "the surface matrix was reintroduced")
-
-        emitter = ROOT / "scripts" / "emit_marketplace_observation.py"
-        self.assertFalse(emitter.exists(), "the observation emitter was reintroduced")
+            name = path.name.lower()
+            if "surface" in name and name.endswith(".json"):
+                offenders.append(f"{rel} (surface matrix)")
+            if name.startswith("emit_") and "observation" in name:
+                offenders.append(f"{rel} (observation emitter)")
+            if "marketplace-observations" in rel.as_posix():
+                offenders.append(f"{rel} (committed observation evidence)")
+        self.assertEqual([], offenders, "the retired surface/observation shape came back")
 
     def test_repository_package_and_carrier_parity_validate(self) -> None:
         result = run("python3", str(VALIDATOR))

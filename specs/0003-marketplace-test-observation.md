@@ -1,7 +1,8 @@
 ---
 id: kodhama-spec-0003-marketplace-test-observation
 type: spec
-status: superseded  # by kodhama-0025, 2026-07-27  # maintainer approved checkpoint 1 on 2026-07-24
+status: superseded  # by kodhama-0025, 2026-07-27
+superseded_by: [kodhama-0025-retire-the-surface-matrix]  # maintainer approved checkpoint 1 on 2026-07-24
 depends_on: [kodhama-0017-retire-family-release-certification]
 implements: [kodhama-0017-retire-family-release-certification]
 owner: agent

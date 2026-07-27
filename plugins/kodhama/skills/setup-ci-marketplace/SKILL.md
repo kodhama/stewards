@@ -64,7 +64,7 @@ plan must identify:
 6. the caller-approved full 40-character `actions/checkout` commit;
 7. the existing exact CLI prerequisite for each host;
 8. the exact host-state environment mapping inherited by registration and the
-   later invocation (empty means the job default); and
+   later invocation (empty means the job default).
 
 Reject branches, tags, floating refs, unknown CLI versions, non-GitHub
 marketplaces, incompatible shared-callee inputs, and partial

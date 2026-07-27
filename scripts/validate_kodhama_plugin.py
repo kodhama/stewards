@@ -11,9 +11,8 @@ what proves the package installs is `scripts/keyless_admission_check.py`.
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
 import json
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
 import sys
 from typing import Any, Iterable
