@@ -25,12 +25,14 @@ materializes; it is not a substitute for `depends_on`.
 |---|---:|---|---|
 | [`kodhama-spec-0001-family-plugin-release-and-distribution-metadata`](0001-family-plugin-release-and-distribution-metadata.md) | 2 | superseded | Historical family release-certification contract; retired by `kodhama-0017` |
 | [`kodhama-spec-0002-bounded-pre-agent-provisioner`](0002-bounded-pre-agent-provisioner.md) | 3 | superseded | Historical universal provisioner contract; retired by `kodhama-0017` |
-| [`kodhama-spec-0003-marketplace-test-observation`](0003-marketplace-test-observation.md) | 1 | approved | Closed product-owned observation of one marketplace revision exercised in GitHub Actions |
-| [`kodhama-spec-0004-ci-marketplace-setup-skill`](0004-ci-marketplace-setup-skill.md) | 3 | approved | Host-independent authoring of caller-selected Claude/Codex marketplace setup in GitHub Actions |
+| [`kodhama-spec-0003-marketplace-test-observation`](0003-marketplace-test-observation.md) | 1 | superseded | Historical observation record; retired by `kodhama-0025` |
+| [`kodhama-spec-0004-ci-marketplace-setup-skill`](0004-ci-marketplace-setup-skill.md) | 5 | approved | Host-independent authoring of caller-selected Claude/Codex marketplace setup in GitHub Actions |
 
-Specs 0001 and 0002 are historical records, not implementation inputs.
-Specs 0003 and 0004 independently implement the two narrow goals retained by
-`kodhama-0017-retire-family-release-certification`.
+Specs 0001, 0002 and 0003 are historical records, not implementation inputs.
+Spec 0004 implements the CI marketplace-setup skill retained by
+`kodhama-0017-retire-family-release-certification`. Its other retained goal —
+recording which marketplace a test exercised — is met by the GitHub Actions run
+log rather than a schema, per `kodhama-0025`.
 
 ## Validation disclosure
 

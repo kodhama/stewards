@@ -127,7 +127,17 @@ one of the version carriers a Stewards package must maintain. The rest of 0018
 stands: `VERSION`, both host manifests, and their parity are unchanged.
 
 **`kodhama-spec-0003` — superseded.** The marketplace-observation record, its
-closed schema and its emitter retire together.
+closed schema and its emitter retire together. `specs/README.md` and
+`tests/TEST_DEPS.md` are updated in the same change, so the retired schema is not
+still advertised as an active implementation input.
+
+**`kodhama-spec-0004` — amended, v4 → v5.** It remains `approved` and its
+authoring behaviour is untouched, but it required `surfaces.json` as a version
+carrier, specified the observation inputs and emission, and carried surface
+parity in R16-R17. An implementer following it could have reintroduced the
+deleted contract. Flagged in review against this very record's acceptance
+criteria, which asserted no spec required any of it — that was false when
+written.
 
 **`kodhama-0017` §2 — amended, not superseded.** Its retained goal survives; only
 the schema-shaped implementation of it goes. Its §4 exclusion of *"surface
