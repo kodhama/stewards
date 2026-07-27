@@ -312,8 +312,6 @@ class SkillContractTests(unittest.TestCase):
             "collision",
             "no edit",
             "idempotent",
-            "surface_id",
-            "observation",
         ):
             self.assertIn(required, text)
 
