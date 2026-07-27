@@ -11,6 +11,11 @@ provenance: "maintainer intent, 2026-07-24: replicate Grove's small SemVer, VERS
 
 # Decision: package the Stewards skill as an independent dual-host plugin
 
+> **Forward pointer.** `kodhama-0025-retire-the-surface-matrix` supersedes §1
+> and AC2's requirement that a Stewards package carry a `surfaces.json`
+> version carrier. `VERSION`, both host manifests and their parity are
+> unchanged.
+
 > **Superseded in part by
 > `kodhama-0020-name-overarching-plugin-kodhama`.** The public plugin identity,
 > package source directory, skill namespace, and managed marketplace path are
