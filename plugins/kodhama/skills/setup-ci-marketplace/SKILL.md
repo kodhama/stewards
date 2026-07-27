@@ -20,7 +20,7 @@ reported as unsupported; do not split, wrap, or guess its inputs.
   matrices, conditions, timeouts, unrelated steps, comments, and formatting.
 - Never edit an external reusable workflow. A repository-local reusable
   workflow is editable only when every local caller is selected and all
-  callers supply identical marketplace, host-state, and observation inputs.
+  callers supply identical marketplace and host-state inputs.
 - Do not copy or create authentication, trust, session state, or credentials.
 - Do not infer the target host from the host invoking this skill.
 - Do not choose a plugin, install a plugin, choose a test, or install a CLI.
@@ -64,12 +64,10 @@ plan must identify:
 6. the caller-approved full 40-character `actions/checkout` commit;
 7. the existing exact CLI prerequisite for each host;
 8. the exact host-state environment mapping inherited by registration and the
-   later invocation (empty means the job default); and
-9. either both an optional product-owned `surface_id` and repository-relative
-   observation JSON path, or neither.
+   later invocation (empty means the job default).
 
 Reject branches, tags, floating refs, unknown CLI versions, non-GitHub
-marketplaces, incompatible shared-callee inputs, and partial observation
+marketplaces, incompatible shared-callee inputs, and partial
 inputs. Never silently select a value. If discovery was requested, present the
 candidates and classifications for confirmation.
 
@@ -88,7 +86,7 @@ any name that cannot form those identifiers.
 
 Parse the YAML semantically. If all owned steps already equal the confirmed
 plan—including ids, names, action pin, checkout inputs, order, commands,
-workspace-root working directory, environment, and observation pair—the target
+workspace-root working directory and environment—the target
 is idempotent and converged:
 write no file, preserving every byte. If an owned id differs, or an unowned
 block appears equivalent, report a collision and make no target edit. Never
@@ -125,7 +123,7 @@ invoking its host:
 3. compare it exactly with `https://github.com/<owner>/<repository>`;
 4. obtain `git -C .kodhama/marketplaces/<m> rev-parse HEAD`;
 5. compare it exactly with the selected revision; and
-6. leave no observation behind if any check fails.
+6. leave nothing behind if any check fails.
 
 These are the checkout-scoped forms of `git remote get-url origin` and
 `git rev-parse HEAD`; do not inspect the product checkout by mistake.
@@ -159,14 +157,6 @@ Use a temporary file for listing output and remove it on exit. Quote shell
 values. Do not print environment values or secrets. The registration step
 inherits the confirmed host-state `env` mapping exactly.
 
-If observation output was selected, the runtime registration step writes the
-closed `kodhama-spec-0003-marketplace-test-observation@v1` JSON only after
-origin, revision, add, and list checks pass. Populate it from GitHub runtime
-variables and the known workflow/job/step identifiers. Write atomically to the
-confirmed repository-relative path. The authoring invocation itself must
-never create an observation. In this case, read
-`references/marketplace-observation-v1.md` before authoring and implement that
-closed shape and validation literally.
 
 ## 5. Verify and report
 
@@ -189,4 +179,4 @@ Report:
 - whether files changed.
 
 State explicitly that workflow authoring did not install a plugin, run a host
-or product test, emit an observation, or establish surface support.
+or product test, or establish surface support.

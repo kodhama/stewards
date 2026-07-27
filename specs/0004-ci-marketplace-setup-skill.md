@@ -1,15 +1,30 @@
 ---
 id: kodhama-spec-0004-ci-marketplace-setup-skill
 type: spec
-status: approved  # maintainer approved v2 on 2026-07-25 after independent spec, conformance, and corpus review; v3 and v4 are agent-drafted amendments awaiting the maintainer's intent act
-depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-spec-0003-marketplace-test-observation@v1]
+status: approved  # maintainer approved v2 on 2026-07-25 after independent spec, conformance, and corpus review; v3-v5 are agent-drafted amendments awaiting the maintainer's intent act
+depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 implements: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 owner: agent
 updated: 2026-07-27
-version: 4
+version: 5
 ---
 
 # GitHub Actions marketplace-setup skill
+
+> **AMENDED 2026-07-27 — v4 → v5 (`kodhama-0025`)**
+>
+> **WHAT:** Removed `surfaces.json` as a version carrier, the optional
+> observation inputs and emission step, and the surface-parity halves of
+> R16-R17. The skill's actual job — authoring marketplace registration in
+> caller-selected GitHub Actions jobs — is unchanged.
+>
+> **WHY:** `kodhama-0025` retired the surface matrix and the
+> marketplace-observation record family-wide. Leaving this spec `approved` while
+> the machinery was deleted would let an implementer following the authoritative
+> contract reintroduce a deleted schema, or generate observation behaviour the
+> shipped skill no longer supports.
+>
+> **SCOPE:** Reference reconciliation. No authoring behaviour changes.
 
 > **Amended 2026-07-25 — decision 0020**
 >
@@ -60,11 +75,10 @@ by `kodhama-0018` and renamed by `kodhama-0020`:
 - `plugins/kodhama/VERSION`;
 - `plugins/kodhama/.claude-plugin/plugin.json`;
 - `plugins/kodhama/.codex-plugin/plugin.json`;
-- `plugins/kodhama/surfaces.json`; and
 - `plugins/kodhama/skills/setup-ci-marketplace/SKILL.md`.
 
-The plugin's Claude manifest, Codex manifest, and `surfaces.json` version shall
-equal its own SemVer `VERSION`.
+The plugin's Claude and Codex manifest versions shall equal its own SemVer
+`VERSION`. *(v5: `surfaces.json` was a third carrier; `kodhama-0025` retired it.)*
 
 The Claude catalog is `.claude-plugin/marketplace.json`; the Codex catalog is
 `.agents/plugins/marketplace.json`. An admitted Claude entry uses the relative
@@ -144,36 +158,6 @@ required here, and a Codex catalog entry rests on `kodhama-0012`'s boundary
 alone. Repository parity checks the shape of present entries but does not decide
 whether an absent entry is ready for admission.
 
-## Kodhama surface metadata
-
-`plugins/kodhama/surfaces.json` uses this closed product-local shape:
-
-```json
-{
-  "schema_version": 1,
-  "version": "0.2.0",
-  "rows": [
-    {
-      "surface_id": "github-actions/codex-marketplace-setup-skill",
-      "host": "codex",
-      "marketplace_test_observations": []
-    }
-  ]
-}
-```
-
-The object, rows, and nested objects are closed. `version` equals `VERSION`.
-Every `surface_id` is unique and matches spec 0003's identifier grammar;
-`host` is `claude` or `codex`; and every observation entry is a normalized
-repository-relative JSON path with no `..` segment. Each referenced record
-must structurally validate against spec 0003 and match the row's host and
-surface id.
-
-An empty array says only that no marketplace-test observation is linked. A
-non-empty array says only that the named runs registered exact marketplaces.
-Neither state claims plugin behavior, surface support, catalog admission, or
-release approval.
-
 ## Supported authoring target
 
 Version 2 supports GitHub Actions jobs with direct Claude Code `2.1.199` or
@@ -229,7 +213,6 @@ Before editing, the skill shall resolve and echo this plan for confirmation:
 | Checkout action | Existing caller-approved full 40-character commit pin for `actions/checkout`; tags and branches are invalid. |
 | CLI prerequisite | Existing repository-owned step/action that provisions exactly Claude Code `2.1.199` or Codex CLI `0.145.0` before the generated block. |
 | Host-state environment | Exact caller-confirmed environment mapping inherited by the host invocation. Empty means both setup and invocation use the job's default state. |
-| Observation output | Optional product-owned `surface_id` plus repository-relative artifact path. Both or neither are required. When selected, the runtime setup step emits the spec-0003 record there; authoring alone emits no observation. |
 
 The skill shall not choose a product or plugin from catalog contents, install a
 plugin or CLI, infer a version, create credentials, or choose a CI test.
@@ -261,7 +244,7 @@ unchanged.
 
 The skill may patch a repository-local reusable workflow only after inspecting
 every repository-local caller and confirming that every caller is selected and
-supplies identical marketplace, host-state, and observation inputs. Otherwise
+supplies identical marketplace and host-state inputs. Otherwise
 it leaves the callee and all callers unchanged and reports the shared-callee
 conflict. It never inserts marketplace setup into a caller job as a substitute
 for setup inside a separately executing reusable-workflow job.
@@ -297,14 +280,13 @@ and revision. Each host gets its own registration step. Registration steps:
 - require the checkout HEAD to equal the selected revision before calling the
   host;
 - call only the version-2 commands above;
-- parse the machine-readable listing and fail if name or root differs; and
-- optionally emit a spec-0003 runtime observation only after all checks pass.
+- parse the machine-readable listing and fail if name or root differs.
 
 The skill parses existing YAML and compares the owned steps against the
 confirmed plan: exact ids/names, checkout action commit, checkout inputs,
-dependency order, workspace-root working directory, host command sequence,
-environment mapping, and optional observation `surface_id`/path pair. A
-semantic match is converged and the skill writes no file, so the existing bytes
+dependency order, workspace-root working directory, host command sequence, and
+environment mapping. A semantic match is converged and the skill writes no file,
+so the existing bytes
 remain unchanged. An owned id with differing semantics, or an unowned block
 that appears equivalent, is a conflict: preserve it, make no target edit, and
 report the collision. Field order, quoting, indentation, and unrelated comments
@@ -345,10 +327,7 @@ After editing, the skill shall report:
 - whether the invocation changed files or was already converged.
 
 The authoring invocation shall not launch a host, run or judge a product test,
-install a plugin, emit support state, or create a marketplace-test observation.
-Only a generated runtime setup step may create a
-`kodhama-spec-0003-marketplace-test-observation@v1` record, after the workflow
-runs and satisfies that record's provenance procedure.
+install a plugin or emit support state.
 
 ## Consumer packaging boundary
 
@@ -450,19 +429,17 @@ claims remain independent for every product.
 
 - **Given** a successfully edited workflow that has not run,
 - **When** the skill completes,
-- **Then** it emits no test result, support claim, or marketplace-test
-  observation.
+- **Then** it emits no test result and no support claim.
 
 **S10 — Dual-host package parity**
 
 - **Given** the Kodhama plugin's `VERSION`, two host manifests,
-  `surfaces.json`, and zero, one, or two catalog entries,
+  and zero, one, or two catalog entries,
 - **When** repository parity validation runs,
-- **Then** the four version carriers match, both manifests name `kodhama`,
+- **Then** the three version carriers match, both manifests name `kodhama`,
   every present Claude or Codex entry uses its exact local source shape and
   carries a nonblank `description`, a present Codex entry carries no field
-  beyond those, every surface observation reference validates and matches its
-  row, and no other product version is read or compared.
+  beyond those, and no other product version is read or compared.
 
 **S11 — Runtime source or revision mismatch**
 
@@ -471,7 +448,7 @@ claims remain independent for every product.
   root,
 - **When** the setup step runs,
 - **Then** it fails before product-owned plugin installation or harness
-  invocation and emits no observation.
+  invocation.
 
 ### Requirements
 
@@ -506,8 +483,8 @@ claims remain independent for every product.
 - **R12 (unwanted behavior):** The skill shall not expose, copy, create, or
   cache credentials, authentication, trust, or session state.
 - **R13 (unwanted behavior):** The authoring invocation shall not launch a
-  host, install a CLI or plugin, run or judge product tests, emit support state,
-  or itself create marketplace-test observations.
+  host, install a CLI or plugin, run or judge product tests, or emit support
+  state.
 - **R14 (ubiquitous):** Products shall own CLI provisioning, plugin selection
   and installation, CI environment, tests, evidence, versions, releases, and
   support claims.
@@ -515,12 +492,9 @@ claims remain independent for every product.
   converged, ambiguous, external, conflicting, unsupported, and skipped
   targets.
 - **R16 (ubiquitous):** The Kodhama plugin shall satisfy
-  `kodhama-0018`'s local VERSION, dual-manifest, surface-version, and
-  present-catalog-source parity without imposing that package shape on a
-  consumer.
-- **R17 (ubiquitous):** Kodhama surface rows shall link only matching
-  spec-0003 observations and shall encode no support, admission, or release
-  conclusion.
+  `kodhama-0018`'s local VERSION, dual-manifest, and present-catalog-source
+  parity without imposing that package shape on a consumer. *(v5: surface-version
+  parity went with `surfaces.json`; `kodhama-0025` supersedes `kodhama-0018` AC2.)*
 - **R18 (event-driven):** When a PR adds a Kodhama host catalog entry, it
   shall run `scripts/keyless_admission_check.py` and review its result with
   that change. *(v3 → v4: this named "the exact product-local path above",

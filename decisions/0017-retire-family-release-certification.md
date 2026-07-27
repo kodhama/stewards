@@ -7,9 +7,15 @@ informed_by: [kodhama-spec-0001-family-plugin-release-and-distribution-metadata,
 owner: agent
 updated: 2026-07-24
 provenance: "approved maintainer intent, 2026-07-24: retire the oversized family release-certification architecture while preserving only the future narrow goal (metadata recording where marketplaces were tested; a Stewards skill that adds Claude/Codex marketplace setup to CI)"
+superseded_in_part_by: [kodhama-0025-retire-the-surface-matrix]
 ---
 
 # Decision: retire family release certification; keep only narrow marketplace-test setup
+
+> **Forward pointer.** `kodhama-0025-retire-the-surface-matrix` amends §2: the
+> retained goal of recording which marketplace a test exercised survives, but
+> its schema-shaped implementation retires. §4's exclusion of surface
+> registries is unchanged.
 
 > **Partially superseded by
 > `kodhama-0023-separate-operational-availability-from-support`.** Its blanket

@@ -1,7 +1,8 @@
 ---
 id: kodhama-0023-separate-operational-availability-from-support
 type: decision
-status: approved
+status: superseded  # by kodhama-0025, 2026-07-27
+superseded_by: [kodhama-0025-retire-the-surface-matrix]
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0021-separate-adoption-posture-from-support, kodhama-0022-propagate-collective-strategy]
 informed_by: [grove/discovery-surface-support-and-setup-eligibility]
 owner: agent
@@ -9,6 +10,12 @@ updated: 2026-07-26
 ---
 
 # Decision: separate operational availability from support
+
+> **Superseded by `kodhama-0025-retire-the-surface-matrix`.** The family
+> surface-matrix contract is retired: no plugin is required to declare exact
+> surface rows, `availability_state`, or `support_claim`. Grove keeps the
+> grammar for its own runtime gate, which `kodhama-0017` §1 permits; nothing
+> else does.
 
 ## Decision state
 
