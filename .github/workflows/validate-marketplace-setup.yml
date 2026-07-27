@@ -9,6 +9,7 @@ on:
       - "plugins/kodhama/**"
       - "scripts/emit_marketplace_observation.py"
       - "scripts/validate_kodhama_plugin.py"
+      - "scripts/keyless_admission_check.py"
       - "tests/**"
   workflow_dispatch:
 
@@ -28,6 +29,10 @@ jobs:
           set -euo pipefail
           python3 scripts/validate_kodhama_plugin.py
           python3 -m unittest discover -s tests -v
+      - name: Install Claude Code for keyless admission evidence
+        run: npm install --global @anthropic-ai/claude-code@2.1.199
+      - name: Keyless catalog-admission evidence
+        run: python3 scripts/keyless_admission_check.py
 
   claude-marketplace:
     runs-on: ubuntu-latest
