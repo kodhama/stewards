@@ -147,6 +147,122 @@ class PackageAndObservationTests(unittest.TestCase):
         self.assertEqual(expected_description, claude_wisp["description"])
         self.assertEqual(expected_description, codex_wisp["description"])
 
+    def test_kodhama_catalog_entries_disclose_no_support_claim(self) -> None:
+        """kodhama-0021 §2: a listing must disclose that support is not claimed.
+
+        The disclosure has no other carrier — no README, product doc, or
+        plugin file in this repository states it — so the entry's own
+        `description` is it, on both hosts. The text is pinned literally
+        here rather than read from a manifest, because `kodhama-0018` §1
+        explicitly permits the two host manifests to carry *different*
+        descriptions; coupling a catalog to one of them would break the
+        moment that grant is exercised.
+        """
+        expected = (
+            "Dogfood — author verified Claude and Codex marketplace setup "
+            "in repository-owned GitHub Actions workflows; support is not "
+            "claimed."
+        )
+        for path in (
+            ROOT / ".claude-plugin" / "marketplace.json",
+            ROOT / ".agents" / "plugins" / "marketplace.json",
+        ):
+            catalog = json.loads(path.read_text(encoding="utf-8"))
+            entry = next(
+                item
+                for item in catalog["plugins"]
+                if item["name"] == "kodhama"
+            )
+            self.assertEqual(expected, entry.get("description"), path)
+
+    def test_codex_catalog_entry_stays_closed_around_its_description(
+        self,
+    ) -> None:
+        """The Codex branch admits `description` and nothing else.
+
+        It used to compare the whole entry for equality, which rejected the
+        `description` its trellis and wisp siblings carry. Relaxing that to a
+        key-by-key subset would have overshot: Codex itself accepts unknown
+        entry fields silently — a typo like `instalation` reaches neither
+        this check nor the host — so the object is closed instead. Driving
+        the validator against mutated copies proves both halves; asserting
+        only that the real catalog passes would not.
+        """
+        validator = self._load_validator()
+        with tempfile.TemporaryDirectory() as workspace:
+            root = Path(workspace)
+            (root / ".claude-plugin").mkdir(parents=True)
+            (root / ".agents" / "plugins").mkdir(parents=True)
+            claude_path = root / ".claude-plugin" / "marketplace.json"
+            codex_path = root / ".agents" / "plugins" / "marketplace.json"
+
+            def write(entry: dict) -> None:
+                claude_path.write_text(
+                    json.dumps(
+                        {
+                            "name": "kodhama",
+                            "plugins": [
+                                {
+                                    "name": "kodhama",
+                                    "source": "./plugins/kodhama",
+                                    "description": "disclosed",
+                                }
+                            ],
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                codex_path.write_text(
+                    json.dumps({"name": "kodhama", "plugins": [entry]}),
+                    encoding="utf-8",
+                )
+
+            valid = {
+                "name": "kodhama",
+                "source": {"source": "local", "path": "./plugins/kodhama"},
+                "policy": {
+                    "installation": "AVAILABLE",
+                    "authentication": "ON_INSTALL",
+                },
+                "category": "Developer Tools",
+                "description": "disclosed",
+            }
+            with mock.patch.object(validator, "ROOT", root):
+                write(valid)
+                validator.validate_catalogs("0.2.0")
+
+                for label, mutation in (
+                    ("unknown field", {"instalation": "AVAILABLE"}),
+                    ("misspelled policy", {"policyy": {}}),
+                    ("stray posture", {"suport": "GA"}),
+                ):
+                    write({**valid, **mutation})
+                    with self.assertRaises(validator.Invalid, msg=label):
+                        validator.validate_catalogs("0.2.0")
+
+                write({k: v for k, v in valid.items() if k != "description"})
+                with self.assertRaises(validator.Invalid, msg="no disclosure"):
+                    validator.validate_catalogs("0.2.0")
+
+                write({**valid, "description": "   "})
+                with self.assertRaises(validator.Invalid, msg="blank"):
+                    validator.validate_catalogs("0.2.0")
+
+                write({**valid, "source": {"source": "local", "path": "./x"}})
+                with self.assertRaises(validator.Invalid, msg="wrong source"):
+                    validator.validate_catalogs("0.2.0")
+
+    @staticmethod
+    def _load_validator():
+        spec = importlib.util.spec_from_file_location(
+            "kodhama_plugin_validator", VALIDATOR
+        )
+        if spec is None or spec.loader is None:
+            raise AssertionError("cannot load validator")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
     def test_repository_package_and_carrier_parity_validate(self) -> None:
         result = run("python3", str(VALIDATOR))
         self.assertIn("kodhama plugin validation passed", result.stdout)

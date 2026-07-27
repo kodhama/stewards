@@ -224,6 +224,13 @@ def validate_catalogs(version: str) -> None:
     codex_path = ROOT / ".agents" / "plugins" / "marketplace.json"
     claude = find_catalog_entry(claude_path)
     codex = find_catalog_entry(codex_path)
+    # `kodhama-0021` §2 admits a dogfood or preview listing only when "the
+    # listing or linked product documentation clearly discloses that support is
+    # not claimed", and AC3 adds that catalog presence never implies support.
+    # No such disclosure exists anywhere else in this repository, so the entry's
+    # own `description` is the only carrier — hence required, on both hosts.
+    # Its exact wording is pinned by the tests, next to the trellis and wisp
+    # descriptions that carry the same disclosure.
     if claude is not None:
         expected = {
             "name": "kodhama",
@@ -234,6 +241,9 @@ def validate_catalogs(version: str) -> None:
                 f"{claude_path}: kodhama entry must use source "
                 "'./plugins/kodhama'"
             )
+        require_string(
+            claude.get("description"), f"{claude_path}: kodhama description"
+        )
     if codex is not None:
         expected = {
             "name": "kodhama",
@@ -244,11 +254,29 @@ def validate_catalogs(version: str) -> None:
             },
             "category": "Developer Tools",
         }
-        if codex != expected:
+        # Closed rather than compared for whole-object equality. Equality
+        # rejected *any* additional field — including `description`, which the
+        # sibling trellis and wisp Codex entries both carry and which the real
+        # host accepts (`codex plugin marketplace add` takes this file, and
+        # `codex plugin add kodhama@kodhama` installs from it on 0.145.0). It
+        # was stricter than the catalog it validates. Merely relaxing it to a
+        # key-by-key subset would have gone too far the other way: Codex itself
+        # accepts unknown entry fields silently, so a typo like `"instalation"`
+        # would have passed both this check and the host. Closing the object
+        # keeps the typo rejected while admitting the description.
+        codex = require_closed(
+            codex,
+            f"{codex_path}: kodhama entry",
+            (*expected, "description"),
+        )
+        if {key: codex[key] for key in expected} != expected:
             raise Invalid(
-                f"{codex_path}: kodhama entry does not match the exact "
-                "Codex local-source shape"
+                f"{codex_path}: kodhama entry must use the Codex "
+                "local-source shape"
             )
+        require_string(
+            codex["description"], f"{codex_path}: kodhama description"
+        )
     # Admission evidence is `scripts/keyless_admission_check.py`, which runs.
     # This validator previously demanded a hand-written six-part smoke report
     # under `plugins/kodhama/reference/surfaces/`, against fixtures under

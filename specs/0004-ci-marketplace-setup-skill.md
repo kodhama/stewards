@@ -1,12 +1,12 @@
 ---
 id: kodhama-spec-0004-ci-marketplace-setup-skill
 type: spec
-status: approved  # maintainer approved v2 on 2026-07-25 after independent spec, conformance, and corpus review
+status: approved  # maintainer approved v2 on 2026-07-25 after independent spec, conformance, and corpus review; v3 and v4 are agent-drafted amendments awaiting the maintainer's intent act
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-spec-0003-marketplace-test-observation@v1]
 implements: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 owner: agent
 updated: 2026-07-27
-version: 3
+version: 4
 ---
 
 # GitHub Actions marketplace-setup skill
@@ -68,8 +68,8 @@ equal its own SemVer `VERSION`.
 
 The Claude catalog is `.claude-plugin/marketplace.json`; the Codex catalog is
 `.agents/plugins/marketplace.json`. An admitted Claude entry uses the relative
-source string `"./plugins/kodhama"`. An admitted Codex entry uses this exact
-host-specific subset:
+source string `"./plugins/kodhama"`. An admitted Codex entry carries exactly
+these host-specific fields, plus a `description` and nothing else:
 
 ```json
 {
@@ -97,6 +97,21 @@ host-specific subset:
 > plugin would have failed CI on an artifact nobody could produce. Replaced with
 > evidence that runs. Scope unchanged: this narrows *how* admission is evidenced,
 > not *whether* it must be, which `kodhama-0018` §3 governs.
+
+> **Amended 2026-07-27 — v3 → v4.** The prior text said an admitted Codex entry
+> "uses this **exact** host-specific subset", which the validator implemented as
+> whole-object equality — rejecting a `description`, the very field the sibling
+> `trellis` and `wisp` Codex entries carry and the only place this repository
+> discloses that support is not claimed. The word was doing two jobs at once:
+> "exact" (no other fields) and "subset" (these fields, among others). It is now
+> split — the four fields are exact, `description` is required, everything else
+> is rejected — and S10 and R18 below follow it. **Why closed rather than open:**
+> Codex 0.145.0 accepts unknown entry fields silently, so a misspelled
+> `"instalation"` would reach neither a subset check nor the host. **Why
+> `description` is required:** `kodhama-0021` §2 admits a dogfood or preview
+> listing only when "the listing or linked product documentation clearly
+> discloses that support is not claimed", and no other carrier for that
+> disclosure exists in this repository.
 
 Catalog admission is governed by decisions 0012 and 0018, not inferred by the
 parity validator. `kodhama-0018` §3 requires admission to be a separate evidenced
@@ -444,9 +459,10 @@ claims remain independent for every product.
   `surfaces.json`, and zero, one, or two catalog entries,
 - **When** repository parity validation runs,
 - **Then** the four version carriers match, both manifests name `kodhama`,
-  every present Claude or Codex entry uses its exact local source shape, every
-  surface observation reference validates and matches its row, and no other
-  product version is read or compared.
+  every present Claude or Codex entry uses its exact local source shape and
+  carries a nonblank `description`, a present Codex entry carries no field
+  beyond those, every surface observation reference validates and matches its
+  row, and no other product version is read or compared.
 
 **S11 — Runtime source or revision mismatch**
 
@@ -506,8 +522,13 @@ claims remain independent for every product.
   spec-0003 observations and shall encode no support, admission, or release
   conclusion.
 - **R18 (event-driven):** When a PR adds a Kodhama host catalog entry, it
-  shall retain the matching passing admission report at the exact product-local
-  path above and review it with that change.
+  shall run `scripts/keyless_admission_check.py` and review its result with
+  that change. *(v3 → v4: this named "the exact product-local path above",
+  whose only remaining mention is the v2 → v3 amendment note recording that
+  the path never existed. The v3 amendment replaced the report with a check
+  that runs but left this requirement pointing at the deleted artifact, so it
+  was unsatisfiable for exactly the event it governs — a PR adding a catalog
+  entry. Repointed at the check that replaced it.)*
 
 ## Open questions
 
