@@ -1,7 +1,7 @@
 # Wave: family consolidation
 
 Opened 2026-07-26. Evidence:
-[`kodhama-0024-family-audit-2026-07`](../decisions/0024-family-audit-2026-07.md).
+[`discovery-family-audit-2026-07`](../research/family-audit-2026-07.md).
 
 ## Scope
 

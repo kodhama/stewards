@@ -1,5 +1,5 @@
 ---
-id: kodhama-0024-family-audit-2026-07
+id: discovery-family-audit-2026-07
 type: discovery
 status: gated
 depends_on: []
@@ -146,4 +146,4 @@ independent adversary passes.
 
 This artifact records findings. It authorises nothing, supersedes nothing, and is not a
 propagation target. The consolidation work it informs is tracked in
-[`conductor/wave-0024-family-consolidation.md`](../conductor/wave-0024-family-consolidation.md).
+[`conductor/wave-0024-family-consolidation.md`](../conductor/wave-family-consolidation.md).
