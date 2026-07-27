@@ -5,8 +5,8 @@ status: approved  # maintainer approved v2 on 2026-07-25 after independent spec,
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-spec-0003-marketplace-test-observation@v1]
 implements: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 owner: agent
-updated: 2026-07-25
-version: 2
+updated: 2026-07-27
+version: 3
 ---
 
 # GitHub Actions marketplace-setup skill
@@ -86,27 +86,48 @@ host-specific subset:
 }
 ```
 
+> **Amended 2026-07-27 — v2 → v3.** The prior text required a hand-written
+> six-part smoke report at
+> `plugins/kodhama/reference/surfaces/<host>-catalog-admission-<version>.md`,
+> proving among other things that invoking the skill on
+> `plugins/kodhama/tests/fixtures/direct-cli-workflow.yml` matched a recorded
+> expectation. **Neither path has ever existed**, so the requirement could not be
+> met. It stayed invisible because the enforcing branch fires only when a
+> `kodhama` catalog entry is present, which it never has been — so publishing the
+> plugin would have failed CI on an artifact nobody could produce. Replaced with
+> evidence that runs. Scope unchanged: this narrows *how* admission is evidenced,
+> not *whether* it must be, which `kodhama-0018` §3 governs.
+
 Catalog admission is governed by decisions 0012 and 0018, not inferred by the
-parity validator. A catalog-changing PR shall retain and review a bounded smoke
-report at
-`plugins/kodhama/reference/surfaces/<host>-catalog-admission-<version>.md`.
-The report passes only when it identifies the host/CLI version, plugin version,
-Stewards commit, commands with secrets redacted, and outputs proving all of:
+parity validator. `kodhama-0018` §3 requires admission to be a separate evidenced
+act and permits that evidence to be "a bounded host-native package and skill
+invocation test" kept in this repository and reviewed with the catalog change.
 
-1. an isolated fresh host state added the proposed local marketplace;
-2. the host discovered and installed `kodhama@kodhama`;
-3. a fresh host process exposed the namespaced
-   `kodhama:setup-ci-marketplace` skill;
-4. invoking the skill on
-   `plugins/kodhama/tests/fixtures/direct-cli-workflow.yml` produced the
-   semantic result recorded in
-   `plugins/kodhama/tests/fixtures/direct-cli-workflow.expected.yml`;
-5. invoking it again produced no diff; and
-6. the report was generated for the same host catalog changed by the PR.
+A catalog-changing PR shall retain `scripts/keyless_admission_check.py` green.
+It installs the built payload through the real Claude plugin path and asserts:
 
-Any failure or missing item keeps that host entry absent. The other host's
-report cannot substitute. Repository parity checks the shape of present
-entries but do not decide whether an absent entry is ready for admission.
+1. the host validates the plugin manifest with no warnings;
+2. an isolated fresh host state added a local marketplace carrying that payload;
+3. the host installed the plugin from it; and
+4. the host's component inventory matches the plugin's declared skill
+   directories.
+
+The check requires no API key and runs no model turn, so it is a pull-request
+gate rather than an occasional ritual.
+
+**What it does not establish.** It proves package validity, catalog install, and
+declared-skill exposure. It does **not** prove the skill *runs* — measured, not
+assumed: the host lists a skill directory in its inventory even when `SKILL.md`
+carries no frontmatter, so this is a layout check rather than a load check.
+Behavioural proof needs a model turn. `kodhama-0018` §3 says the evidence "may
+be" an invocation test, not that it must be; this meets the package half and
+leaves the invocation half openly unmet.
+
+Codex has no keyless equivalent — `codex mcp list` and `codex plugin` read
+configuration without launching anything — so no Codex admission evidence is
+required here, and a Codex catalog entry rests on `kodhama-0012`'s boundary
+alone. Repository parity checks the shape of present entries but does not decide
+whether an absent entry is ready for admission.
 
 ## Kodhama surface metadata
 

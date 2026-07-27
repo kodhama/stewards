@@ -234,14 +234,6 @@ def validate_catalogs(version: str) -> None:
                 f"{claude_path}: kodhama entry must use source "
                 "'./plugins/kodhama'"
             )
-        report = (
-            PLUGIN
-            / "reference"
-            / "surfaces"
-            / f"claude-catalog-admission-{version}.md"
-        )
-        if not report.is_file():
-            raise Invalid(f"{claude_path}: missing admission report {report}")
     if codex is not None:
         expected = {
             "name": "kodhama",
@@ -257,14 +249,13 @@ def validate_catalogs(version: str) -> None:
                 f"{codex_path}: kodhama entry does not match the exact "
                 "Codex local-source shape"
             )
-        report = (
-            PLUGIN
-            / "reference"
-            / "surfaces"
-            / f"codex-catalog-admission-{version}.md"
-        )
-        if not report.is_file():
-            raise Invalid(f"{codex_path}: missing admission report {report}")
+    # Admission evidence is `scripts/keyless_admission_check.py`, which runs.
+    # This validator previously demanded a hand-written six-part smoke report
+    # under `plugins/kodhama/reference/surfaces/`, against fixtures under
+    # `plugins/kodhama/tests/fixtures/`. Neither path has ever existed, so the
+    # requirement was unsatisfiable — and invisible, because it fires only when
+    # a `kodhama` catalog entry is present, which it never has been. Publishing
+    # would have failed CI on an artifact nobody could produce.
 
 
 def validate_surfaces(version: str) -> None:
