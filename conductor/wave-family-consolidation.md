@@ -91,7 +91,7 @@ proceed autonomously; not surviving compaction is acceptable, with a refresh
 skill. **A research pass into what comparable frameworks actually do was
 commissioned before committing further** — primary reference
 https://github.com/MartyBonacci/specswarm, plus the activation-pattern survey
-and the RPI-Team/CGM brief the maintainer prepared but never brought back.
+and the private-framework brief the maintainer prepared but never brought back.
 Superseding previous decisions is explicitly permitted.
 
 **`adr-0046`** (drafted, `gated`, never pushed) proposed hook-only delivery and
@@ -308,7 +308,8 @@ State and traps are in **Cold start** at the top; this is the audit trail only.
       central claim was false should not enter the corpus even as a draft.
 - [ ] **Research pass commissioned** on swarm activation patterns before any
       further design: specswarm as primary reference, the wider activation
-      survey, and RPI-Team/CGM. Nothing is drafted until it returns.
+      survey, and the maintainer's private reference framework. Nothing is drafted
+      until it returns.
 - [ ] **`adr-0003` ← `spec-0004` pointer fix** — owed regardless of direction,
       and the one item from this slice that should proceed on its own.
 
