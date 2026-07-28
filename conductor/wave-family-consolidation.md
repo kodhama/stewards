@@ -51,7 +51,8 @@ enough to miss the evidence is not evidence.**
 |---|---|
 | **trellis#204** — `decision-0066`, retire Trellis's `surfaces.json` | an intent act. Third draft; two adversary rounds. Nothing lands under it until `approved`. |
 | **grove#161** — setup overwrite preserves consumer rows | green and mergeable, deliberately unmerged. Three review rounds each found a defect introduced by the last; the fourth was self-caught. Wanted a human look before merge. |
-| **stewards#54** — no automated PR reviewer outside trellis | a per-repo secret only the maintainer can add. No workflow files were written. |
+| **stewards#54** — no automated PR reviewer outside trellis | **resolved 2026-07-28** for grove, stewards, wisp, design-system: reviewer + parity control merged in each, and the maintainer set `CLAUDE_CODE_OAUTH_TOKEN` in all four. |
+| **trellis#205** — trellis's reviewer reports `success` while delivering nothing | a merge call. Left open deliberately: trellis was not in the roll-out ask, it already holds a token so the fix bites immediately, and merging suspends review on #204 until #204 merges `main` back in. |
 | grove#142, grove#135 | stale Codex PRs; judgment calls, not debris. Left open on purpose. |
 
 ### The dispatcher thread — status: STOPPED, direction reset
@@ -325,3 +326,57 @@ The pattern worth carrying forward: **every substantive error this slice was
 caught by an independent reviewer or by reading the primary source, and none by
 me re-reading my own work.** Three of the corrections were to claims I had
 explicitly told the maintainer were verified.
+
+---
+
+## Slice 7 — an outside lens, and what fourteen inside rounds missed (2026-07-28)
+
+### The finding that justifies the rest
+
+grove#181 had passed **fourteen in-house review rounds across two lenses**. One
+outside reviewer then found **two P1 defects**. The follow-up round found the
+first fix had not closed the hole, and reproduced arbitrary repo-internal writes
+**through the shipped CLI with an empty confirmation file**.
+
+**Carry this forward as a trap, not as history.** The root cause is *not* in
+grove#181 and is *not* fixed on `main`: `applyPlan`
+(`plugins/grove/runtime/lifecycle/lib/lifecycle.mjs`) authorizes actions by
+**id-string membership** while writing to `action.path`, and ids are never
+recomputed at apply. A caller-supplied plan file that repeats a licensed id on a
+second, unflagged action gets that action applied. It defeats the **human**
+confirm gate too — confirming only the disclosed cursor id on an `open-run` plan
+let a duplicate-id action write `.github/workflows/pwn.yml`. Reachable from
+`grove-operation.mjs`, which also reads its plan from a file.
+
+Both reviewers reproduced it independently. All suites were green throughout.
+
+### PR review, family-wide
+
+Reviewer + `agent-workflow-parity.yml` merged into grove, stewards, wisp and
+design-system; trellis's existing copy has a fix open at #205.
+
+**Do not copy trellis's `claude-code-review.yml` forward.** It is the broken one:
+missing `show_full_output` and `claude_args`, and measurably silent — #204 ran
+three times (45s/56s/45s), all `success`, **zero comments**; #202 ran ~5 min and
+posted "No issues found". Take grove's copy instead.
+
+**Two distinct silent-failure modes, often confused:**
+
+1. **Byte-identity skip** — `claude-code-action` refuses to run when its workflow
+   file differs from the default branch, then logs a warning, does nothing, and
+   concludes **`success`**. Observed on all four roll-out PRs: `claude-review`
+   "passed" in 9–14s against a 7–8 minute real review. `agent-workflow-parity.yml`
+   exists solely to make this visible; it runs no agent, so it cannot itself skip
+   green. **After merging any change to a reviewer workflow, merge the default
+   branch into every open PR or they stay unreviewed behind a green tick.**
+2. **Delivered-nothing** — the trellis case above. **Parity does not catch it**;
+   none of those PRs touched the workflow file. `show_full_output` is what makes
+   it diagnosable, which is why its absence is the costly one.
+
+**Green here has never meant clean.** The exit code tracks whether the action
+*ran*, never what it *found*.
+
+### Correction made on the record
+
+I attributed trellis's reviewer trouble to "seven consecutive red runs". Its runs
+are **green** — that is the defect. Corrected on grove#182 and stewards#54.
