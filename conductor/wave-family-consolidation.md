@@ -51,7 +51,6 @@ enough to miss the evidence is not evidence.**
 |---|---|
 | **trellis#204** — `decision-0066`, retire Trellis's `surfaces.json` | an intent act. Third draft; two adversary rounds. Nothing lands under it until `approved`. |
 | **grove#161** — setup overwrite preserves consumer rows | green and mergeable, deliberately unmerged. Three review rounds each found a defect introduced by the last; the fourth was self-caught. Wanted a human look before merge. |
-| **stewards#54** — no automated PR reviewer outside trellis | **resolved 2026-07-28** for grove, stewards, wisp, design-system: reviewer + parity control merged in each, and the maintainer set `CLAUDE_CODE_OAUTH_TOKEN` in all four. |
 | **trellis#205** — trellis's reviewer reports `success` while delivering nothing | a merge call. Left open deliberately: trellis was not in the roll-out ask, it already holds a token so the fix bites immediately, and merging suspends review on #204 until #204 merges `main` back in. |
 | grove#142, grove#135 | stale Codex PRs; judgment calls, not debris. Left open on purpose. |
 
@@ -329,7 +328,7 @@ explicitly told the maintainer were verified.
 
 ---
 
-## Slice 7 — an outside lens, and what fourteen inside rounds missed (2026-07-28)
+## Slice 6 — an outside lens, and what fourteen inside rounds missed (2026-07-28)
 
 ### The finding that justifies the rest
 
@@ -338,22 +337,32 @@ outside reviewer then found **two P1 defects**. The follow-up round found the
 first fix had not closed the hole, and reproduced arbitrary repo-internal writes
 **through the shipped CLI with an empty confirmation file**.
 
-**Carry this forward as a trap, not as history.** The root cause is *not* in
-grove#181 and is *not* fixed on `main`: `applyPlan`
-(`plugins/grove/runtime/lifecycle/lib/lifecycle.mjs`) authorizes actions by
-**id-string membership** while writing to `action.path`, and ids are never
-recomputed at apply. A caller-supplied plan file that repeats a licensed id on a
-second, unflagged action gets that action applied. It defeats the **human**
-confirm gate too — confirming only the disclosed cursor id on an `open-run` plan
-let a duplicate-id action write `.github/workflows/pwn.yml`. Reachable from
-`grove-operation.mjs`, which also reads its plan from a file.
+**Carry this forward as a trap, not as history.** The weakness is in how
+lifecycle *plan application* decides an action was confirmed: a caller-supplied
+plan file could obtain writes nobody confirmed, defeating the guard-licensed
+path and the **human** confirm path alike. Both reviewers reproduced it
+independently, through the shipped CLI. All suites were green throughout.
 
-Both reviewers reproduced it independently. All suites were green throughout.
+**The construction is deliberately not written down here.** It was, in the first
+draft of this entry, and the reviewer on stewards#59 raised it as a P1: this
+ledger is public, it stated the flaw was live on `main`, and the description was
+operational enough to reuse. Fixed in grove#181 round two — not yet merged, so
+until it lands the rule is simply: **treat a plan file as untrusted input, and
+never assume a confirmation covers the action you think it covers.** The detail
+belongs in the PR and the tests, which is where it now lives.
 
 ### PR review, family-wide
 
 Reviewer + `agent-workflow-parity.yml` merged into grove, stewards, wisp and
-design-system; trellis's existing copy has a fix open at #205.
+design-system; trellis's existing copy has a fix open at #205. The maintainer set
+`CLAUDE_CODE_OAUTH_TOKEN` in all four — it is **per-repo, with no org-level secret
+to inherit**, so any repo added later needs its own. spore and homebrew-tap have
+neither reviewer nor token; that was a scope call, not an oversight.
+
+**Verified end to end, not assumed:** stewards#59 — this entry's own PR — ran
+9m24s and returned three findings, one of them a P1 against this very section.
+Contrast the roll-out PRs' 9–14s. That is the whole test: *duration and a posted
+comment*, never the check mark.
 
 **Do not copy trellis's `claude-code-review.yml` forward.** It is the broken one:
 missing `show_full_output` and `claude_args`, and measurably silent — #204 ran
