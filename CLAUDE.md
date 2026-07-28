@@ -56,13 +56,22 @@ Rules (the collective's):
   liftable; until then the trellis overlay alone is owed — if the
   `trellis` CLI is available run `trellis setup`, otherwise record the
   debt in `conductor/` loudly.
-<!-- grove:begin (managed by grove — edit .claude/agents/, not this block) -->
+
 This repo is **grove-managed**: conductor work items run as
-[grove](https://github.com/kodhama/grove) runs. The agent roles
-live in `.claude/agents/` (placeholders resolved for this repo — no
-test/typecheck gates, parked items ride the conductor briefs' Parked
-sections). Telemetry: wisp not vendored here, no grove-status skill
-installed (optional by construction). grove plugin@bf7c835
+[grove](https://github.com/kodhama/grove) runs, and the agent roles arrive
+from the grove plugin as `grove:<role>` — never vendored here (`grove/adr-0026`
+D1; the stale vendored copies were removed in #52). Two placeholders are
+resolved locally: there are no test/typecheck gates in this repo, and parked
+items ride the conductor briefs' Parked sections. Telemetry: wisp is not
+vendored here and no grove-status skill is installed — optional by
+construction.
+
+<!-- grove:begin (managed by grove — dials live in .grove/, not this block) -->
+Load the complete driving-session dispatcher from `${CLAUDE_PLUGIN_ROOT}/reference/charters/dispatcher.md` in this current task.
+Load the complete interactive shaper from `${CLAUDE_PLUGIN_ROOT}/reference/charters/shaper.md` in this current task.
+Do not delegate or spawn either driving-session role. A native dispatcher remains only the scoped advisor.
+At every handover, an absent `runtime_dir` resolves `runtime/gates/` relative to the active installed Grove package. A declared non-legacy runtime is exact authority and is never searched or replaced.
+grove plugin@0.3.0
 <!-- grove:end -->
 
 <!-- trellis:begin (managed by trellis — edit .trellis/, not this block) -->
