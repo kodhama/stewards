@@ -61,10 +61,13 @@ This repo is **grove-managed**: conductor work items run as
 [grove](https://github.com/kodhama/grove) runs, and the agent roles arrive
 from the grove plugin as `grove:<role>` — never vendored here (`grove/adr-0026`
 D1; the stale vendored copies were removed in #52). Two placeholders are
-resolved locally: there are no test/typecheck gates in this repo, and parked
-items ride the conductor briefs' Parked sections. Telemetry: wisp is not
-vendored here and no grove-status skill is installed — optional by
-construction.
+resolved locally. The test gate is `python3 -m unittest discover -s tests`
+plus `python3 scripts/validate_kodhama_plugin.py` — run both before reporting
+done; CI enforces them on any PR touching `tests/`, `scripts/`, `plugins/`, or
+either marketplace catalog, and on nothing else, so a docs-only PR gets no
+check at all. There is no typecheck gate. Parked items ride the conductor
+briefs' Parked sections. Telemetry: wisp is not vendored here and no
+grove-status skill is installed — optional by construction.
 
 <!-- grove:begin (managed by grove — dials live in .grove/, not this block) -->
 Load the complete driving-session dispatcher from `${CLAUDE_PLUGIN_ROOT}/reference/charters/dispatcher.md` in this current task.
