@@ -13,6 +13,123 @@ The full working plan lives outside the repo with the maintainer; this brief is 
 ledger and the closure report. **Boundaries:** no math-quest product work, no decision is
 ratified by an agent, and nothing is removed without a trace of what governs it.
 
+## Cold start — read this first (state as of 2026-07-28)
+
+If you are picking this up with no memory of it, this section is the whole
+briefing. The chronological slices below are the audit trail, not the state.
+
+### What this wave is
+
+A consolidation pass over the kodhama family after a period where scope creep
+added heavy machinery faster than it added value. The corrective, learned the
+hard way in Slice 2 and reaffirmed since: **trace what runs, what depends on it,
+and which approved artifact governs it — and report that trace — before
+proposing removal.** Slice 4 added a second: **stating that a claim was verified
+is not verifying it.** Slice 5 added a third, the sharpest: **a search narrow
+enough to miss the evidence is not evidence.**
+
+### Working rules for this repo family
+
+- The local checkout of any repo **other than `stewards`** may be owned by
+  another session. Never edit files or switch branches there. Clone fresh to a
+  scratch directory and work in the clone; the deliverable is a pushed branch.
+- Decisions are append-only. Supersede with a forward pointer; never edit
+  ratified substance.
+- **The intent gate is closed to the agent.** Decisions are drafted `gated`;
+  only the maintainer flips `approved`. Merging a gated decision is their act.
+- Ratification packets go to the maintainer as **HTML artifacts**, not raw prose.
+- Run adversarial review before pushing, and **again after every fix round** —
+  a review that only saw the original code cannot find defects the fixes
+  introduced. Three consecutive rounds on grove#161 each found a defect
+  introduced by the previous fix.
+- Mutation-test every guard: revert the fix and confirm the test goes red. Two
+  tests written this week passed against the broken code.
+
+### Open, blocked on the maintainer
+
+| item | what it needs |
+|---|---|
+| **trellis#204** — `decision-0066`, retire Trellis's `surfaces.json` | an intent act. Third draft; two adversary rounds. Nothing lands under it until `approved`. |
+| **grove#161** — setup overwrite preserves consumer rows | green and mergeable, deliberately unmerged. Three review rounds each found a defect introduced by the last; the fourth was self-caught. Wanted a human look before merge. |
+| **stewards#54** — no automated PR reviewer outside trellis | a per-repo secret only the maintainer can add. No workflow files were written. |
+| grove#142, grove#135 | stale Codex PRs; judgment calls, not debris. Left open on purpose. |
+
+### The dispatcher thread — status: STOPPED, direction reset
+
+The largest thread of 2026-07-28 and the one most likely to be picked up wrong.
+
+**The symptom:** reviewers, including `conformance-reviewer`, stopped running.
+
+**The trace, verified:** grove'"'"'s dispatch rules reach a session through its
+managed instruction block. Two generations exist —
+
+- **`0.1.0` block** carries a standing directive: *"Work items matching a grove
+  workflow (W1–W6 …) run as grove runs, sequenced through grove'"'"'s chartered
+  agent roles, loaded from the grove plugin as `grove:<role>` subagents (all
+  thirteen)."* Five repos have this: wisp, trellis, design-system, spore,
+  math-quest.
+- **`0.3.0` block** replaces it with two "Load the charter" pointers and no
+  routing rule. One repo has this: stewards, since #53.
+
+The two have **never coexisted**. Stewards never had the directive at all, which
+is why routing failed there specifically.
+
+**Do not "fix" this by refreshing the five 0.1.0 consumers** — that would delete
+the working directive. Blocked pending a decision (grove#170).
+
+**A live contradiction, owed regardless of direction:** `adr-0003` (approved,
+no supersession pointer) mandates the routing rule; `adr-0031:157-158`
+(approved) still requires it on `AGENTS.md`; `spec-0004:308-334` (**gated**)
+specifies the loader block instead and never mentions `adr-0003`. A gated spec
+overrode an approved decision. **Fix this first, whatever else happens** — a
+pointer on `adr-0003` and a `spec-0004` amendment.
+
+**Direction reset, maintainer, 2026-07-28:** always-on rules and an always-on
+swarm are no longer the target. Voluntary session entry is acceptable — a
+`/grove:start`-style skill that loads the dispatch rules, after which handovers
+proceed autonomously; not surviving compaction is acceptable, with a refresh
+skill. **A research pass into what comparable frameworks actually do was
+commissioned before committing further** — primary reference
+https://github.com/MartyBonacci/specswarm, plus the activation-pattern survey
+and the RPI-Team/CGM brief the maintainer prepared but never brought back.
+Superseding previous decisions is explicitly permitted.
+
+**`adr-0046`** (drafted, `gated`, never pushed) proposed hook-only delivery and
+failed three reviews: `NEEDS-REVISION`, `FAIL`, `NEEDS-REVISION`. Its central
+claim — *"nothing authorizes the loader"* — was **false**, retracted publicly on
+grove#170. Do not revive it as drafted. The fork that was in front of the
+maintainer when the direction reset: **A** restore the rule to the generator ·
+**B** hook plus a residual block carrying the rule · **C** hook only. B had been
+chosen, then superseded by the reset.
+
+### Traps that cost real time this week
+
+- **grove'"'"'s plugin cache is version-keyed and its VERSION never moved past
+  `0.3.0`.** Two different builds both answer to `0.3.0` and share one cache
+  directory: the `grove` project is currently loading `stewards`'"'"' bytes.
+  Verified by sha. Bump VERSION before any refresh wave (grove#169).
+- **Three copies of every charter exist** with different line numbers:
+  `charters/`, `plugins/grove/reference/charters/`, and the installed plugin
+  cache. Always say which one a citation is against.
+- **`kodhama-0025` is on `main`** and its URL resolves — a review claimed
+  otherwise from a stale local ref. Fetch before concluding a ref is missing.
+- Stewards'"'"' only CI workflow is **path-filtered**; a docs-only PR gets no check
+  at all. Green means nothing there without reading the filter.
+
+### Grove issues filed 2026-07-28
+
+#163 spec-0004 Setup section describes whole-file overwrites · #164 a managed
+block written by an older Grove is unmanageable forever · #165 per-host adapter
+fields have no validation gate · #166 the `unavailable + claimed` invariant has
+no live decision behind it · #167 refresh advertises files only setup seeds ·
+#168 the non-support disclosure is emitted twice · #169 VERSION/cache collision ·
+#170 the routing directive regression · #171 `contract-author` names a
+`spec-adversary` `SOUND` token that role cannot emit · #172 decisions have no
+body-section contract, and 40 of 45 carry acceptance criteria.
+
+Also: stewards#42 closed (obsolete), stewards#39 narrowed, grove#149 closed
+(superseded by main), grove#160 re-scoped and corrected.
+
 ## Slice 1 — correctness · CLOSED 2026-07-26
 
 - [x] grove [#155](https://github.com/kodhama/grove/pull/155) — `/grove:setup` resolved
@@ -165,3 +282,45 @@ stewards#39 narrowed to what actually remains.
 - Two stale Codex PRs left open deliberately: grove#142 (a draft ADR) and
   grove#135 (`AGENTS.md` as canonical instructions, conflicting since 2026-07-24).
   Both are judgment calls, not debris.
+
+## Slice 5 — the dispatcher thread · 2026-07-28 · STOPPED, direction reset
+
+State and traps are in **Cold start** at the top; this is the audit trail only.
+
+- [x] **Diagnosed why reviewers stopped running.** Not the dispatcher agent —
+      the managed block. Two block generations, five repos on the `0.1.0`
+      directive and one (stewards) on the `0.3.0` pointer. Stewards never had
+      the directive, which is why routing failed there specifically.
+- [x] **Corrected three of my own claims to the maintainer**, each caught by
+      review or by going to the primary source:
+      *"this used to work"* is impossible — the loader line postdates the
+      maintainer's memory of it working by four days;
+      *"the loader may be live in grove and math-quest"* — it is live in exactly
+      one repo, and grove does not self-host at all;
+      *"nothing authorizes the loader — no decision, no spec"* — **false**,
+      `spec-0004:308-334` specifies it deliberately. Retracted on grove#170.
+- [x] **Ten grove issues filed**, indexed under Cold start.
+- [x] `adr-0046` drafted `gated`, reviewed three ways, **not pushed**. Verdicts:
+      `NEEDS-REVISION` (decision-adversary), `FAIL` (conformance), and
+      `NEEDS-REVISION` (spec-adversary). Every reviewer found real defects; two
+      reviewers contradicted each other on byte counts and the draft's figure was
+      the correct one. Kept in scratch, deliberately unpushed — a decision whose
+      central claim was false should not enter the corpus even as a draft.
+- [ ] **Research pass commissioned** on swarm activation patterns before any
+      further design: specswarm as primary reference, the wider activation
+      survey, and RPI-Team/CGM. Nothing is drafted until it returns.
+- [ ] **`adr-0003` ← `spec-0004` pointer fix** — owed regardless of direction,
+      and the one item from this slice that should proceed on its own.
+
+### What this slice cost, and what it bought
+
+Three drafts and three reviews produced no merged artifact. What it bought is a
+correct diagnosis of a failure the family had been living with silently, ten
+filed defects, and a direction reset made on evidence rather than momentum —
+including the maintainer's own read that the always-on premise deserved
+challenging before more was built on it.
+
+The pattern worth carrying forward: **every substantive error this slice was
+caught by an independent reviewer or by reading the primary source, and none by
+me re-reading my own work.** Three of the corrections were to claims I had
+explicitly told the maintainer were verified.
