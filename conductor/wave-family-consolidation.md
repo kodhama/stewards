@@ -51,7 +51,7 @@ enough to miss the evidence is not evidence.**
 |---|---|
 | **trellis#204** — `decision-0066`, retire Trellis's `surfaces.json` | an intent act. Third draft; two adversary rounds. Nothing lands under it until `approved`. |
 | **grove#161** — setup overwrite preserves consumer rows | green and mergeable, deliberately unmerged. Three review rounds each found a defect introduced by the last; the fourth was self-caught. Wanted a human look before merge. |
-| **trellis#205** — trellis's reviewer reports `success` while delivering nothing | a merge call. Left open deliberately: trellis was not in the roll-out ask, it already holds a token so the fix bites immediately, and merging suspends review on #204 until #204 merges `main` back in. |
+| **trellis#205** — trellis's reviewer reports `success` while delivering nothing | a merge call. Left open deliberately: trellis was not in the roll-out ask, it already holds a token so the fix bites immediately, and merging suspends review on #204 until #204 merges `main` back in. Now also carries the parity regex fix (below), so it is no longer a single-commit branch. |
 | grove#142, grove#135 | stale Codex PRs; judgment calls, not debris. Left open on purpose. |
 
 ### The dispatcher thread — status: STOPPED, direction reset
@@ -359,10 +359,17 @@ design-system; trellis's existing copy has a fix open at #205. The maintainer se
 to inherit**, so any repo added later needs its own. spore and homebrew-tap have
 neither reviewer nor token; that was a scope call, not an oversight.
 
-**Verified end to end, not assumed:** stewards#59 — this entry's own PR — ran
-9m24s and returned three findings, one of them a P1 against this very section.
+**Verified end to end, not assumed:** stewards#59 — this entry's own PR — drew
+three findings, and **they came from two different reviewers.** The new Claude
+action ran 9m24s and posted **two** (a resolved row left under an "open" heading,
+and a slice-numbering gap). The **P1** — a coordinated-disclosure failure in the
+first draft of this section — was posted separately by
+`chatgpt-codex-connector[bot]`. The first version of this paragraph credited all
+three to the Claude run; that was wrong, and an independent reviewer caught it.
+
 Contrast the roll-out PRs' 9–14s. That is the whole test: *duration and a posted
-comment*, never the check mark.
+comment*, never the check mark. And read the author of each finding before
+crediting a reviewer with it.
 
 **Do not copy trellis's `claude-code-review.yml` forward.** It is the broken one:
 missing `show_full_output` and `claude_args`, and measurably silent — #204 ran
@@ -371,6 +378,14 @@ posted "No issues found". Take grove's copy instead.
 
 **Two distinct silent-failure modes, often confused:**
 
+0. **The check's own blind spot, found and fixed the same night.** `parity`'s
+   match pattern required only whitespace before `uses:`, so it saw a *named*
+   step but not the equally valid nameless `- uses: anthropics/claude-code-action@v1`
+   — reporting "nothing to check", exit 0, blind to the file it watches. Fixed in
+   all five copies. **Editing `agent-workflow-parity.yml` itself is safe**: it
+   deliberately does not invoke the action, so it is not a watched file and its
+   own edits do not suspend the reviewer. Only edits to `claude-code-review.yml`
+   do.
 1. **Byte-identity skip** — `claude-code-action` refuses to run when its workflow
    file differs from the default branch, then logs a warning, does nothing, and
    concludes **`success`**. Observed on all four roll-out PRs: `claude-review`
