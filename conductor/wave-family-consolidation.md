@@ -52,6 +52,22 @@ enough to miss the evidence is not evidence.**
   introduced by the previous fix.
 - Mutation-test every guard: revert the fix and confirm the test goes red. Two
   tests written this week passed against the broken code.
+- **A green reviewer check never means "clean."** It tracks whether the action
+  ran, never what it found. Read *duration and a posted comment*, and read both
+  endpoints: the clean-run verdict arrives as an **issue** comment, findings as
+  **inline review** comments. Querying one and concluding from it has now gone
+  wrong three times in this family.
+- **Do not merge until the reviewer's verdict is readable.** Its first step
+  refuses closed or merged PRs, so a fast merge makes it bail and report
+  `success`. Three PRs merged unreviewed this way on 2026-07-28, inside eight
+  seconds.
+- **After merging any change to `claude-code-review.yml`, merge the default
+  branch into every open PR**, or they stay unreviewed behind a green tick.
+  Editing `agent-workflow-parity.yml` is safe — it does not invoke the action,
+  so it is not a watched file.
+- **Attribute a finding to the reviewer that produced it.** Codex and Claude post
+  to the same PR and are not interchangeable; every time both ran they returned
+  disjoint sets.
 
 ### Open, blocked on the maintainer
 
@@ -64,6 +80,7 @@ enough to miss the evidence is not evidence.**
 | **grove#187**, **grove#188**, **grove#184** | three parked decisions: may a plan be persisted? do artifact types get their own lifecycles? does security review get its own role? |
 | ~~grove#161~~ | **STALE — merged 2026-07-28T06:33.** |
 | ~~stewards#54~~ | **STALE in substance.** Six repos now carry `claude-code-review.yml` and the secret. Only spore and kodhama remain, and neither has a `.github/` directory at all. Narrow or close it. |
+| ~~trellis#205~~ | **STALE — merged 2026-07-29T07:14.** Trellis's reviewer reported `success` while delivering nothing; the fix restored the two flags and made the failure diagnosable. It was recorded as possibly not a cure, and that caution stands — #202 showed the workflow delivers sometimes, so the flags were not the whole cause. |
 | grove#142, grove#135 | stale Codex PRs; judgment calls, not debris. Left open on purpose. |
 
 ### The dispatcher thread — status: RESTARTED AND SHIPPED
@@ -140,7 +157,9 @@ chosen, then superseded by the reset.
 - ~~Stewards' only CI workflow is path-filtered; a docs-only PR gets no check at
   all.~~ **No longer true for review, 2026-07-29.** Stewards has three workflows;
   `claude-code-review.yml` and `agent-workflow-parity.yml` run on every PR —
-  verified, docs-only PR #61 got both green. Still true for the *test* gate.
+  verified twice — stewards#59 was docs-only and drew a **9m24s review**, and
+  docs-only #61 got both checks green. Only `validate-marketplace-setup.yml` is
+  path-filtered, so this stays true for the *test* gate alone.
   **`stewards/CLAUDE.md` repeats the old claim and is now inaccurate there.**
 - **A draft PR bails the Claude reviewer in ~30-60s** at its eligibility check,
   instead of a ~15-minute review. Keeping a PR draft through fix rounds is the
@@ -232,7 +251,9 @@ this file. There is no decision `0024` in stewards; the ids jump 0023 → 0025.
 - [x] 111 debris branches deleted across six repos; `trellis/research/0013` preserved as
       closed-unmerged work.
 - [x] Trellis's PR-review workflow, red for seven consecutive runs, recovered on its own.
-      Cause unaddressed.
+      Cause unaddressed. **→ SUPERSEDED by Slice 6 — this is wrong.** Trellis's
+      reviewer runs are *green*; that is the defect. It reports `success` while
+      delivering nothing on most PRs. See Slice 6, "PR review, family-wide".
 
 ## Slice 2 — dead weight · WITHDRAWN 2026-07-27
 
@@ -449,3 +470,95 @@ The pattern worth carrying forward: **every substantive error this slice was
 caught by an independent reviewer or by reading the primary source, and none by
 me re-reading my own work.** Three of the corrections were to claims I had
 explicitly told the maintainer were verified.
+
+---
+
+## Slice 6 — an outside lens, and what fourteen inside rounds missed (2026-07-28)
+
+### The finding that justifies the rest
+
+grove#181 had passed **fourteen in-house review rounds across two lenses**. An
+outside reviewer then found defects those rounds had not, and each successive
+round found that the previous fix had not closed what it claimed to close. All
+suites were green throughout.
+
+**The security detail is deliberately absent, and this is the second attempt at
+removing it.** The first draft described the defect operationally; review raised
+that as a P1, since this repo is public. The rewrite kept the component, the
+trigger and the liveness, and review judged it **narrowed rather than closed** —
+correctly. So: no component, no vector, no state. It is tracked in grove#181 and
+its tests, which is the correct venue.
+
+**What generalises, and is safe to write down:** treat any file a tool consumes
+as instruction as untrusted input, and never assume a confirmation covers the
+action you believe it covers. Authorise the identity of a thing, not the label
+attached to it.
+
+**The disclosure rule this produced:** a public ledger records that a defect was
+found and where it is tracked. It does not record how to reach it while it is
+still reachable. Coordinate the fix first; write the history afterwards.
+
+### PR review, family-wide
+
+Reviewer + `agent-workflow-parity.yml` merged into grove, stewards, wisp and
+design-system; trellis's existing copy has a fix open at #205. The maintainer set
+`CLAUDE_CODE_OAUTH_TOKEN` in all four — it is **per-repo, with no org-level secret
+to inherit**, so any repo added later needs its own. spore and homebrew-tap have
+neither reviewer nor token; that was a scope call, not an oversight.
+
+**Closes stewards#54** — "no automated PR reviewer outside trellis". Satisfied
+by this roll-out, not withdrawn; its row left the open/blocked table in the same
+commit that reported the resolution.
+
+**Verified end to end, not assumed:** stewards#59 — this entry's own PR — drew
+three findings, and **they came from two different reviewers.** The new Claude
+action ran 9m24s and posted **two** (a resolved row left under an "open" heading,
+and a slice-numbering gap). The **P1** — a coordinated-disclosure failure in the
+first draft of this section — was posted separately by
+`chatgpt-codex-connector[bot]`. The first version of this paragraph credited all
+three to the Claude run; that was wrong, and an independent reviewer caught it.
+
+Contrast the roll-out PRs' 9–14s. That is the whole test: *duration and a posted
+comment*, never the check mark. And read the author of each finding before
+crediting a reviewer with it.
+
+**Do not copy trellis's `claude-code-review.yml` forward.** It is the broken one:
+missing `show_full_output` and `claude_args`, and measurably silent — #204 ran
+three times (45s/56s/45s), all `success`, **zero comments**; #202 ran ~5 min and
+posted "No issues found". Take grove's copy instead.
+
+**Four silent-failure modes, every one reported as `success`, all seen this week:**
+
+1. **The check's own blind spot, found and fixed the same night.** `parity`'s
+   match pattern required only whitespace before `uses:`, so it saw a *named*
+   step but not the equally valid nameless `- uses: anthropics/claude-code-action@v1`
+   — reporting "nothing to check", exit 0, blind to the file it watches. Fixed in
+   all five copies. **Editing `agent-workflow-parity.yml` itself is safe**: it
+   deliberately does not invoke the action, so it is not a watched file and its
+   own edits do not suspend the reviewer. Only edits to `claude-code-review.yml`
+   do.
+2. **Byte-identity skip** — `claude-code-action` refuses to run when its workflow
+   file differs from the default branch, then logs a warning, does nothing, and
+   concludes **`success`**. Observed on all four roll-out PRs: `claude-review`
+   "passed" in 9–14s against a 7–8 minute real review. `agent-workflow-parity.yml`
+   exists solely to make this visible; it runs no agent, so it cannot itself skip
+   green. **After merging any change to a reviewer workflow, merge the default
+   branch into every open PR or they stay unreviewed behind a green tick.**
+3. **Delivered-nothing** — the trellis case above. **Parity does not catch it**;
+   none of those PRs touched the workflow file. `show_full_output` is what makes
+   it diagnosable, which is why its absence is the costly one. The diagnosis is
+   **incomplete**: #202 *did* deliver, and a missing flag cannot explain a
+   workflow that posts sometimes. The real cause is unknown, and it is **not**
+   the byte-identity skip — that run's log carries no validation warning.
+4. **Merged before reviewed** — the reviewer's first step refuses a closed or
+   merged PR, so merging inside the review window makes it bail and report
+   `success`. Three PRs went in unreviewed this way inside eight seconds; a
+   fourth was reviewed only because an unrelated CI job forced the wait.
+
+**Green here has never meant clean.** The exit code tracks whether the action
+*ran*, never what it *found*.
+
+### Correction made on the record
+
+I attributed trellis's reviewer trouble to "seven consecutive red runs". Its runs
+are **green** — that is the defect. Corrected on grove#182 and stewards#54.
