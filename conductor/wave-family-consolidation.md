@@ -171,6 +171,29 @@ Also: stewards#42 closed (obsolete), stewards#39 narrowed, grove#149 closed
   corpora. A rule change, not maintenance; needs its own shaping.
 - The stewards/kodhama thin-vendor migration. Their vendored charters carry config tokens
   resolved in prose and neither repo has a `.grove/config.toml` to hold them.
+- **[grove#187](https://github.com/kodhama/grove/issues/187) — should a plan ever be a
+  persisted artifact?** *(high, maintainer-raised 2026-07-29.)* `adr-0037` (`approved`)
+  says no in four places; grove#186 shipped one anyway on a practice call that was never
+  traced against it, and the corpus baseline had already classified it
+  `implements-bearing+unclaimed` — the plan had enrolled itself as a fidelity-bearing
+  upstream. Unblocked by deleting the file and relaying it on the PR. The open question is
+  whether a *durable but non-authoritative* plan form should exist, since the value was
+  real and the prohibition is about authority, not persistence.
+- **[grove#188](https://github.com/kodhama/grove/issues/188) — the lifecycle enum is
+  one-size-fits-all.** *(high, maintainer-raised 2026-07-29: "each artifact needs its own
+  lifecycle, not the same for all of them.")* `charters/lifecycle.md` says "exactly four
+  values" and forbids restating them anywhere; **four grove `type: research` files have run
+  a fifth value, `recorded`, since 2026-07-22**, each escaping by a frontmatter comment
+  rather than a decision. `research/orchestrator-patterns.md:4` flagged the gap itself and
+  nothing followed. The #186 plan then invented the same value on the same prose exemption
+  — a convention escaping twice, which is `inv-self-improvement`'s exact failure shape.
+  Neither escape was visible to any gate: `research/` and `plans/` are both outside
+  `.grove/config.toml`'s `ARTIFACT_DIRS`.
+
+  **Both are parked deliberately, not deferred by oversight.** The maintainer's call:
+  *"let's do whatever unblocks the thing now."* Neither blocks grove#186, and the wave's
+  own cost is the reason — every touch has been surfacing a new governance question, and
+  answering them inline is what would prevent the consolidation from ever finishing.
 
 ## Stop-and-learn checkpoint
 
