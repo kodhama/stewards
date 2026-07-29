@@ -76,9 +76,3 @@ Do not delegate or spawn either driving-session role. A native dispatcher remain
 At every handover, an absent `runtime_dir` resolves `runtime/gates/` relative to the active installed Grove package. A declared non-legacy runtime is exact authority and is never searched or replaced.
 grove plugin@0.3.0
 <!-- grove:end -->
-
-<!-- trellis:begin (managed by trellis — edit .trellis/, not this block) -->
-This project follows **Trellis** — working rules you are expected to follow while you work here. They are imported below:
-@.trellis/internal/trellis.md
-@.trellis/rules.toml
-<!-- trellis:end -->
