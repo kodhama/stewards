@@ -13,10 +13,18 @@ The full working plan lives outside the repo with the maintainer; this brief is 
 ledger and the closure report. **Boundaries:** no math-quest product work, no decision is
 ratified by an agent, and nothing is removed without a trace of what governs it.
 
-## Cold start — read this first (state as of 2026-07-28)
+## Cold start — read this first (state as of 2026-07-29)
 
 If you are picking this up with no memory of it, this section is the whole
 briefing. The chronological slices below are the audit trail, not the state.
+
+> **Reconciled 2026-07-29 against live `gh` and file state.** The ledger had
+> drifted badly: twelve entries were stale in both directions — items marked open
+> that had landed, and items marked done that were only triaged — and the
+> dispatcher section below described as "stopped" a thread that restarted and
+> shipped. Worse, **fourteen items of the wave's actual plan appear nowhere in
+> this brief at all**; see §The plan's items this ledger never tracked. Judged by
+> this brief the wave looked nearly finished. It is not.
 
 ### What this wave is
 
@@ -65,12 +73,29 @@ enough to miss the evidence is not evidence.**
 
 | item | what it needs |
 |---|---|
-| **trellis#204** — `decision-0066`, retire Trellis's `surfaces.json` | an intent act. Third draft; two adversary rounds. Nothing lands under it until `approved`. |
-| **grove#161** — setup overwrite preserves consumer rows | green and mergeable, deliberately unmerged. Three review rounds each found a defect introduced by the last; the fourth was self-caught. Wanted a human look before merge. |
-| **trellis#205** — trellis's reviewer reports `success` while delivering nothing | a merge call. Left open deliberately: trellis was not in the roll-out ask, it already holds a token so the fix bites immediately, and merging suspends review on #204 until #204 merges `main` back in. Now also carries the parity regex fix (below), so no longer a single-commit branch. **Do not read the merge as a cure**: #202 shows the workflow delivers sometimes, so the two restored flags cannot be the whole cause. The fix makes the failure *diagnosable*; it may not stop it. |
+| **trellis#204** — `decision-0066`, retire Trellis's `surfaces.json` | an intent act. **It bundles the implementation deliberately** — approved `kodhama-0025`'s AC requires `surfaces.json` and its `install.sh` manifest entry be removed *"in the same commit — the bundle fetches a moving `main`, so splitting them breaks `curl \| sh` for every user immediately."* Verified unmet on trellis `main`. A Codex P1 asked for them to be split; doing so would break the public install command, so the record's own "no code until approved" comment is what gets amended. |
+| **grove#186** — `adr-0048`, parsers are dependencies | the ship act. The record is already `approved` and says so: *"The PR merge is the separate ship act and is NOT performed by this flip."* Carries grove#169's VERSION bump. |
+| **`spec-0006-voluntary-dispatch`** | flip `gated` → `approved`. Its own status line: *"`approved` remains a human act; ship = human stands."* |
+| **grove#189**, **stewards#61** | merges. Two supersession frontmatter edges `adr-0047` ordered in ratified text, and this ledger commit. Both green. |
+| **grove#187**, **grove#188**, **grove#184** | three parked decisions: may a plan be persisted? do artifact types get their own lifecycles? does security review get its own role? |
+| ~~grove#161~~ | **STALE — merged 2026-07-28T06:33.** |
+| ~~stewards#54~~ | **STALE in substance.** Six repos now carry `claude-code-review.yml` and the secret. Only spore and kodhama remain, and neither has a `.github/` directory at all. Narrow or close it. |
+| ~~trellis#205~~ | **STALE — merged 2026-07-29T07:14.** Trellis's reviewer reported `success` while delivering nothing; the fix restored the two flags and made the failure diagnosable. It was recorded as possibly not a cure, and that caution stands — #202 showed the workflow delivers sometimes, so the flags were not the whole cause. |
 | grove#142, grove#135 | stale Codex PRs; judgment calls, not debris. Left open on purpose. |
 
-### The dispatcher thread — status: STOPPED, direction reset
+### The dispatcher thread — status: RESTARTED AND SHIPPED
+
+> **This section's "STOPPED" verdict is superseded, 2026-07-29.** `adr-0046` is
+> **`status: approved`** (maintainer intent act 2026-07-28, *"Approved!"*), merged
+> via grove#175. `spec-0006-voluntary-dispatch` exists at `status: gated`, v3,
+> after an eight-round adversary convergence. **Its implementation merged as
+> grove#181** on 2026-07-29, advancing `spec-0004` to v8. The `adr-0003` pointer
+> fix landed as grove#173. **Everything below describing a fork awaiting the
+> maintainer, a decision "never pushed", or a research pass not yet returned is
+> historical.** It is kept because the reasoning that produced the reset is worth
+> reading; it is not the state. Read this banner, not the paragraphs.
+
+#### Historical — the thread as it stood on 2026-07-28
 
 The largest thread of 2026-07-28 and the one most likely to be picked up wrong.
 
@@ -129,11 +154,31 @@ chosen, then superseded by the reset.
   cache. Always say which one a citation is against.
 - **`kodhama-0025` is on `main`** and its URL resolves — a review claimed
   otherwise from a stale local ref. Fetch before concluding a ref is missing.
-- ~~Stewards' only CI workflow is path-filtered; a docs-only PR gets no check.~~
-  **No longer true as of 2026-07-28.** `claude-code-review.yml` and
-  `agent-workflow-parity.yml` both fire on every `pull_request` with no path
-  filter, so a docs-only PR now *is* reviewed — stewards#59 was docs-only and
-  drew a 9m24s review. Only `validate-marketplace-setup.yml` is path-filtered.
+- ~~Stewards' only CI workflow is path-filtered; a docs-only PR gets no check at
+  all.~~ **No longer true for review, 2026-07-29.** Stewards has three workflows;
+  `claude-code-review.yml` and `agent-workflow-parity.yml` run on every PR —
+  verified twice — stewards#59 was docs-only and drew a **9m24s review**, and
+  docs-only #61 got both checks green. Only `validate-marketplace-setup.yml` is
+  path-filtered, so this stays true for the *test* gate alone.
+  **`stewards/CLAUDE.md` repeats the old claim and is now inaccurate there.**
+- **A draft PR bails the Claude reviewer in ~30-60s** at its eligibility check,
+  instead of a ~15-minute review. Keeping a PR draft through fix rounds is the
+  single biggest lever on review cost — **but see the next trap before relying on
+  flipping it ready.**
+- **A PR gets exactly ONE Claude review, ever — the first one.** Measured
+  2026-07-29 on grove#186: flipping `ready_for_review` produced no review. The
+  run's own verdict: *"Claude has already left a code review comment on this PR …
+  Per the review instructions, when Claude has already commented on a PR, I should
+  stop and not proceed with another review."* The check is **condition 4 inside
+  the host-native `/code-review` skill**, not in our workflow file, so it cannot
+  be fixed by editing `claude-code-review.yml` — which is byte-identity-pinned
+  anyway. **Consequence:** if Claude comments early, every later push is
+  unreviewed by Claude no matter how much changes. grove#186 had ~60 files change
+  after its only Claude review. This is the **sixth** silent-failure mode of this
+  reviewer and it contradicts the working rule above it — *"run adversarial review
+  again after every fix round"* — which the tooling cannot deliver. Re-review has
+  to come from Codex (explicit tag), a local `grove:code-reviewer` run, or a fresh
+  PR.
 
 ### Grove issues filed 2026-07-28
 
@@ -148,6 +193,47 @@ body-section contract, and 40 of 45 carry acceptance criteria.
 
 Also: stewards#42 closed (obsolete), stewards#39 narrowed, grove#149 closed
 (superseded by main), grove#160 re-scoped and corrected.
+
+### The plan's items this ledger never tracked
+
+**The consequential finding of the 2026-07-29 reconciliation.** This brief is the
+*ledger of* a working plan held outside the repo — §Scope says so, and the plan
+reciprocates. But fourteen plan items, most of them medium-to-large, appear
+nowhere in these slices, not even as Parked. **Closing the wave on the slices
+alone would close it on a ledger that never recorded most of its work.**
+
+Status verified 2026-07-29 by `gh` and file checks; re-verify each at execution
+rather than trusting this table wholesale.
+
+| id | what | status | blocked on | size |
+|---|---|---|---|---|
+| **W0.3** | stewards + kodhama thin-vendor migration | not done — neither repo has `.grove/config.toml` or `gates.toml`; both still carry vendored `lifecycle.md`/`relations.md`/`versioning.md` | rides W0.4 / W1.5 | medium |
+| **W0.4** | overlay refresh in 7 repos | not done — 7 of 8 stale on two payload stamps. **The remedy has changed:** trellis `decision-0065` (approved) removed vendoring from the plugin path, so the move is probably to migrate off `.trellis/internal/` entirely, not refresh the stamp. No decision settles which. math-quest's hand-rolled hook is *dead*, not merely wrong-pathed — it reads `.trellis/version`, which does not exist there | **maintainer** at an interactive prompt, + grove#169 | medium–large |
+| **W0.6** | trellis CI recurrence guard | recovered on its own; nothing prevents recurrence | maintainer's call | small |
+| **P4** | wisp root implementation | not done — **and both stated preconditions are void.** No "rich-dashboard" branch or PR ever existed (the dashboard landed as wisp#27/#28), and math-quest no longer carries `vendor/wisp/`. The "non-lossy" and "ratified byte-copy" constraints are gone | needs a re-scope first | large |
+| **P7** | `reference/gates/enforcement.toml`, "24 lines" | not done — **and it is not a leaf delete.** 14 inbound references incl. `profile.mjs`, `lifecycle.mjs`, `release.mjs`, `package-allowlist.json`, `legacy-ownership.json` (records its sha256), 3 tests, `adr-0008`/`0018`/`0035`, `specs/0004` | unblocked | medium |
+| **P8** | trellis eval transcripts | not done — 181 blobs; `decision-0053` (approved) pins the directory byte-untouched | **needs a decision** | medium |
+| **P9** | grove probe ritual | not done — interacts with grove#159, which is what asserts `candidate` | unblocked; sequence after #159 | medium–large |
+| **W1.5** | grove setup/refresh in 5 repos so the runtime consumes `legacy-ownership.json` | not done — `lifecycle.mjs` reads it via `inspectLegacyState()`; the release validator checks its schema | same gate as W0.4 | medium |
+| **W1.6** | drop the dispatcher's `claude_agent`/`codex_skill` outputs (grove#130) | not done — **but now UNBLOCKED.** The plan gated this on "W3 naming the instruction carrier"; that carrier is now named twice — grove `adr-0046` and trellis `decision-0065` | unblocked | small–medium |
+| **W1.7** | retire trellis `install.sh` | not done — `install.sh` is 19,830 b, `spec-0005` is `gated` and entirely about it, and `design-system/patterns.md:119,138` still renders the `curl \| sh` command. Live shaping exists as trellis#197/#201 | **a channel-retirement decision**, then LP copy in two repos, then code | large |
+| **W2.1** | supersede `kodhama-0022` — index row + per-repo pointer | not done — **`stewards/decisions/README.md` does not exist at all** | **needs a decision** | medium |
+| **W2.2** | retire the prose-affidavit `status:` → `status` + `approved_by` + `approved_on` | not done — `approved_by`/`approved_on` return **zero** hits repo-wide | **needs a decision** | medium |
+| **W2.3** | retire the test-deps ledger requirement (grove#118) | **partially done, in a different direction** — `adr-0043` + `spec-0005` + grove#154 landed the structured canary; the ledger requirement at `charters/executor.md:71` survives | unblocked; write the ~50-line checker | small |
+| **W3** | plugin-resident instruction delivery, Claude half | **DONE** — trellis `decision-0065` / PR #198; `staleness.sh` injects rules via SessionStart when no vendored overlay exists. Residuals: `trellis/research/0013` is still only a branch (likely moot), and **grove#117** — the `agents` array is still hand-written, 13 paths against 14 roles, and ~15 files carry a hardcoded roster count | grove#117 unblocked | medium |
+
+**Also absent from this ledger, filed 2026-07-28/29:** grove#156 (stale, close it —
+superseded by #159) · grove#159 (retire `release_state`, unblock the release gate;
+unblocked) · grove#179 (spec-0004 owes a provenance scheme for multi-source entry
+skills) · grove#180 (nine build-gate follow-ups, one MEDIUM: `implements:`
+classification misses YAML comments/blank lines before the first block item — the
+fail-open direction) · stewards#39's two residuals.
+
+**The plan's own header pointers are wrong** and should be corrected wherever it
+lives: it cites `stewards/decisions/0024-family-audit-2026-07.md` and
+`conductor/wave-0024-family-consolidation.md`. Neither exists — the audit is
+`stewards/research/family-audit-2026-07.md` (`type: discovery`) and the ledger is
+this file. There is no decision `0024` in stewards; the ids jump 0023 → 0025.
 
 ## Slice 1 — correctness · CLOSED 2026-07-26
 
@@ -180,11 +266,21 @@ Also: stewards#42 closed (obsolete), stewards#39 narrowed, grove#149 closed
 - [x] Mechanism archived, loadable, at
       [`wisp@archive/codex-marketplace-canary`](https://github.com/kodhama/wisp/tree/archive/codex-marketplace-canary).
 - [x] [#45](https://github.com/kodhama/stewards/issues/45) — family marketplace check,
-      keyless asset half, inside current Stewards scope.
+      keyless asset half, inside current Stewards scope. **The checkmark records
+      triage, not delivery** — the issue is still open with zero comments and no
+      implementation. No workflow reads the published catalogs today. *Unblocked,
+      needs no new authority, small–medium.*
 - [x] [#47](https://github.com/kodhama/stewards/issues/47) — live-session ping; needs
-      `kodhama-0017` widened. **Deferred by the maintainer, not blocked.**
-- [ ] `wisp/adr-0018` — second draft, in independent review. First returned `UNSOUND`.
-- [ ] Implementation, gated on that decision reaching `approved`.
+      `kodhama-0017` widened. **Deferred by the maintainer, not blocked.** Also
+      triage-only; it needs a **decision**, not an implementation PR.
+- [x] `wisp/adr-0018` — **`approved` 2026-07-27** (maintainer intent act in
+      conversation), merged in wisp#54. Retired on cost-for-value with the losses
+      named, after three drafts failed on a redundancy argument.
+- [x] Implementation — **landed in the same PR**: `codex-canary.mjs` (−780),
+      `codex-canary.yml` (−89), the 753-line driver test, `spec-0002` (−324).
+- [ ] **wisp#55's open debt** — `spec-0002`'s 4,194,304-byte boundary is normative
+      with **no test at any value**. The issue itself calls the fix small and
+      independent. *Unblocked, trivial.*
 
 ## Parked
 
@@ -192,6 +288,29 @@ Also: stewards#42 closed (obsolete), stewards#39 narrowed, grove#149 closed
   corpora. A rule change, not maintenance; needs its own shaping.
 - The stewards/kodhama thin-vendor migration. Their vendored charters carry config tokens
   resolved in prose and neither repo has a `.grove/config.toml` to hold them.
+- **[grove#187](https://github.com/kodhama/grove/issues/187) — should a plan ever be a
+  persisted artifact?** *(high, maintainer-raised 2026-07-29.)* `adr-0037` (`approved`)
+  says no in four places; grove#186 shipped one anyway on a practice call that was never
+  traced against it, and the corpus baseline had already classified it
+  `implements-bearing+unclaimed` — the plan had enrolled itself as a fidelity-bearing
+  upstream. Unblocked by deleting the file and relaying it on the PR. The open question is
+  whether a *durable but non-authoritative* plan form should exist, since the value was
+  real and the prohibition is about authority, not persistence.
+- **[grove#188](https://github.com/kodhama/grove/issues/188) — the lifecycle enum is
+  one-size-fits-all.** *(high, maintainer-raised 2026-07-29: "each artifact needs its own
+  lifecycle, not the same for all of them.")* `charters/lifecycle.md` says "exactly four
+  values" and forbids restating them anywhere; **four grove `type: research` files have run
+  a fifth value, `recorded`, since 2026-07-22**, each escaping by a frontmatter comment
+  rather than a decision. `research/orchestrator-patterns.md:4` flagged the gap itself and
+  nothing followed. The #186 plan then invented the same value on the same prose exemption
+  — a convention escaping twice, which is `inv-self-improvement`'s exact failure shape.
+  Neither escape was visible to any gate: `research/` and `plans/` are both outside
+  `.grove/config.toml`'s `ARTIFACT_DIRS`.
+
+  **Both are parked deliberately, not deferred by oversight.** The maintainer's call:
+  *"let's do whatever unblocks the thing now."* Neither blocks grove#186, and the wave's
+  own cost is the reason — every touch has been surfacing a new governance question, and
+  answering them inline is what would prevent the consolidation from ever finishing.
 
 ## Stop-and-learn checkpoint
 
@@ -304,7 +423,10 @@ stewards#39 narrowed to what actually remains.
   grove#135 (`AGENTS.md` as canonical instructions, conflicting since 2026-07-24).
   Both are judgment calls, not debris.
 
-## Slice 5 — the dispatcher thread · 2026-07-28 · STOPPED, direction reset
+## Slice 5 — the dispatcher thread · 2026-07-28 · reset, then RESTARTED AND SHIPPED
+
+> Closed 2026-07-29: `adr-0046` approved and merged (grove#175), `spec-0006`
+> authored and gated, implementation merged (grove#181). See the cold-start banner.
 
 State and traps are in **Cold start** at the top; this is the audit trail only.
 
@@ -327,12 +449,14 @@ State and traps are in **Cold start** at the top; this is the audit trail only.
       reviewers contradicted each other on byte counts and the draft's figure was
       the correct one. Kept in scratch, deliberately unpushed — a decision whose
       central claim was false should not enter the corpus even as a draft.
-- [ ] **Research pass commissioned** on swarm activation patterns before any
-      further design: specswarm as primary reference, the wider activation
-      survey, and the maintainer's private reference framework. Nothing is drafted
-      until it returns.
-- [ ] **`adr-0003` ← `spec-0004` pointer fix** — owed regardless of direction,
-      and the one item from this slice that should proceed on its own.
+- [x] **Research pass commissioned** on swarm activation patterns before any
+      further design. **Delivered** — grove#174 and #178 merged;
+      `research/rule-delivery-and-activation.md`, `orchestrator-patterns.md` and
+      `supervisor-composition.md` are on main and `adr-0046` cites them in
+      `informed_by:`.
+- [x] **`adr-0003` ← `spec-0004` pointer fix** — **landed**, grove#173, 2026-07-28.
+      `adr-0003` now carries `superseded_in_part_by: [adr-0026, adr-0046]` plus
+      three in-body forward pointers.
 
 ### What this slice cost, and what it bought
 
