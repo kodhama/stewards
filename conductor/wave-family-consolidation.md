@@ -143,9 +143,23 @@ chosen, then superseded by the reset.
   verified, docs-only PR #61 got both green. Still true for the *test* gate.
   **`stewards/CLAUDE.md` repeats the old claim and is now inaccurate there.**
 - **A draft PR bails the Claude reviewer in ~30-60s** at its eligibility check,
-  instead of a ~15-minute review. Keep a PR draft through fix rounds and flip it
-  ready once; `ready_for_review` fires exactly one full review. This is the single
-  biggest lever on review cost.
+  instead of a ~15-minute review. Keeping a PR draft through fix rounds is the
+  single biggest lever on review cost — **but see the next trap before relying on
+  flipping it ready.**
+- **A PR gets exactly ONE Claude review, ever — the first one.** Measured
+  2026-07-29 on grove#186: flipping `ready_for_review` produced no review. The
+  run's own verdict: *"Claude has already left a code review comment on this PR …
+  Per the review instructions, when Claude has already commented on a PR, I should
+  stop and not proceed with another review."* The check is **condition 4 inside
+  the host-native `/code-review` skill**, not in our workflow file, so it cannot
+  be fixed by editing `claude-code-review.yml` — which is byte-identity-pinned
+  anyway. **Consequence:** if Claude comments early, every later push is
+  unreviewed by Claude no matter how much changes. grove#186 had ~60 files change
+  after its only Claude review. This is the **sixth** silent-failure mode of this
+  reviewer and it contradicts the working rule above it — *"run adversarial review
+  again after every fix round"* — which the tooling cannot deliver. Re-review has
+  to come from Codex (explicit tag), a local `grove:code-reviewer` run, or a fresh
+  PR.
 
 ### Grove issues filed 2026-07-28
 
