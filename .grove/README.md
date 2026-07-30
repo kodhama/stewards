@@ -8,4 +8,4 @@
 The gate runtime and fixed enforcement data remain in the active installed
 Grove package. This consumer floor never contains executable machinery.
 
-The operating model ships in the Grove plugin, `plugin@0.3.0`.
+The operating model ships in the Grove plugin, `plugin@0.4.0`.

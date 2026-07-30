@@ -70,9 +70,6 @@ briefs' Parked sections. Telemetry: wisp is not vendored here and no
 grove-status skill is installed — optional by construction.
 
 <!-- grove:begin (managed by grove — dials live in .grove/, not this block) -->
-Load the complete driving-session dispatcher from `${CLAUDE_PLUGIN_ROOT}/reference/charters/dispatcher.md` in this current task.
-Load the complete interactive shaper from `${CLAUDE_PLUGIN_ROOT}/reference/charters/shaper.md` in this current task.
-Do not delegate or spawn either driving-session role. A native dispatcher remains only the scoped advisor.
-At every handover, an absent `runtime_dir` resolves `runtime/gates/` relative to the active installed Grove package. A declared non-legacy runtime is exact authority and is never searched or replaced.
-grove plugin@0.3.0
+Grove is installed. Run /grove:start to open a governed run, or /grove:enter to make Grove's dispatch rules available without opening one.
+grove plugin@0.4.0
 <!-- grove:end -->
