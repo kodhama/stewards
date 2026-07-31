@@ -80,8 +80,10 @@ propagates; it does not enable. Retired Spore is not a target.
       `kodhama` plugin in Stewards, as a staging area.** Deliberately a
       parking spot — **what the `kodhama` plugin is for stays undecided**, and
       staging this skill there defers that question rather than answering it.
-      Its declared narrow scope is untouched. **grove was rejected on grove's
-      own structure**: its adapter axis
+      **Staging touched no scope claim; publication amends the statements that
+      describe it** — see the two rulings below, and note that this line
+      previously asserted the claims were untouched, which publication makes
+      false. **grove was rejected on grove's own structure**: its adapter axis
       is host (`claude`/`codex`) not tracker, none of its thirteen roles is a
       product owner, and only two of its fourteen charters mention GitHub —
       hosting this would invent a tracker axis for an absent role. Graduation
@@ -89,7 +91,25 @@ propagates; it does not enable. Retired Spore is not a target.
       `wave-issue-taxonomy/plugin/DIRECTION.md`
 - [ ] Open, unscheduled: decide what the `kodhama` plugin is for. This skill
       stays or moves on that answer
-- [ ] Plugin published to the `kodhama` marketplace
+- [x] **Maintainer ruling, 2026-07-31 — amend the standing scope claims.**
+      Publication falsifies statements that the plugin's scope is narrow, so
+      those statements are authorised for edit: the `distribution-scope` block
+      hand-mirrored in `CLAUDE.md`, `README.md` and canonically
+      `distribution/repository-scope.md`, plus `plugins/kodhama/README.md`'s
+      *"It edits workflow configuration and nothing else"*, **which ships to
+      consumers**. **The wording must not assert a purpose for the plugin** —
+      it acknowledges skills staged there while their home is decided, nothing
+      more. Review of the resulting contract found three further carriers,
+      in scope under the same ruling: `wave-issue-taxonomy/plugin/DIRECTION.md`
+      §45–47, the Lane B line above, and `CLAUDE.md`'s *"and on nothing else"*.
+      Contract and pinned wording:
+      `specs/0005-issue-taxonomy-skill-publication.md` §Standing scope claims
+- [x] **Maintainer ruling, 2026-07-31 — close the CI blind spot, narrowly.**
+      Add `conductor/wave-issue-taxonomy/plugin/**` to the `paths:` filter in
+      `.github/workflows/validate-marketplace-setup.yml`, and nothing wider:
+      **ordinary docs PRs must still get no check**, which is the property
+      `CLAUDE.md` protects. Contract: spec 0005 §Closing the CI blind spot
+- [ ] Plugin published to the `kodhama` marketplace, per spec 0005
 
 **Lane C — cross-link ADRs** *(one PR per repo, independently reviewed)*
 - [ ] Grove

@@ -1,7 +1,7 @@
 ---
 id: kodhama-0026-issue-taxonomy
 type: decision
-status: approved  # maintainer intent act 2026-07-31 ("I approve, flip it, just need to check the PR though") — in-PR flip recording the act, per the kodhama-0008 precedent; the agent did not open the gate. Delivery (relocation to kodhama/kodhama, propagation, provisioning) is the wave brief's ledger
+status: approved  # maintainer intent act 2026-07-31 ("I approve, flip it, just need to check the PR though") — in-PR flip recording the act, per the kodhama-0008 precedent; the agent did not open the gate. Delivery (relocation to kodhama/kodhama, propagation, provisioning) is the wave brief's ledger. Corrected pre-merge 2026-07-31 on maintainer direction ("Correct pre-merge"): two clauses asserted a purpose and a narrow scope for the kodhama plugin, contradicting the maintainer's 06f7f1d correction ("Nobody decided that") which had reached DIRECTION.md and the brief but not this record. Per the kodhama-0008 precedent the merge performs delivery, so the record was still correctable; append-only binds from delivery
 depends_on: [kodhama-0009-org-topology-spirit-stewards-trees, stewards/kodhama-0008-family-inheritance-restate-nothing, stewards/kodhama-0021-separate-adoption-posture-from-support, stewards/kodhama-0022-propagate-collective-strategy]
 owner: agent
 updated: 2026-07-31
@@ -136,14 +136,16 @@ lives.
 ## Open questions
 
 **1. Where the plugin lives — resolved 2026-07-31, and never a term of this
-record.** Maintainer direction: the `kodhama` plugin in Stewards, whose
-identity is the family's GitHub operations. Recorded here only because an
+record.** Maintainer direction: the `kodhama` plugin in Stewards, **as a
+staging area — what that plugin is for stays undecided**, and staging a skill
+there defers that question rather than answering it. Recorded here only because an
 earlier draft of Decision 9 made the plugin the sole carrier and so made this
 look like a gate. It was not; the convention is carried by the org's types and
 labels. The graduation path and the coming abstract/concrete split are in
 `plugin/DIRECTION.md`. The three candidates weighed were:
-  - the Stewards `kodhama` plugin — but its scope is deliberately narrow
-    (CI marketplace setup), and widening it contradicts that narrowness;
+  - the Stewards `kodhama` plugin — whose declared distribution scope
+    enumerated only CI marketplace setup, so staging a second skill there
+    requires that enumeration to stop claiming to be exhaustive;
   - **grove** — which the standing corpus nominates, since `kodhama-0008` §3
     holds that "operational content is grove's" and Decision 10 already hands
     grove the `(type, stage)` mapping. The cost is that repositories which
