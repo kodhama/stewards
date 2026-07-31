@@ -1,4 +1,4 @@
-"""Kodhama plugin tests derived from specs 0003@v1 and 0004@v2."""
+"""Kodhama plugin tests derived from specs 0003@v1, 0004@v2 and 0005@v8."""
 
 from __future__ import annotations
 
