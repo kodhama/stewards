@@ -91,12 +91,12 @@ LABELS=(
 
   "stage: triage|fef2c0|Noticed, not yet committed to — the type may still be unset"
   "stage: shaping|c2e0c6|Accepted; the problem is being refined"
-  "stage: spec|bfd4f2|A contract is being written"
+  "stage: drafting|bfd4f2|The artifact that defines the work is being written"
   "stage: ready|0e8a16|Approved and dispatchable — an agent can pick this up"
-  "stage: building|1d76db|Implementation in flight"
+  "stage: active|1d76db|The committed work is in flight"
   "stage: review|5319e7|Built, awaiting verification"
 
-  "blocked|b60205|Cannot proceed — the cause is linked in the body"
+  "blocked|b60205|Blocked by something that is not an issue (issue-to-issue is a native dependency)"
   "deferred|cfd3d7|Accepted, but waiting on a condition stated in the body"
   "needs-human|fbca04|Requires a person; an agent must not proceed alone"
   "needs-design-system|d4c5f9|Waiting on an upstream design-system change"

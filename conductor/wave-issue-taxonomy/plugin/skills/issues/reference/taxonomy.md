@@ -48,17 +48,21 @@ be building a worse copy:
   label scheme cannot enforce that.
 - **Sub-issues** are GA. They replace `[Epic]` / `[Story]` / `[program]` with
   real hierarchy that renders in the UI and rolls up in Projects.
+- **Issue dependencies** are GA (`--blocked-by` / `--blocking`, with
+  `blockedBy` / `blocking` in the JSON). An issue-to-issue blocker is a native
+  edge, never a label plus a prose link; the `blocked` label survives only for
+  blockers that are not issues. Adopted by maintainer direction 2026-07-31 —
+  the earlier prose-link form was exactly the "worse copy" this section warns
+  against.
 - **Issue Fields** (single-select / text / number / date, org-wide, pinnable
   per type) went to public preview for all orgs in May 2026, with `Priority`,
   `Effort`, `Start date` and `Target date` preconfigured.
 
 **This taxonomy deliberately uses only the GA surface** — types, sub-issues,
-and labels. Priority is a label, not an Issue Field, because Issue Fields is
-still public preview and a convention should not be built on unsettled
-ground. When Fields reaches GA, `priority: *` migrates into it and this
-document is superseded, not edited.
-
-**Native issue dependencies are a known gap in this design — see §6.4.**
+dependencies, and labels. Priority is a label, not an Issue Field, because
+Issue Fields is still public preview and a convention should not be built on
+unsettled ground. When Fields reaches GA, `priority: *` migrates into it and
+this document is superseded, not edited.
 
 Prior art consulted: the standard namespaced-label pattern
 (`Type:` / `Priority:` / `Status:`) as used by
@@ -105,10 +109,21 @@ a verification chore satisfies both and neither rule resolved it.
 Unset is legitimate **only** at `stage: triage`, where deciding the type is
 the work — or where the type is correct but not yet provisioned in the org.
 
-### Stage — `stage: triage|shaping|spec|ready|building|review`
+### Stage — `stage: triage|shaping|drafting|ready|active|review`
 
 Mutually exclusive; exactly one on any issue filed or touched under this
-convention. `triage` is the pre-acceptance pile.
+convention, **except `Epic`, which carries none**. `triage` is the
+pre-acceptance pile.
+
+**Two values were renamed and the universal path was replaced by per-type
+paths.** `spec` and `building` were written in the language of a code change,
+which left three of six types unstageable: a `Decision` is never built, a
+`Research` issue's deliverable is a finding, and an `Epic`'s children sit at
+different stages by construction while stage is exclusive. The vocabulary is
+now `drafting` and `active`, and each type declares which stages it visits —
+so skipping one is correct rather than an omission. `Epic` carries no stage
+at all, because a container has no single position. See `SKILL.md` for the
+per-type table.
 
 The invariant is scoped to issues you handle, not asserted over the whole
 corpus — an unqualified corpus invariant would license exactly the backlog
@@ -205,14 +220,9 @@ Flagged so they can be overturned rather than inherited silently.
 
 ## 6. Open questions
 
-**6.1 — `stage` is required but three of its six values are code-shaped.
-BLOCKING.** `spec`, `building` and `review` are written in the language of a
-change. A `Decision` is never *built*; a `Research` issue's deliverable is a
-finding; an `Epic`'s children are at different stages by construction while
-stage is mandatory and exclusive. Two agents will stage the same `Decision`
-differently, and so will the same agent twice. **Either the stage vocabulary
-gains type-neutral values, or stage stops being universally required.** That
-is a design call and is not resolved here.
+*(6.1, the code-shaped stage vocabulary, was resolved by maintainer direction
+on 2026-07-31 — per-type paths plus the `drafting`/`active` renames. See §4.
+6.4, native issue dependencies, was resolved in the same act: adopt. See §2.)*
 
 **6.2 — `roadmap`** (45 uses, one repo) is a selection, not a dimension —
 Projects territory. Deferred until this taxonomy is ratified, so the backlog
@@ -220,15 +230,6 @@ moves under one change at a time. A named exemption, not an oversight.
 
 **6.3 — Issue Fields is public preview.** Priority stays a label until GA,
 then supersede this document rather than edit it.
-
-**6.4 — Native issue dependencies are not adopted, and that needs a
-decision.** `gh issue create --blocked-by/--blocking`, `gh issue edit
---add-blocked-by`, and the `blockedBy`/`blocking` JSON fields are all GA. The
-`blocked` label plus "name the cause in the body, with a link" is a
-hand-rolled dependency edge in prose — unqueryable, undirected, and exactly
-the "worse copy" §2 warns against. Either adopt them or state why they are
-declined, as §2 does for Issue Fields. Silence here is an oversight, not a
-position.
 
 **6.5 — Whether existing issues get migrated at all.** The migration mapping
 exists and rides the ratifying decision; it does not authorise the edit.

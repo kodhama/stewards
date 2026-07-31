@@ -24,7 +24,7 @@ machine needs to filter on is structured metadata.
 ```
 ✗  [execution] [high-priority] Fix the retry loop in the dispatcher
 ✓  Dispatcher retry loop drops the final attempt
-   → type Bug · priority: p1 · stage: building · area: dispatcher
+   → type Bug · priority: p1 · stage: active · area: dispatcher
 ```
 
 **Titles state the situation, not the instruction.** "Fix X" and "Add Y" name
@@ -36,14 +36,15 @@ dimension you are reaching for is below — use it instead.
 
 ## Filing an issue
 
-**Set the stage first — it is the one field every issue you touch carries.**
+**Set the stage first — the one field every issue you touch carries, bar an
+`Epic`.**
 Then work down. **Never stop at an unknown: leave that field unset and
 continue.** An unset field is honest; a guessed one is noise; a halted
 *procedure* loses the fields you did know.
 
 | # | Dimension | Where it lives | Required |
 |---|-----------|----------------|----------|
-| 1 | **Stage** | `stage: *` label | always, on issues you file or touch |
+| 1 | **Stage** | `stage: *` label | always, except on an `Epic` |
 | 2 | **Type** | native GitHub issue type | once out of `triage` |
 | 3 | **Area** | `area: *` label | if the repo defines any |
 | 4 | **Priority** | `priority: *` label | only when elevated or explicitly low |
@@ -51,18 +52,31 @@ continue.** An unset field is honest; a guessed one is noise; a halted
 
 ### 1. Stage — where in the pipeline?
 
-`stage: *` labels. Exactly one on any issue you file or touch. That is an
-invariant about **your** issue, not a claim about every issue in the repo.
-
-`stage: triage` → `shaping` → `spec` → `ready` → `building` → `review`
+`stage: *` labels. Exactly one on any issue you file or touch — except an
+`Epic`, which carries none. That is an invariant about **your** issue, not a
+claim about every issue in the repo.
 
 - `triage` — **noticed, not yet committed to.** The type may still be unset.
   This is the collective's "we should look at this" pile
 - `shaping` — accepted; the problem is being refined
-- `spec` — a contract is being written
+- `drafting` — the artifact that defines the work is being written
 - `ready` — approved and dispatchable; an agent can pick this up
-- `building` — the committed work is in flight
+- `active` — the committed work is in flight
 - `review` — done, awaiting verification
+
+**Not every type visits every stage.** Take the path for your type:
+
+| Type | Path |
+|---|---|
+| `Bug` `Feature` `Task` | `triage` → `shaping` → `drafting` → `ready` → `active` → `review` |
+| `Decision` | `triage` → `shaping` → `drafting` → `review` |
+| `Research` | `triage` → `shaping` → `active` → `review` |
+| `Epic` | **none** — its children carry the stages |
+
+A `Decision` is never *built*, so it has no `ready`/`active`: its artifact is
+the record, drafted then reviewed. A `Research` issue has no `drafting` — the
+work *is* the finding. Skipping a stage your type does not have is correct,
+not an omission.
 
 Closed vocabulary, one at a time. Moving forward replaces the label rather
 than adding to it.
@@ -71,7 +85,7 @@ than adding to it.
 enters the pipeline. Everything in `triage` is fair game to close as
 `not-planned` — that is what the pile is for.
 
-**On close, strip the stage label.** A closed issue carrying `stage: building`
+**On close, strip the stage label.** A closed issue carrying `stage: active`
 asserts something false. **On reopen, set `stage: triage`** and re-decide —
 the state that produced the old label no longer holds.
 
@@ -162,8 +176,10 @@ oversight.
 
 Additive, and only when true. Closed vocabulary, four bare tokens.
 
-- `blocked` — cannot proceed, for a reason not covered below. **Name the cause
-  in the body, with a link**
+- `blocked` — cannot proceed for a reason that is **not another issue**
+  (waiting on a vendor, a credential, an external release). Name it in the
+  body. **Issue-to-issue blocking is a native dependency, not this label** —
+  see below
 - `needs-human` — requires a person; an agent must not proceed alone
 - `needs-design-system` — waiting on an upstream design-system change
 - `deferred` — accepted and still wanted, but deliberately not scheduled
@@ -172,6 +188,19 @@ Additive, and only when true. Closed vocabulary, four bare tokens.
 **Use the most specific one that applies, and never add `blocked` on top.**
 `needs-human` and `needs-design-system` are specific forms of blocked;
 `blocked` is the general form for everything else. They do not combine.
+
+### Blocked by another issue — use the native dependency
+
+Do not encode an issue-to-issue edge as a label plus a prose link. It is a
+real, queryable, directed relationship:
+
+```bash
+gh issue create --title "..." --blocked-by 42
+gh issue edit 57 --add-blocked-by 42      # --remove-blocked-by to clear
+gh issue list --json number,title,blockedBy
+```
+
+The `blocked` label is only for blockers that are **not** issues.
 
 ### "Not now" — three states, one question each
 
@@ -199,7 +228,7 @@ Because the metadata is structured, search it directly:
 ```bash
 gh issue list --type Bug --label "priority: p0"
 gh issue list --label "stage: triage"                             # the untriaged pile
-gh issue list --type Research --label "stage: shaping"
+gh issue list --type Decision --label "stage: drafting"
 gh issue list --label "stage: ready" --json number,title,labels   # agent-dispatchable
 gh search issues --owner <org> --include-prs=false "type:Bug"     # across the family
 ```

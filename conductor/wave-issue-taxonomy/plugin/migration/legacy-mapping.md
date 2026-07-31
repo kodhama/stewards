@@ -20,7 +20,7 @@ occurrences across all repos.
 | `[bug]` | 24 | type `Bug` |
 | `[idea]` | 19 | `stage: triage` + the type its content implies |
 | `[shaping]` | 19 | `stage: shaping` |
-| `[execution]` | 18 | `stage: building` |
+| `[execution]` | 18 | `stage: active` |
 | `[consider]` | 14 | `stage: triage` + the type its content implies |
 | `[high-priority]` / `HIGH:` | 12 | `priority: p1` |
 | `[Story]` | 11 | type `Feature`, as a sub-issue of its epic |
