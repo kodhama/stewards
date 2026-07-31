@@ -71,18 +71,19 @@ propagates; it does not enable. Retired Spore is not a target.
 - [ ] Decision ratified by maintainer intent act
 
 **Lane B — plugin home + publication**
-- [x] **Plugin home resolved (maintainer direction, 2026-07-31): the
-      `kodhama` plugin in Stewards.** Not a compromise — that plugin already
-      carries a GitHub Actions skill and this is a GitHub issues skill; its
-      coherent identity is *how the family operates on GitHub*, and its
-      "CI marketplace setup" description names its contents rather than its
-      shape. **grove was rejected on grove's own structure**: its adapter axis
+- [x] **Plugin home settled for now (maintainer direction, 2026-07-31): the
+      `kodhama` plugin in Stewards, as a staging area.** Deliberately a
+      parking spot — **what the `kodhama` plugin is for stays undecided**, and
+      staging this skill there defers that question rather than answering it.
+      Its declared narrow scope is untouched. **grove was rejected on grove's
+      own structure**: its adapter axis
       is host (`claude`/`codex`) not tracker, none of its thirteen roles is a
       product owner, and only two of its fourteen charters mention GitHub —
       hosting this would invent a tracker axis for an absent role. Graduation
       path and the abstract/concrete split are recorded in
       `wave-issue-taxonomy/plugin/DIRECTION.md`
-- [ ] Amend the `kodhama` plugin's description to match what it carries
+- [ ] Open, unscheduled: decide what the `kodhama` plugin is for. This skill
+      stays or moves on that answer
 - [ ] Plugin published to the `kodhama` marketplace
 
 **Lane C — cross-link ADRs** *(one PR per repo, independently reviewed)*

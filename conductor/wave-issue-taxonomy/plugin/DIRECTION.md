@@ -22,21 +22,29 @@ deepen a coupling grove has mostly avoided.
 
 ## The home, in three steps — the middle one is skippable
 
-1. **Now — the `kodhama` plugin in Stewards.** Not a parking spot: that plugin
-   already carries a GitHub Actions skill, and this is a GitHub issues skill.
-   Its coherent identity is *how the family operates on GitHub*, and its
-   "CI marketplace setup" description names what it contains rather than what
-   it is. Chosen deliberately over minting a name for something whose shape is
-   still moving.
-2. **Later, if it earns it — its own plugin**, potentially still hosted in
-   Stewards. The trigger is a second GitHub-operations concern that does not
-   belong beside CI setup, or a tracker-abstraction layer appearing.
+1. **Now — the `kodhama` plugin in Stewards, as a staging area.** This is a
+   parking spot and is meant to be one. **What the `kodhama` plugin is for
+   remains undecided**, and putting this skill there defers that question
+   rather than answering it. The alternative was minting a name and a home for
+   something whose shape is still moving, which costs more than it buys today.
+   *(An observation, not a ruling: that plugin currently carries a GitHub
+   Actions skill and would now carry a GitHub issues skill. If the question
+   ever gets taken up, "how the family operates on GitHub" is one available
+   reading of it. Nobody has decided that.)*
+2. **Later — its own plugin**, potentially still hosted in Stewards. The
+   trigger is whenever the `kodhama` plugin's own purpose gets decided: this
+   skill either fits that purpose and stays, or does not and moves. Skippable
+   if step 3's trigger arrives first.
 3. **Later still — its own repository**, on the `git-subdir` pattern grove,
    trellis and wisp use. The trigger is non-kodhama consumers or a release
    cadence of its own.
 
 Step 2 may be skipped entirely. Do not create a repository to hold one skill
 and one script.
+
+**Nothing about this sequence claims the `kodhama` plugin's scope.** Its
+declared distribution scope stays narrow until someone decides otherwise; a
+staged skill sitting in it is a deferral, not an amendment.
 
 ## The split that is coming
 
