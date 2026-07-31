@@ -203,9 +203,10 @@ class PackageAndCatalogTests(unittest.TestCase):
         moment that grant is exercised.
         """
         expected = (
-            "Dogfood — author verified Claude and Codex marketplace setup "
-            "in repository-owned GitHub Actions workflows; support is not "
-            "claimed."
+            "Dogfood — verified Claude and Codex marketplace setup in "
+            "repository-owned GitHub Actions workflows, plus the kodhama "
+            "issue convention, staged here while its home is decided; "
+            "support is not claimed."
         )
         for path in (
             ROOT / ".claude-plugin" / "marketplace.json",
