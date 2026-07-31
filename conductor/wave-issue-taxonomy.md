@@ -99,16 +99,23 @@ propagates; it does not enable. Retired Spore is not a target.
       *"It edits workflow configuration and nothing else"*, **which ships to
       consumers**. **The wording must not assert a purpose for the plugin** —
       it acknowledges skills staged there while their home is decided, nothing
-      more. Review of the resulting contract found three further carriers,
+      more. Review of the resulting contract found **four** further carriers,
       in scope under the same ruling: `wave-issue-taxonomy/plugin/DIRECTION.md`
-      §45–47, the Lane B line above, and `CLAUDE.md`'s *"and on nothing else"*.
+      §45–47, the Lane B line above, `CLAUDE.md`'s *"and on nothing else"*, and
+      **`plugins/kodhama/README.md` line 22's singular *"the declared skill"***
+      — which also ships to consumers, and which the first count missed.
       Contract and pinned wording:
       `specs/0005-issue-taxonomy-skill-publication.md` §Standing scope claims
 - [x] **Maintainer ruling, 2026-07-31 — close the CI blind spot, narrowly.**
       Add `conductor/wave-issue-taxonomy/plugin/**` to the `paths:` filter in
-      `.github/workflows/validate-marketplace-setup.yml`, and nothing wider:
-      **ordinary docs PRs must still get no check**, which is the property
-      `CLAUDE.md` protects. Contract: spec 0005 §Closing the CI blind spot
+      `.github/workflows/validate-marketplace-setup.yml`, and nothing wider.
+      **The property protected is that the *test gate* — suite, validator, the
+      `npm install` of two CLIs, the admission check — does not run on a
+      docs-only PR.** An earlier wording of this line said such a PR gets *no
+      check at all*; that is false and was false before this wave, since
+      `agent-workflow-parity.yml` and `claude-code-review.yml` carry no
+      `paths:` filter and run on every PR. The ruling is about cost, and stands.
+      Contract: spec 0005 §Closing the CI blind spot
 - [ ] Plugin published to the `kodhama` marketplace, per spec 0005
 
 **Lane C — cross-link ADRs** *(one PR per repo, independently reviewed)*
