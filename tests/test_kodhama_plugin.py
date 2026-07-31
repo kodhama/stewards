@@ -642,6 +642,37 @@ class IssueSkillPublicationTests(unittest.TestCase):
                     dangling.append(f"{rel} -> {pointer}")
         self.assertEqual([], dangling)
 
+    def test_the_distribution_scope_block_is_mirrored_exactly(self) -> None:
+        """spec-0005 S14: three hand-mirrored copies, byte for byte.
+
+        `distribution/repository-scope.md` is canonical and `CLAUDE.md` and
+        `README.md` copy it by hand, which is exactly the arrangement that
+        drifts. Byte identity is asserted rather than "says roughly the same
+        thing", because a paraphrase is how one copy quietly outlives the
+        others.
+
+        **Disclosed limit:** none of the three files is in the CI `paths:`
+        filter, so this fires on any PR that also touches a gated path —
+        including this publication, which touches all three — and not on a PR
+        editing only `CLAUDE.md`. Putting them in the filter would drag
+        `CLAUDE.md` and `README.md` into the test gate, which is the cost the
+        narrow-filter ruling declines to pay for a prose edit. The residual
+        gap is inherent, not overlooked.
+        """
+        begin = "<!-- distribution-scope:begin -->"
+        end = "<!-- distribution-scope:end -->"
+        blocks: dict[str, str] = {}
+        for name in (
+            "distribution/repository-scope.md",
+            "CLAUDE.md",
+            "README.md",
+        ):
+            text = (ROOT / name).read_text(encoding="utf-8")
+            self.assertEqual(1, text.count(begin), name)
+            self.assertEqual(1, text.count(end), name)
+            blocks[name] = text.split(begin, 1)[1].split(end, 1)[0]
+        self.assertEqual(1, len(set(blocks.values())), blocks)
+
     def test_capabilities_enumerates_the_skill_directories(self) -> None:
         """spec-0005 R16: one element per skill directory, derived not
         remembered.
