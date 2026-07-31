@@ -27,7 +27,7 @@ materializes; it is not a substitute for `depends_on`.
 | [`kodhama-spec-0002-bounded-pre-agent-provisioner`](0002-bounded-pre-agent-provisioner.md) | 3 | superseded | Historical universal provisioner contract; retired by `kodhama-0017` |
 | [`kodhama-spec-0003-marketplace-test-observation`](0003-marketplace-test-observation.md) | 1 | superseded | Historical observation record; retired by `kodhama-0025` |
 | [`kodhama-spec-0004-ci-marketplace-setup-skill`](0004-ci-marketplace-setup-skill.md) | 5 | approved | Host-independent authoring of caller-selected Claude/Codex marketplace setup in GitHub Actions |
-| [`kodhama-spec-0005-issue-taxonomy-skill-publication`](0005-issue-taxonomy-skill-publication.md) | 5 | gated | Publishing the issue-convention skill and its provisioning actuator into the Kodhama plugin |
+| [`kodhama-spec-0005-issue-taxonomy-skill-publication`](0005-issue-taxonomy-skill-publication.md) | 6 | gated | Publishing the issue-convention skill and its provisioning actuator into the Kodhama plugin |
 
 Specs 0001, 0002 and 0003 are historical records, not implementation inputs.
 Spec 0004 implements the CI marketplace-setup skill retained by
@@ -36,12 +36,16 @@ recording which marketplace a test exercised — is met by the GitHub Actions ru
 log rather than a schema, per `kodhama-0025`.
 Spec 0005 implements the delivery half of `kodhama-0026-issue-taxonomy`: it
 covers publication only, and asserts no scope for the plugin that carries the
-skill. **It also adds a third thing to what this repository distributes**,
-which the two retained goals above do not anticipate: `kodhama-0017` §33 says
-Stewards *"retains only a narrow future distribution goal"* and its AC3 says
-current repository scope *"describes only"* those two items. That record is
-approved and append-only, so spec 0005 does not edit it; the conformance debt
-is parked as its open question 6.
+skill. **It also changes what this repository distributes in both
+directions**, which the two retained goals above do not anticipate:
+`kodhama-0017` line 33 says Stewards *"retains only a narrow future
+distribution goal"* and its **AC3** says current repository scope *"describes
+only"* those two items — the section `kodhama-0025` amended is **§2**. Spec
+0005 adds a third and fourth distributed thing, and drops the
+marketplace-metadata description, since per `kodhama-0025` that goal is now met
+by the run log rather than by anything the door distributes. Those criteria are
+frozen records rather than statements of present state, so spec 0005 does not
+edit them; the **disclosure** debt is parked as its open question 6.
 
 ## Validation disclosure
 
