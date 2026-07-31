@@ -714,6 +714,49 @@ class IssueSkillPublicationTests(unittest.TestCase):
                     dangling.append(f"{rel} -> {pointer}")
         self.assertEqual([], dangling)
 
+    def test_shipped_readme_enumerates_the_package_contents(self) -> None:
+        """spec-0005 S16: the installer is told what they received.
+
+        Hiding the actuator from the *skill* is a context-safety measure —
+        everything under `skills/` is agent-reachable by construction, which
+        is what `test_the_skill_never_reaches_the_actuator` enforces. Hiding
+        it from the *human who installed the package* is not. An earlier
+        version shipped an actuator that no consumer-facing text mentioned:
+        the spec index named it, and nothing inside the package did.
+
+        S16's closing clause — that the five strings the older README test
+        pins are still there — is discharged by
+        `test_shipped_readme_discloses_hosts_and_makes_no_support_claim`,
+        which the criteria table names alongside this one and which must keep
+        passing unchanged. Not duplicated here, so the pinned set has one
+        home.
+
+        Normalised, so a re-wrap cannot make a required sentence "absent".
+        """
+        text = " ".join(
+            (PLUGIN / "README.md").read_text(encoding="utf-8").split()
+        )
+        for name in (
+            "`skills/setup-ci-marketplace`",
+            "`skills/issues`",
+            "`scripts/seed-issue-taxonomy.sh`",
+        ):
+            self.assertIn(name, text)
+        self.assertIn("**an actuator, not a skill.**", text)
+        self.assertIn("It is dry-run by default", text)
+        self.assertIn("changes nothing without `--apply`", text)
+        # R8: the package enumerates its contents and mints no purpose.
+        # `kodhama-0020` named it the family's overarching dual-host plugin;
+        # what that plugin is *for* is a separate question nobody answered.
+        self.assertIn(
+            "**What this plugin is *for* has never been decided.**", text
+        )
+        self.assertIn(
+            "The list above is the package's present contents, not a "
+            "statement of purpose.",
+            text,
+        )
+
     def test_no_standing_statement_understates_the_package(self) -> None:
         """spec-0005 S13/R15: nothing left standing says the package is
         narrower than it is.
