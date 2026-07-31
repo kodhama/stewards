@@ -567,3 +567,23 @@ class IssueSkillPublicationTests(unittest.TestCase):
         # test gate must not run on a prose edit under `conductor/`.
         self.assertNotIn("conductor/**", entries)
 
+    def test_the_staging_copies_are_gone(self) -> None:
+        """spec-0005 S10/R12: publication moves rather than copies.
+
+        Negatives only. An earlier form also asserted that
+        `migration/legacy-mapping.md` is still staged, which Lane A will make
+        false when the mapping rides the decision to `kodhama/kodhama` — a
+        test that must be deleted the day it matters is worse than no test.
+        R12 is established by these three absences together with the closed
+        inventory in `test_the_package_inventory_is_closed`.
+
+        Reachable on a `conductor/`-only PR, because the CI filter now names
+        this subtree.
+        """
+        staged = ROOT / "conductor" / "wave-issue-taxonomy" / "plugin"
+        for leftover in ("skills", "scripts", "DIRECTION.md"):
+            self.assertFalse(
+                (staged / leftover).exists(),
+                f"{leftover} is still staged: publication copied instead of moving",
+            )
+
