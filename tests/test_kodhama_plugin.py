@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import hashlib
 import importlib.util
 import json
@@ -640,6 +641,74 @@ class IssueSkillPublicationTests(unittest.TestCase):
                     rel = path.relative_to(ROOT).as_posix()
                     dangling.append(f"{rel} -> {pointer}")
         self.assertEqual([], dangling)
+
+    def test_the_actuator_gh_surface_is_pinned(self) -> None:
+        """spec-0005 S9/R11: a closed multiset, not a denylist.
+
+        The previous form called itself an allowlist and implemented a
+        denylist. Injected into this same script, four of five added mutating
+        commands survived it. A denylist can only forbid what someone thought
+        of; pinning the whole surface means **any** added `gh` invocation
+        changes the multiset, whatever its verb.
+
+        Two of the nine occurrences are prose — the sentence "your gh token
+        lacks the 'admin:org' scope" and the advice printed under it. The
+        extractor does not model shell quoting, so both are counted.
+        Excluding them would need a shell parser; including them means
+        editing those two sentences trips this test and a human re-confirms
+        the surface. Cheap, and fail-safe for an actuator.
+
+        The head for the prose line is `gh token lacks`, not `gh token`: the
+        second group is optional but **greedy**. Anyone changing the
+        extractor must re-derive this table from it rather than reconciling
+        the two by eye — an arbiter that fails where it should pass teaches
+        its reader to override the check.
+        """
+        script = PLUGIN / "scripts" / "seed-issue-taxonomy.sh"
+        text = script.read_text(encoding="utf-8")
+        heads = collections.Counter(
+            " ".join(part for part in ("gh", *match.groups()) if part)
+            for match in re.finditer(
+                r"\bgh\s+([a-z][a-z-]*)(?:\s+([a-z][a-z-]*))?", text
+            )
+        )
+        self.assertEqual(
+            {
+                "gh api": 3,
+                "gh auth refresh": 1,
+                "gh auth status": 1,
+                "gh issue list": 1,
+                "gh label create": 1,
+                "gh label list": 1,
+                "gh token lacks": 1,
+            },
+            dict(heads),
+        )
+
+        # The multiset alone cannot see a same-head substitution: swapping
+        # `--method PATCH` for `--method DELETE` leaves the head `gh api` and
+        # the count at three. The literals are what catch it.
+        for mutating in (
+            'gh api --method POST "/orgs/$ORG/issue-types"',
+            'gh api --method PATCH "/orgs/$ORG/issue-types/$id"',
+            'gh label create "$name" -R "$ORG/$repo"',
+        ):
+            self.assertIn(mutating, text)
+
+        # Command forms, not the bare substring `delete`: the file promises
+        # the opposite of what a substring ban would forbid, in four separate
+        # sentences ("This script NEVER deletes a label", "Reported, never
+        # deleted", "now redundant, NOT deleted", "No label is ever deleted").
+        for forbidden in (
+            "gh label delete",
+            "gh issue delete",
+            "gh repo delete",
+            "--method DELETE",
+            "--method PUT",
+            "-X DELETE",
+            "-X PUT",
+        ):
+            self.assertNotIn(forbidden, text)
 
     def test_the_staging_copies_are_gone(self) -> None:
         """spec-0005 S10/R12: publication moves rather than copies.
