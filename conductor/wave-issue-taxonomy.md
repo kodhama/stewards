@@ -146,11 +146,24 @@ propagates; it does not enable. Retired Spore is not a target.
       only in user settings do not transfer to cloud sessions or routines
 
 **Lane E — provisioning**
-- [ ] `gh auth refresh -h github.com -s admin:org` — the maintainer's token
-      currently has `read:org` only, so custom issue types cannot be created
-- [ ] Org issue types created: `Research`, `Decision`, `Epic`
+- [x] `gh auth refresh -h github.com -s admin:org` — run by the maintainer
+      2026-07-31; the token now carries `admin:org`, `gist`, `repo`, `workflow`
+      (`read:org` is subsumed). The actuator's own preflight named the missing
+      scope and printed this command
+- [x] Org issue types created: `Research`, `Decision`, `Epic` — seeded
+      2026-07-31 with `--types-only --apply`, exit 0. **Verified against the
+      API rather than the script's output**: `/orgs/kodhama/issue-types`
+      returns six types, all `is_enabled: true` — the three new ones plus the
+      pre-existing `Task`, `Bug`, `Feature`, which were left untouched
 - [ ] Labels seeded per repo (`scripts/seed-issue-taxonomy.sh --apply`).
-      Idempotent, deletes nothing, reports superseded labels only
+      Idempotent, deletes nothing, reports superseded labels only. Dry-run
+      plans **121 labels across 8 repos**; `homebrew-tap` skips on the
+      empty-backlog gate. Needs no scope beyond `repo`
+
+**Note on order.** The vocabulary now exists org-wide while nothing consumes
+it: the skill reaches repos only once #64 merges and the plugin is installed.
+That gap is deliberate — types are the reversible half — but it means the
+convention is **not** in force yet, whatever the org API now reports.
 
 **Lane F — math-quest**
 - [ ] Receiving issue filed in math-quest (product ownership, not a
