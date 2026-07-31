@@ -11,43 +11,38 @@ resolves — see [`../wave-issue-taxonomy.md`](../wave-issue-taxonomy.md).
 | File | Final home | Blocked on |
 |------|-----------|------------|
 | `decision-0026-issue-taxonomy.md` | `kodhama/kodhama` → `decisions/0026-issue-taxonomy.md` | Lane A — a fresh review pass on this revision, then the maintainer's intent act. **Id confirmed free** 2026-07-31: `kodhama/kodhama` holds only `0009` |
-| `plugin/skills/issues/**` | the plugin that carries the taxonomy | **Eight blocking spec-adversary findings, unrepaired.** Then Lane B — plugin home unresolved, now with grove as a third candidate |
+| `plugin/skills/issues/**` | the plugin that carries the taxonomy | A third review pass. Then Lane B — **plugin home unresolved (BLOCKING)**, three candidates including grove |
 | `plugin/scripts/seed-issue-taxonomy.sh` | same plugin, **outside** `skills/` | Lane B. Deliberately not inside the skill: bundling an actuator into reference content is what forced guardrails into the first draft |
 | `plugin/migration/legacy-mapping.md` | rides the ratified decision, not the plugin | Lane A. Deliberately out of standing agent context — a mapping table plus counts reads as a backlog-sweep plan |
 
 ## Status
 
-**Three independent reviews returned 2026-07-31, all posted to
-[stewards#64](https://github.com/kodhama/stewards/pull/64) against commit
-`90a7bbb`. None passed.**
+**Two review rounds have run, both against superseded states. Neither
+passed.** All six verdict records are on
+[stewards#64](https://github.com/kodhama/stewards/pull/64).
 
-| Reviewer | Verdict |
-|---|---|
-| `grove:decision-adversary` | `NEEDS-REVISION` — 3 load-bearing, 7 repairable |
-| `grove:spec-adversary` | `NEEDS-REVISION` — 8 blocking, 8 non-blocking |
-| `grove:corpus-reviewer` | corpus not sound — 1 hard FAIL, 8 dangling refs, all pre-existing |
+| Round | Binds to | Outcome |
+|---|---|---|
+| 1 | `90a7bbb` | decision `NEEDS-REVISION` · spec `NEEDS-REVISION` (8 blocking) · corpus not sound |
+| 2 | `ff1e47c` | decision `NEEDS-REVISION` · spec `NEEDS-REVISION` (7 blocking, 3 regressions) · corpus not sound |
 
-**The decision record has been revised** against the decision-adversary and
-corpus-reviewer findings, and against the maintainer's direction of
-2026-07-31 to narrow the Done-when rather than supersede `kodhama-0021`. It
-owes a fresh review pass: the verdicts above bind to `90a7bbb`, and this is a
-new state.
+**Round 2 named the root cause:** the record and the taxonomy had been
+repaired in separate passes and diverged for five commits, so the record
+ratified an artifact it no longer described. This state answers round 2 and
+reconciles the two in a single pass — the record, the spec, the brief and the
+seeding script all move together.
 
-**The taxonomy itself is unrepaired.** The spec-adversary's eight blocking
-findings — two internal contradictions, a stage vocabulary undefined for
-three of six types, no tie-break for multi-matching types, a dead relative
-path, and three type names that do not exist in the org — all stand. The
-decision should not be ratified ahead of them, since the vocabulary it
-declares closed is the thing under indictment.
+**It owes a third review pass.** Nothing here has been reviewed in its
+current state.
 
-**Two factual corrections were forced by review**, both in the author's own
-evidence:
+**Three factual errors in the author's own evidence, all caught by review:**
 
-- the claim that math-quest triple-encodes kind including a native type was
-  **wrong**. Zero of 465 issues sampled across six repos carry any native
-  type. The types are provisioned, never applied;
-- the repo denominator counted retired Spore. Six of nine live repos carry
-  stock labels, not seven of ten.
+- a claim that a repo triple-encoded kind including a native type — **wrong**;
+- its replacement, "0 of 465", carried a denominator inflated by pull
+  requests — **also wrong**. The correct figure is 0 of 294, org-wide;
+- `depends_on` used bare cross-repo ids on the strength of one record's
+  practice, which the declared grammar in `.grove/versioning.md` makes a
+  defect rather than a precedent.
 
 **Nothing here authorises a change to any repository**: no label creation, no
 issue migration, no plugin enablement. Those are the wave's lanes, and the

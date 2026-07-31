@@ -14,6 +14,18 @@ This describes how issues are *filed*. It applies to **the issue at hand** —
 the one you are creating or editing. It is never an instruction to sweep the
 backlog.
 
+## Before you start: is this convention in force here?
+
+It requires six issue types. Three ship with every org; three must be created:
+
+```bash
+gh api /orgs/<org>/issue-types --jq '.[].name'
+```
+
+If `Research`, `Decision` and `Epic` are missing, **this convention is not yet
+in force in that org.** Say so and stop — do not file half-typed issues
+against it. Provisioning is a setup step, not a case to work around.
+
 ## The rule that does the most work
 
 **Issue titles are prose. No `[brackets]`, no `type:` prefixes, no `HIGH:`.**
@@ -24,57 +36,58 @@ machine needs to filter on is structured metadata.
 ```
 ✗  [execution] [high-priority] Fix the retry loop in the dispatcher
 ✓  Dispatcher retry loop drops the final attempt
-   → type Bug · priority: p1 · stage: active · area: dispatcher
+   → type Bug · priority: p1 · stage: active · facing: system
 ```
 
 **Titles state the situation, not the instruction.** "Fix X" and "Add Y" name
-the response; the title names what is true. A `Bug` reads as the symptom
-(*"…drops the final attempt"*); everything else reads as the outcome
-(*"Dispatcher retries are configurable per route"*, *"Whether runs commit
-their cursor"*). If you find yourself writing an imperative verb first, the
-dimension you are reaching for is below — use it instead.
+the response; the title names what is true. A `Bug` reads as the symptom;
+everything else reads as the outcome. If you find yourself writing an
+imperative verb first, rewrite it:
 
-**Where there is a real end user, state the outcome from their side.**
+```
+✗  Untrack the self-referencing node_modules symlink
+✓  A self-referencing node_modules symlink blocks fresh clones
+```
+
+**Where the issue has a consumer, state the outcome from their side.**
 
 ```
 ✗  Add streak-freeze logic to the progress reducer
 ✓  A learner's streak survives one missed day
 ```
 
-**Never invent a persona to satisfy the format.** "As a frontend developer I
-want to consume an API" is a fabricated user, written to make enabler work
-look like user-facing work. That issue is `facing: system` and has an honest
-home — state its outcome plainly and drop the persona:
+**Never invent a consumer that does not exist.** Some work has no one outside
+the building team who observes it — a refactor, a lint rule, a test gap. That
+is fine and needs no persona:
 
 ```
-✗  As a frontend developer, I want a progress endpoint
-✓  Progress API exposes per-session totals
+✗  As a maintainer, I want the reducer to be easier to reason about
+✓  Progress reducer duplicates streak logic across three branches
 ```
 
-The test is whether the persona is someone who would ever read the issue. If
-not, drop it. A missing user is honest; an imaginary one is the same class of
-error as a guessed label.
+The test is whether you can name a real party who would notice. If you cannot,
+the issue is `facing: system` and the plain outcome is the honest title.
 
 ## Filing an issue
 
-**Set the stage first — the one field every issue you touch carries.**
-Then work down. **Never stop at an unknown: leave that field unset and
-continue.** An unset field is honest; a guessed one is noise; a halted
-*procedure* loses the fields you did know.
+**Set the stage first.** Then work down. **Never stop at an unknown: leave
+that field unset and continue.** An unset field is honest; a guessed one is
+noise; a halted *procedure* loses the fields you did know.
 
 | # | Dimension | Where it lives | Required |
 |---|-----------|----------------|----------|
-| 1 | **Stage** | `stage: *` label | always |
+| 1 | **Stage** | `stage: *` label | on every open issue |
 | 2 | **Type** | native GitHub issue type | once out of `triage` |
-| 3 | **Facing** | `facing: *` label | on `Feature`, `Bug`, `Task` |
+| 3 | **Facing** | `facing: *` label | once the type is set |
 | 4 | **Area** | `area: *` label | if the repo defines any |
 | 5 | **Priority** | `priority: *` label | only when elevated or explicitly low |
 | 6 | **Status** | `blocked` · `needs-human` · `needs-design-system` · `deferred` | only when true |
 
 ### 1. Stage — where in the pipeline?
 
-`stage: *` labels. Exactly one on any issue you file or touch. That is an
-invariant about **your** issue, not a claim about every issue in the repo.
+`stage: *` labels. Exactly one on every **open** issue you file or touch.
+
+`stage: triage` → `shaping` → `drafting` → `ready` → `active` → `review`
 
 - `triage` — **noticed, not yet committed to.** The type may still be unset.
   This is the collective's "we should look at this" pile
@@ -88,38 +101,20 @@ invariant about **your** issue, not a claim about every issue in the repo.
 
 | Type | Path |
 |---|---|
-| `Bug` `Feature` `Task` `Epic` | `triage` → `shaping` → `drafting` → `ready` → `active` → `review` |
-| `Decision` | `triage` → `shaping` → `drafting` → `review` |
-| `Research` | `triage` → `shaping` → `active` → `review` |
+| `Bug` `Feature` `Task` `Epic` | the full path above |
+| `Decision` | `triage` → `shaping` → `drafting` → `ready` → `review` |
+| `Research` | `triage` → `shaping` → `ready` → `active` → `review` |
 
-A `Decision` is never *built*, so it has no `ready`/`active`: its artifact is
-the record, drafted then reviewed. A `Research` issue has no `drafting` — the
-work *is* the finding. Skipping a stage your type does not have is correct,
-not an omission.
-
-**An `Epic` takes the full path**, because it is real work with its own
-deliverable. Its `drafting` is the **breakdown into children**, and that
-breakdown is a dispatchable artifact: an `Epic` at `ready` is one an agent can
-pick up and decompose. `active` is its children in flight; `review` asks
-whether the set turned out coherent and complete.
-
-**An `Epic`'s stage is its own, never derived from its children.** It says
-where *the epic* is, not where its contents are. An `Epic` at `active` may
-hold children at `triage` and `review` simultaneously; that is normal, not a
-contradiction. An epic nobody has agreed to sits at `triage`, and an epic with
-no children yet is at whatever stage its own work has reached — often
-`drafting`, since deciding what it contains is the work.
-
-Closed vocabulary, one at a time. Moving forward replaces the label rather
-than adding to it.
-
-**Leaving `triage` is the acceptance moment**: the type gets set and the issue
-enters the pipeline. Everything in `triage` is fair game to close as
-`not-planned` — that is what the pile is for.
+`Decision` has no `active`: writing the record *is* `drafting`, and once
+ratified there is nothing left to build. `Research` has no `drafting`: the
+work *is* the finding. Both keep `ready`, because both can be handed to an
+agent — that is what `ready` means, and it is the only stage that marks
+commitment. Skipping a stage your type does not have is correct, not an
+omission.
 
 **On close, strip the stage label.** A closed issue carrying `stage: active`
-asserts something false. **On reopen, set `stage: triage`** and re-decide —
-the state that produced the old label no longer holds.
+asserts something false. **On reopen, set the stage the work is actually at**
+— `triage` only if it genuinely needs re-deciding.
 
 ### 2. Type — what kind of thing is this?
 
@@ -128,34 +123,26 @@ Exactly one. This is a **native GitHub issue type**, not a label — set it with
 
 | Type | Use when | Not this when |
 |------|----------|---------------|
+| `Epic` | It has children that ship separately, **and its own deliverable is that the set is coherent and complete** | It ships as one unit → the rows below |
 | `Decision` | A choice must be made and recorded before work can proceed | The choice is already made and just needs doing → `Task` |
-| `Research` | **The deliverable is a finding**, not a change | The deliverable is a change → something below |
+| `Research` | **The deliverable is a finding**, not a change | The deliverable is a change → the rows below |
 | `Bug` | Something behaves wrong against a stated expectation | Nothing was ever promised → `Feature` |
 | `Feature` | A new capability | It is a defect against something promised → `Bug` |
-| `Task` | **The deliverable is a change** with an obvious done state — chores, cleanups, test gaps, rollouts, bookkeeping | The deliverable is a finding → `Research` |
-| `Epic` | A set of independently-deliverable children, plus the guarantee that the set is **coherent and complete**. **Orthogonal** — never competes with the rows above | It ships as one unit → whatever it actually is |
+| `Task` | The deliverable is a change to something that already exists — chores, cleanups, test gaps, rollouts, bookkeeping | It is new capability → `Feature` |
 
 **When two rows fire, the higher one wins.** The table is in precedence order:
-`Decision` → `Research` → `Bug` → `Feature` → `Task`. An issue that both
-reports a contradiction *and* requires choosing how to resolve it is a
-`Decision`. An issue that is both a rollout and an open question is `Research`.
+`Epic` → `Decision` → `Research` → `Bug` → `Feature` → `Task`. `Epic` leads
+because a container is a container whatever its contents deliver. An issue
+that both reports a contradiction *and* requires choosing how to resolve it is
+a `Decision`. An issue that is both a rollout and an open question is
+`Research`.
 
 `Task` and `Research` are separated on **one axis only — the deliverable.** A
 verification chore whose outcome is unknown is `Research`, because what it
-produces is a finding, even though it has an obvious done state.
+produces is a finding.
 
 **The vocabulary is closed. Never invent a type.** If nothing fits, use the
 nearest match and say so in the body.
-
-**Three of these may not exist yet.** `Bug`, `Feature` and `Task` ship with
-every org. **`Research`, `Decision` and `Epic` must be created** and may not
-be available where you are. If `gh issue create --type` rejects the type,
-**leave the type unset, stay at `stage: triage`, and name the intended type in
-the body** — never substitute a wrong type that happens to exist. Check with:
-
-```bash
-gh api /orgs/<org>/issue-types --jq '.[].name'
-```
 
 **There is no `Idea` type.** "Idea" is not a kind of thing — it is a
 *commitment level*, and commitment is what stage tracks. An unvalidated
@@ -168,11 +155,7 @@ research is `Research` at `stage: shaping` — never a type called
 `divergent-research`. The type says what the issue *is*; the stage says where
 it *is*.
 
-### Hierarchy — native sub-issues, not a naming convention
-
-`Epic` describes structure, not kind, which is why it never competes in the
-precedence order — an epic is *also* a `Feature`, a `Task`, or whatever its
-contents deliver. Use real sub-issues:
+### Hierarchy — native sub-issues
 
 ```bash
 gh issue create --title "..." --parent 42     # file under an epic
@@ -180,51 +163,54 @@ gh issue edit 57 --add-sub-issue 61           # attach an existing issue
 gh issue view 42 --json subIssues             # read the children
 ```
 
-An `Epic` may legitimately have no children yet — that is what `drafting` is
-for. Each child should deliver value on its own; the epic's job is to make
-the set add up to a complete package, which is what its `review` checks. A
-tracker that coordinates work without shipping anything itself is an `Epic`.
+An `Epic`'s stage is **its own**, describing the epic's work, never computed
+from its children:
 
-### 3. Facing — does anyone outside this repo observe it?
+- `drafting` — **the breakdown is being written.** This is where children get
+  created. An epic with no children yet is normally here
+- `ready` — the breakdown is approved; the children can be dispatched
+- `active` — the epic's own coordination work is in flight
+- `review` — the children are done; checking whether the set is coherent and
+  complete, which is the thing an epic uniquely promises
 
-`facing: user` · `facing: system`. Set it on `Feature`, `Bug` and `Task`;
-leave it off the rest.
+An `Epic` at `active` may hold children at any mix of stages. That is normal.
 
-**"User" means whoever consumes this repo** — a learner for a product, a
-consuming repository for a plugin. Not necessarily a human.
+### 3. Facing — who observes the difference?
+
+`facing: user` · `facing: system`. Set it once the type is set.
+
+**The boundary is the building team**, in both directions:
 
 | | |
 |---|---|
-| `facing: user` | someone outside this repo sees the difference |
-| `facing: system` | only the team building it does |
+| `facing: user` | someone who did **not** build it observes the difference |
+| `facing: system` | only the people building it do |
 
-The distinction cuts *inside* a type, not between types, which is why it is
-its own dimension. Two real chores from the same repo:
+"Someone" need not be a human: a learner for a product, a **consuming
+repository** for a plugin. If another repo's agents or maintainers would
+notice, it is `facing: user` even though nobody outside the org ever sees it.
+
+The distinction cuts *inside* a type, not between types. Two real chores from
+the same repo:
 
 ```
-facing: system   Untrack the self-referencing node_modules symlink
+facing: system   Progress reducer duplicates streak logic across three branches
 facing: user     Theme glyph renders flush against the name
 ```
 
-Same type, same urgency class, entirely different audience — and the second
-is a learner looking at a wrong-looking screen.
+Same type, entirely different audience — and the second is a learner looking
+at a wrong-looking screen.
 
 **This is where Story and Enabler live.** A `Feature` at `facing: user` is
-what agile calls a **Story**; at `facing: system`, an **Enabler**. They are
-one type seen from two sides, not two types — which is why an enabler never
-needs a fabricated persona to justify itself. It has an honest home.
-
-**Set it before writing the title**, because it decides which form the title
-takes — see the title rule above.
+what agile calls a **Story**; at `facing: system`, an **Enabler**. One type
+seen from two sides, which is why an enabler never needs a fabricated persona
+to justify itself. It has an honest home.
 
 ### 4. Area — what part of the system?
 
 `area: <thing>` labels, defined **per repo**. Deliberately not standardised
-across the family: `area: dispatcher` in one repo and `area: tutoring` in
-another have nothing to do with each other.
-
-Use an existing one. Only propose a new area when three or more issues would
-carry it.
+across the family. Use an existing one; only propose a new area when three or
+more issues would carry it.
 
 ### 5. Priority
 
@@ -242,23 +228,22 @@ oversight.
 
 Additive, and only when true. Closed vocabulary, four bare tokens.
 
-- `blocked` — cannot proceed for a reason that is **not another issue**
-  (waiting on a vendor, a credential, an external release). Name it in the
-  body. **Issue-to-issue blocking is a native dependency, not this label** —
-  see below
+- `blocked` — cannot proceed, and **the blocker is not another issue**. Name
+  it in the body
 - `needs-human` — requires a person; an agent must not proceed alone
 - `needs-design-system` — waiting on an upstream design-system change
-- `deferred` — accepted and still wanted, but deliberately not scheduled
-  **until a stated condition**. Name the condition in the body
+- `deferred` — nothing is stopping it; **we have chosen not to schedule it
+  yet**, until a condition named in the body
 
-**Use the most specific one that applies, and never add `blocked` on top.**
-`needs-human` and `needs-design-system` are specific forms of blocked;
-`blocked` is the general form for everything else. They do not combine.
+**`blocked` and `deferred` are not the same shape.** `blocked` means the work
+*cannot* proceed; `deferred` means it *could* but we decided not to. "Waiting
+for the vendor to ship 2.0" is `blocked`. "Not before the Q3 release" is
+`deferred`.
+
+**Use the most specific one, and never add `blocked` on top.** `needs-human`
+and `needs-design-system` are specific forms of blocked. They do not combine.
 
 ### Blocked by another issue — use the native dependency
-
-Do not encode an issue-to-issue edge as a label plus a prose link. It is a
-real, queryable, directed relationship:
 
 ```bash
 gh issue create --title "..." --blocked-by 42
@@ -270,13 +255,11 @@ The `blocked` label is only for blockers that are **not** issues.
 
 ### "Not now" — three states, one question each
 
-Distinct, and the test is mechanical:
-
 | | Has it been accepted? | Consequence |
 |---|---|---|
 | `stage: triage` | **No** — nobody has committed to it | no priority, no `deferred` |
 | `priority: p2` | Yes, ranked low | competes for time, just badly |
-| `deferred` | Yes, but waiting on a **stated condition** | does not compete until the condition holds |
+| `deferred` | Yes, but we chose not to schedule it | does not compete until the condition holds |
 
 If you cannot name the condition, it is not `deferred` — it is `priority: p2`.
 If nobody has agreed to do it at all, it is neither; it is `stage: triage`.
@@ -289,13 +272,11 @@ comment before closing a duplicate. Strip the `stage:` label on close.
 
 ## Searching
 
-Because the metadata is structured, search it directly:
-
 ```bash
 gh issue list --type Bug --label "priority: p0"
 gh issue list --label "stage: triage"                             # the untriaged pile
-gh issue list --type Decision --label "stage: drafting"
 gh issue list --label "stage: ready" --json number,title,labels   # agent-dispatchable
+gh issue list --type Feature --label "facing: user"               # user-visible capability
 gh search issues --owner <org> --include-prs=false "type:Bug"     # across the family
 ```
 
@@ -303,12 +284,10 @@ gh search issues --owner <org> --include-prs=false "type:Bug"     # across the f
 
 Many existing issues still carry `[bracket]` prefixes or superseded labels.
 **Never copy them onto a new issue.** On an issue you are already editing for
-another reason, normalising it to this convention is **permitted, not
-required**. Converting the backlog wholesale is a separate exercise under its
-own approval, with its own mapping table — never something to start from here.
+another reason, normalising it is **permitted, not required**. Converting the
+backlog wholesale is a separate exercise under its own approval.
 
 ## Full reference
 
-`reference/taxonomy.md` — the rationale behind each dimension, the
-type-versus-stage distinction, and the questions still open. Read it when a
-case does not fit the summary above.
+`reference/taxonomy.md` — the rationale behind each dimension and the
+questions still open. Read it when a case does not fit the summary above.

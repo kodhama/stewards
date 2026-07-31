@@ -33,8 +33,10 @@ are not plugin repositories, and so take an issue rather than an ADR:
 
 - math-quest; design-system; sdd-gauntlet; homebrew-tap; kodhama.
 
-**Enablement** — every repository above where agents file issues. Retired
-Spore is not a target.
+**Enablement** — **each repository's own act, not this wave's.** Approved
+`kodhama-0021` reserves adoption to each product, and `kodhama-0026`
+Decision 11 disclaims enabling anything anywhere. This wave publishes and
+propagates; it does not enable. Retired Spore is not a target.
 
 ## Boundaries
 
@@ -82,7 +84,8 @@ Spore is not a target.
 - [ ] Stewards
 
 **Lane D — enablement** *(the delivery that actually reaches cloud sessions)*
-- [ ] Each target repo's `.claude/settings.json` lists the plugin under
+- [ ] **Each repo decides for itself; this lane records opt-ins rather than
+      performing them.** A repo that opts in lists the plugin under
       `enabledPlugins`. **Declaring the marketplace is not enough** —
       Stewards currently carries `"enabledPlugins": {}`, and plugins enabled
       only in user settings do not transfer to cloud sessions or routines

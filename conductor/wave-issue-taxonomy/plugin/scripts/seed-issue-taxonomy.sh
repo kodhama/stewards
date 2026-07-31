@@ -18,7 +18,7 @@ TYPES_ONLY=0
 LABELS_ONLY=0
 REPOS=()
 
-ALL_REPOS=(trellis spore grove wisp math-quest design-system kodhama stewards sdd-gauntlet homebrew-tap)
+ALL_REPOS=(trellis grove wisp math-quest design-system kodhama stewards sdd-gauntlet homebrew-tap)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -54,7 +54,7 @@ run() {  # run <description> <command...>
 CUSTOM_TYPES=(
   "Research|purple|An open question to answer. The deliverable is a finding, not a change"
   "Decision|orange|A choice that must be made and recorded"
-  "Epic|green|A container for sub-issues that ship separately"
+  "Epic|green|Children that ship separately, plus the guarantee the set is coherent and complete"
 )
 
 seed_types() {
@@ -94,7 +94,7 @@ LABELS=(
   "stage: drafting|bfd4f2|The artifact that defines the work is being written"
   "stage: ready|0e8a16|Approved and dispatchable — an agent can pick this up"
   "stage: active|1d76db|The committed work is in flight"
-  "stage: review|5319e7|Built, awaiting verification"
+  "stage: review|5319e7|Done, awaiting verification"
 
   "facing: user|0e8a16|Someone outside this repo sees the difference"
   "facing: system|5319e7|Only the team building it does"
