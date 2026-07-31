@@ -64,7 +64,8 @@ Jira, a tracker that is not GitHub — against the same abstract role.
 | **Story** | **Already adapter-shaped.** It appears only as a reading of the encoding — *"a `Feature` at `facing: user` is what agile calls a Story"*. Concept and encoding are already distinct words. Lifts out cleanly |
 | **Epic** | **Not separated.** The word is both the abstract container *and* the literal GitHub type name. Extraction requires splitting them first — the concept "a coherent set of independently-deliverable children" from the type spelled `Epic` |
 | **Enabler** | Adapter-shaped, same as Story — a reading of `facing: system` |
-| `stage:`, `priority:`, status | Encoding only. Stay here |
+| `stage:`, `priority:`, status, `severity:` | Encoding only. Stay here |
+| `facing:` | Encoding, but the **concept** it carries (does a consumer see this?) is abstract. The values are GitHub labels; the question is not |
 | §3 type-vs-stage, §5 no-`Idea`-type, §5a no-`Story`-type | **Abstract reasoning.** This is what moves to the role |
 
 ### Templates sit on the abstract side

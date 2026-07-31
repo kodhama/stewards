@@ -1,7 +1,6 @@
 ---
 name: issues
-description: The kodhama issue convention — how to file, type, prioritise, label, and search GitHub issues in any kodhama repo. Titles are prose; every dimension lives in structured metadata.
-when_to_use: Use when creating, filing, triaging, labelling, closing, or searching a GitHub issue; when writing an issue title or body; when deciding what kind of work an issue represents; or when a user asks what label, type, or priority something should get.
+description: The kodhama issue convention — titles are prose, every dimension lives in structured metadata. Use when creating, filing, triaging, labelling, closing or searching a GitHub issue; when writing an issue title or body; when starting or finishing work on one; when deciding what kind of work an issue represents; or when asked what label, type or priority something should get.
 implements: kodhama-0026-issue-taxonomy
 ---
 
@@ -120,9 +119,14 @@ Each value names **how far the issue has got**, not what anyone is doing right
 now — so an issue nobody is touching keeps the stage it reached, and a
 `deferred` issue needs no stage of its own.
 
+**Advance it on any issue you touch, not only ones you file.** Set `active`
+when you start work, `review` when you finish. A `ready` label nobody removes
+turns the dispatch queue into a list of work already done.
+
 **Leaving `triage` is the commitment moment**: the type gets set and the issue
-becomes dispatchable. Everything in `triage` is fair game to close as
-`"not planned"` — that is what the pile is for.
+becomes dispatchable. `triage` holds both — things nobody has agreed to, and
+things agreed but not yet worked out — so it is **not** a disposable pile, and
+work in it may carry `deferred` or `priority: low` like anything else.
 
 ### 2. Type — what kind of thing is this?
 
@@ -144,10 +148,15 @@ children but no coherence deliverable, so classify it by what it delivers.
 
 `Task` and `Research` are separated on **one axis — the deliverable.** A
 verification chore whose outcome is unknown is `Research`, because what it
-produces is a finding.
+produces is a finding. **The test: if the issue closes on confirming "it
+works", it is `Research`; if a change is already known to be needed, `Task`.**
 
 **The vocabulary is closed. Never invent a type.** If nothing fits, use the
 nearest match and say so in the body.
+
+**A bucket with no shared deliverable is not an issue — split it.** Use `Epic`
+only when the pieces ship as a coherent set. Several findings that are all the
+same kind of fix are fine as one issue; nine unrelated ones are not.
 
 **There is no `Idea` type.** "Idea" is not a kind of thing — it is a
 *commitment level*, and commitment is what stage tracks. An unvalidated
@@ -184,6 +193,11 @@ children still open, and an epic at any stage may hold children at any mix.
 Who maintains the consumer is irrelevant. A change a sibling repo would notice
 is `facing: user` even when the same people maintain both.
 
+**An artifact-only change is `facing: system`** even when the artifact governs
+shipped output — a wrong spec is why the plugin will be wrong, but the
+consumer receives the plugin, not the spec. It becomes `facing: user` only
+when what consumers receive changes.
+
 **`Decision`, `Research` and `Epic` carry no `facing:`.** A record, a finding
 and a coherence guarantee are none of them a change a consumer receives.
 
@@ -198,13 +212,22 @@ other.
 
 | Label | Means |
 |-------|-------|
-| `severity: session-blocker` | someone is blocked right now, with no way through |
-| `severity: broken-feature` | a path is unusable; the default path still works |
+| `severity: blocker` | someone is stopped, with no way through |
+| `severity: broken-feature` | a path is unusable or misleading; the default path still works |
 | `severity: papercut` | annoying, cosmetic, or has a workaround |
 
+**When two fire, take the more severe.** They overlap by construction — a
+blocker also makes a path unusable.
+
+**For a bug in an artifact rather than in running behaviour** — a spec
+contradicting its upstream, two documents disagreeing, something stated and
+never built — nothing is executing, so read it by what a reader would do:
+**`broken-feature` if someone could act wrongly on it, `papercut` otherwise.**
+`blocker` is for when work genuinely cannot proceed.
+
 A papercut on the first screen every user sees can be `priority: urgent`. A
-session-blocker in a feature nobody has enabled yet can be unprioritised. Do
-not collapse them.
+blocker in a feature nobody has enabled yet can be unprioritised. Do not
+collapse the two axes.
 
 Optional on other types when something is degraded rather than absent.
 
@@ -236,6 +259,10 @@ Additive, and only when true. Closed vocabulary, three bare tokens.
 - `deferred` — nothing is stopping it; **we have chosen not to schedule it
   yet**, until a condition named in the body
 
+**Use the most specific one, and never add `blocked` on top of it.**
+`needs-human` is a specific form of blocked; `blocked` is the general form for
+everything else. They do not combine.
+
 **`blocked` and `deferred` are not the same shape.** `blocked` means the work
 *cannot* proceed; `deferred` means it *could* but we decided not to.
 
@@ -258,7 +285,7 @@ change. The `blocked` label is only for blockers that are **not** issues.
 
 | | Has it been committed to? | Consequence |
 |---|---|---|
-| `stage: triage` | **No** | no `priority: low`, no `deferred`. `urgent`/`high` are fine — an incident is often noticed before anyone triages it |
+| `stage: triage` | **Not necessarily** — it holds both | any priority, and `deferred` if a condition is named. The stage does not decide this; the body does |
 | `priority: low` | Yes, ranked low | competes for time, just badly |
 | `deferred` | Yes, but waiting on a **stated condition** | does not compete until the condition holds |
 
@@ -282,7 +309,7 @@ edge, the same reason blocking uses `--blocked-by` rather than prose.
 ## Searching
 
 ```bash
-gh issue list --type Bug --label "severity: session-blocker"
+gh issue list --type Bug --label "severity: blocker"
 gh issue list --label "stage: triage"                             # the untriaged pile
 gh issue list --label "stage: ready" --json number,title,labels \
   --search '-label:needs-human -label:blocked -label:deferred'    # agent-dispatchable

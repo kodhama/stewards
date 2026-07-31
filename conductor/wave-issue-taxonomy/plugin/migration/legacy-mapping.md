@@ -21,7 +21,7 @@ occurrences across those repos.
 | `[bug]` | 24 | type `Bug` |
 | `[idea]` | 19 | `stage: triage` + the type its content implies |
 | `[shaping]` | 19 | `stage: triage` |
-| `[execution]` | 18 | `stage: active` |
+| `[execution]` | 18 | `stage: active` + the type its content implies |
 | `[consider]` | 14 | `stage: triage` + the type its content implies |
 | `[high-priority]` / `HIGH:` | 12 | `priority: high` |
 | `[Story]` | 11 | type `Feature` + `facing: user`, as a sub-issue of its epic |
@@ -35,16 +35,17 @@ occurrences across those repos.
 | `[kit]` `[gate]` `[durability]` `[adjudicate]` | 4 | `area: *`, repo-local to sdd-gauntlet |
 | `[experiment]` | 3 | type `Research` |
 | `[stage-0]` `[stage-1]` `[stage-2]` | 3 | `area: <phase>` — **not** grove stages; see judgment calls |
-| `cleanup:` `test:` `review-bookkeeping:` | 3 | type `Task` |
+| `cleanup:` `review-bookkeeping:` | 2 | type `Task` |
+| `test:` | 1 | judge by deliverable — `Research` if it closes on confirming "it works", `Task` if a change is already known |
 | `[feature]` | 2 | type `Feature` |
 | `[design-feedback]` | 2 | `area: design` |
 | `Decide:` | 2 | type `Decision` |
-| `[validation]` | 1 | `stage: review` |
+| `[validation]` | 1 | `stage: review` + the type its content implies |
 | `[discovery]` | 1 | type `Research` + `stage: triage` |
 | `[papercut]` | 1 | type `Bug` + `severity: papercut` |
 | `[maintainer-action]` | 1 | `needs-human` |
 | `[user-feedback]` | 1 | `area: <feature>` + note the source in the body |
-| `[program]` | 1 | type `Epic` |
+| `[program]` | 1 | **no type**, `stage: active` — a machine-owned delivery surface is not work; say so in the body. No children, so `Epic`'s conjunctive test fails |
 | `[product]` | 1 | `area: product` |
 | `[rollout]` | 1 | type `Task` |
 | `[deferred]` | 1 | `deferred` |

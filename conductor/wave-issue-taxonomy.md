@@ -64,9 +64,11 @@ propagates; it does not enable. Retired Spore is not a target.
       **NEEDS-REVISION** (twelve verdict records on stewards#64, binding
       `90a7bbb`, `ff1e47c`, `7c0c54d`, `228e7ed`). Round 1's F1 was a real
       conflict with approved `kodhama-0021`, now closed
-- [x] Maintainer direction on F1 (2026-07-31): **narrow the Done-when** to
-      publication plus repo-owned opt-in, rather than supersede
-      `kodhama-0021`. Applied; `kodhama-0021` is now a declared dependency
+- [x] Maintainer direction on F1 (2026-07-31): resolve the `kodhama-0021`
+      conflict by narrowing rather than superseding. Applied — and the
+      Done-when was subsequently **emptied of delivery criteria altogether**,
+      which resolves it more completely than the direction asked. Delivery
+      lives in these lanes. `kodhama-0021` is a declared dependency
 - [ ] Fifth review pass — the four prior rounds bind to superseded commits
 - [ ] Decision ratified by maintainer intent act
 

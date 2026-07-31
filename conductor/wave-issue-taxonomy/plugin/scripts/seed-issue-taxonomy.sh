@@ -8,6 +8,8 @@
 #   ./seed-issue-taxonomy.sh --repo grove           # plan for one repo
 #   ./seed-issue-taxonomy.sh --repo grove --apply   # execute for one repo
 #   ./seed-issue-taxonomy.sh --types-only --apply   # org issue types only
+#   ./seed-issue-taxonomy.sh --labels-only           # labels, skip types
+#   ./seed-issue-taxonomy.sh --repo X --force        # seed a repo with no backlog
 #
 # Requires: gh, with scopes `repo` (labels) and `admin:org` (issue types).
 set -euo pipefail
@@ -29,7 +31,7 @@ while [[ $# -gt 0 ]]; do
     --types-only)  TYPES_ONLY=1; shift ;;
     --labels-only) LABELS_ONLY=1; shift ;;
     --force)       FORCE=1; shift ;;
-    -h|--help)     sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help)     sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -105,8 +107,8 @@ LABELS=(
   "facing: user|0e8a16|Changes what a consumer of this repo gets"
   "facing: system|5319e7|Changes only how this repo is built or maintained"
 
-  "severity: session-blocker|b60205|Someone is blocked right now, with no way through"
-  "severity: broken-feature|d93f0b|A path is unusable; the default path still works"
+  "severity: blocker|b60205|Someone is stopped, with no way through"
+  "severity: broken-feature|d93f0b|A path is unusable or misleading; the default path still works"
   "severity: papercut|fef2c0|Annoying, cosmetic, or has a workaround"
 
   "priority: urgent|b60205|Drop other work"

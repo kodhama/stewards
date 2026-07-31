@@ -46,12 +46,12 @@ population. The conclusion is unchanged; the correct figure is smaller.
    which is also why `Epic` **is** a type: a container does not dissolve on
    completion.
 4. **Stage, severity, priority, facing, status and area are labels.** Every
-   closed one is enumerated in this record — these five here, `facing:` in
-   clause 5 — so the closure is enforceable by the record rather than by a
-   file it points at:
+   closed one is enumerated in this record — the four below, plus `facing:` in
+   clause 5. `area:` is the one open vocabulary. The closure is therefore
+   enforceable by the record rather than by a file it points at:
    - `stage:` — `triage` · `ready` · `active` · `review`. Mutually exclusive,
      one sequence, every type
-   - `severity:` — `session-blocker` · `broken-feature` · `papercut`. Impact,
+   - `severity:` — `blocker` · `broken-feature` · `papercut`. Impact,
      which is a different axis from urgency
    - `priority:` — `urgent` · `high` · `low`, with **unset** meaning normal
    - status — `blocked` · `needs-human` · `deferred`. Bare tokens;
@@ -120,9 +120,9 @@ This record decides a convention. Its completion test is whether the
 convention is decided — **not whether it has been delivered anywhere.**
 
 - Every vocabulary this record calls closed is **enumerated in this record**:
-  the six types, the six stage values, the four status tokens, the two
-  `facing:` values, and the priority set. A closure the record does not
-  enumerate is a closure it cannot enforce.
+  the six types, the four stage values, the three severity values, the three
+  status tokens, the two `facing:` values, and the three priority values. A
+  closure the record does not enumerate is a closure it cannot enforce.
 - The record is ratified by the maintainer's intent act.
 
 **Nothing about delivery is a criterion here.** Publication, org-type
@@ -235,7 +235,7 @@ rather than by the author:**
 
 - a claim that a repo triple-encoded kind including a native type — **wrong**;
 - its replacement, "0 of 465", counted pull requests — **also wrong**. The
-  figure is 0 of ~296, reproduced independently three times since;
+  figure is 0 of ~296, reproduced independently five times since;
 - `depends_on` used bare cross-repo ids on one record's practice, which the
   author then called *"a defect by the declared grammar"* — an **over-read**:
   the companions say such referents are *permitted*, not mandated, and state

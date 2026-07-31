@@ -32,7 +32,7 @@ One slot cannot carry eight dimensions. That is the whole diagnosis.
 **A measured fact that bears on cost.** The org has `Task`, `Bug` and
 `Feature` provisioned, and **not one issue carries a type — 0 of ~296**,
 counted across all nine live repos on 2026-07-31 with pull requests excluded.
-The denominator drifts daily; the zero has been reproduced independently four
+The denominator drifts daily; the zero has been reproduced independently five
 times. Two earlier drafts got this wrong in opposite directions — one claimed
 a repo already used native types, the other reported 465, which had counted
 pull requests.
@@ -103,6 +103,12 @@ commitment moment is leaving it.
 Every value names **how far an issue has got**, not what anyone is doing right
 now, which is what lets a `deferred` issue keep the stage it reached.
 
+**Advancing the stage is an obligation on any issue you touch**, not only ones
+you file. An earlier state said nothing about issues the agent did not create,
+which left `stage: ready` as a label nobody was required to remove — and a
+dispatch queue that reads as authoritative while listing finished work is
+worse than no stage at all.
+
 **An `Epic`'s stage is its own and is never derived from its children** — at
 any stage, not only one. An earlier draft asserted the independence and then
 defined two values in terms of the children.
@@ -118,27 +124,36 @@ maintainers. Two earlier drafts keyed the values on different boundaries.
 Set on `Bug`, `Feature` and `Task`. `Decision`, `Research` and `Epic` are
 exempt by the same test.
 
-**Kept mandatory against a review recommendation.** A practitioner argued it
-does not partition grove, trellis or wisp — nearly everything there is
-`facing: user` by the repo-output test — and should be optional there. The
-reviewer marked that claim as inference rather than measurement, and it was
-not adopted: a uniformly-`user` repo is still answering the question, and an
-optional dimension decays to an unused one. **Revisit if measurement shows the
-split is genuinely absent.**
+**Kept mandatory, and the objection was withdrawn on measurement.** A
+practitioner argued it does not partition grove, trellis or wisp and should be
+optional there, marking the claim as inference. Asked to measure rather than
+infer, they classified all 72 open issues in those three repos: of 41
+delivery-type issues, **33 `user` and 8 `system` — 80/20, a skew, not an
+absence**, and the eight are a coherent set worth pulling. Objection withdrawn
+by its author. The question is settled by measurement, not by argument.
 
-### Severity — `session-blocker | broken-feature | papercut`
+### Severity — `blocker | broken-feature | papercut`
 
 Required on `Bug`. **Severity is impact; priority is urgency**, and they are
 independent: a papercut on the first screen every user sees can be urgent, and
-a session-blocker in an unreleased feature can be unprioritised.
+a blocker in an unreleased feature can be unprioritised.
 
 This vocabulary is not invented. It is the required dropdown in math-quest's
 existing `bug-report.yml`, in daily use before this convention existed — the
 team was already recording impact, and an earlier draft of the mapping
 discarded it by collapsing `[papercut]` into `priority: p2`.
 
-Values are defined generically so they carry outside a product repo:
-"someone is blocked right now" rather than "a kid's session".
+Values are defined generically so they carry outside a product repo. The
+original `session-blocker` was renamed to `blocker`: it collided with the
+`blocked` status label, and "session" already means a Claude Code session in
+three of these repos, so the word pointed at the wrong thing.
+
+**The `Bug` widening forced one more generalisation.** Because `Bug` now
+admits artifact-against-artifact contradiction, where nothing is executing,
+all three values needed a reading for work with no runtime path. `SKILL.md`
+gives it: read by what a reader would do wrongly. Without that, `severity:`
+was a required field with no defined answer for a class the type row
+deliberately admits.
 
 ### Area — `area: *`, repo-local
 
