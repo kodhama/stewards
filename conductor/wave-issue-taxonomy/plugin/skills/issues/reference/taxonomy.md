@@ -33,8 +33,10 @@ One slot cannot carry eight dimensions. That is the whole diagnosis.
 
 **A measured fact that bears on cost.** The org has `Task`, `Bug` and
 `Feature` provisioned as native issue types, and **not one issue in the org
-carries a type — 0 of 294**, counted across all nine live repos on
-2026-07-31 with pull requests excluded. The native dimension is available and
+carries a type — 0 of ~296**, counted across all nine live repos on
+2026-07-31 with pull requests excluded. The denominator drifts daily as issues
+are filed; the zero is the load-bearing part and has been reproduced
+independently three times. The native dimension is available and
 entirely unadopted. Two earlier drafts got this wrong in opposite directions:
 one claimed a repo already used native types (false), the other reported a
 denominator of 465 (which had counted pull requests, and exceeded the org's
@@ -124,17 +126,18 @@ forbids. `triage` is the pre-acceptance pile.
 
 **Per-type paths.** `Decision` skips `active` (writing the record *is* the
 work, so `drafting` is its working stage); `Research` skips `drafting` (the
-work *is* the finding). Everything else takes the full path. **`ready` always
-sits immediately before the stage where the work happens** — which is why
-`Decision`'s runs `shaping → ready → drafting`, not the reverse.
+work *is* the finding). Everything else takes the full path. For the three types with a
+committed-delivery stage, **`ready` sits immediately before it** — which is
+why `Decision`'s runs `shaping → ready → drafting`, not the reverse.
 
-`stage: ready` is the dispatch signal, but it is **not sufficient on its own**:
-an issue also carrying `needs-human`, `blocked` or `deferred` is not
-dispatchable, and the query in `SKILL.md` excludes them.
+`stage: ready` means the defining artifact is approved. **Any status label
+suspends dispatch** — a `ready` issue that becomes `blocked`, `needs-human` or
+`deferred` keeps its stage, and the status label is what withholds it. The
+query in `SKILL.md` filters on both.
 
-**Stage marks how far an issue has got, not what is happening this minute.**
-That is what lets a `deferred` issue keep the stage it reached instead of
-needing a stage of its own.
+**Every stage value names how far an issue has got, not what anyone is doing
+right now** — which is why the values are worded as positions rather than
+activities, and why a `deferred` issue keeps the stage it reached.
 
 **An `Epic`'s stage is its own and is never derived from its children** — at
 any stage, not only `active`. Every value describes the epic's own work:
@@ -162,9 +165,10 @@ recorded where an issue came from, which changes nothing about the work.
 Facing changes how the title is written and whether shipping it is observable
 outside the building team. It also cuts *inside* every delivery type rather
 than between them, so it cannot be a type without multi-matching. It is set on
-the delivery types only — `Bug`, `Feature`, `Task`, `Epic`; a `Decision`
-produces a record and a `Research` issue a finding, neither of which is a
-change a consumer receives.
+`Bug`, `Feature` and `Task` only. `Decision`, `Research` and `Epic` are exempt
+by the same test: a record, a finding and a coherence guarantee are none of
+them a change a consumer receives. Reading an epic's `facing:` off its
+children would also break the rule that an epic's metadata is its own.
 
 The evidence is in the corpus: two issues carried the same `[chore]` label in
 the same repo — a duplicated reducer branch, and a theme glyph rendering flush
@@ -269,9 +273,14 @@ rides the ratifying decision; it does not authorise the edit.
 ## Revision note
 
 Kept short and last, deliberately: superseded rules stated in the same voice
-as live ones are a hazard in standing agent context. Three constructs changed
-shape under review — `Epic` (no stage → short path → full path, and orthogonal
-→ first in precedence), `facing:` (added, then given a single boundary), and
-the stage vocabulary (`spec`/`building` → `drafting`/`active`). The reasoning
+as live ones are a hazard in standing agent context. Constructs that changed
+shape across four review rounds: `Epic` (no stage → short path → full path;
+orthogonal → first in precedence; carried `facing:` → exempt), `facing:`
+(added, then re-keyed twice, finally to this repository's output), the stage
+vocabulary (`spec`/`building` → `drafting`/`active`, then reworded from
+activities to positions), `Decision` (gained a derivability threshold, and
+`ready` moved before `drafting`), `Bug` (widened to non-behavioural and
+non-vertical conflicts), `Task` (redrawn on the deliverable axis), and the
+close block (twice). The reasoning
 for each is folded into §4 above rather than narrated here. Full history is in
 the commits and in the verdict records on stewards#64.

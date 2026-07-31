@@ -90,11 +90,11 @@ LABELS=(
   "priority: p2|c5def5|Accepted and wanted, ranked below normal"
 
   "stage: triage|fef2c0|Noticed, not yet committed to — the type may still be unset"
-  "stage: shaping|c2e0c6|Accepted; the problem is being refined"
-  "stage: drafting|bfd4f2|The artifact that defines the work is being written"
-  "stage: ready|0e8a16|Approved and dispatchable — an agent can pick this up"
-  "stage: active|1d76db|The committed work is in flight"
-  "stage: review|5319e7|Done, awaiting verification"
+  "stage: shaping|c2e0c6|Accepted; the problem is not yet settled"
+  "stage: drafting|bfd4f2|The defining artifact is not yet finished"
+  "stage: ready|0e8a16|Defining artifact approved; dispatchable unless a status label says otherwise"
+  "stage: active|1d76db|Approved and started, not yet done"
+  "stage: review|5319e7|Done, not yet verified"
 
   "facing: user|0e8a16|Changes what a consumer of this repo gets"
   "facing: system|5319e7|Changes only how this repo is built or maintained"

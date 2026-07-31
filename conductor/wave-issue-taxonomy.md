@@ -60,14 +60,14 @@ propagates; it does not enable. Retired Spore is not a target.
       Stewards holds 0001–0023 + 0025. `0024` is free and **explained** —
       `wave-family-consolidation.md` records it was reclassified to
       `research/family-audit-2026-07.md`; there is no unaccounted hole
-- [x] `kodhama-0026` independently reviewed — `grove:decision-adversary`
-      returned **NEEDS-REVISION** (posted to stewards#64, binding `90a7bbb`).
-      Its F1 was a real conflict with approved `kodhama-0021`
+- [x] `kodhama-0026` independently reviewed, four rounds — every one returned
+      **NEEDS-REVISION** (twelve verdict records on stewards#64, binding
+      `90a7bbb`, `ff1e47c`, `7c0c54d`, `228e7ed`). Round 1's F1 was a real
+      conflict with approved `kodhama-0021`, now closed
 - [x] Maintainer direction on F1 (2026-07-31): **narrow the Done-when** to
       publication plus repo-owned opt-in, rather than supersede
       `kodhama-0021`. Applied; `kodhama-0021` is now a declared dependency
-- [ ] Fresh review pass on the revision — the prior verdicts bind to
-      `90a7bbb` and no longer apply
+- [ ] Fifth review pass — the four prior rounds bind to superseded commits
 - [ ] Decision ratified by maintainer intent act
 
 **Lane B — plugin home + publication**

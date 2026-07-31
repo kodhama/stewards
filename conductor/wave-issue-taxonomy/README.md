@@ -17,32 +17,35 @@ resolves — see [`../wave-issue-taxonomy.md`](../wave-issue-taxonomy.md).
 
 ## Status
 
-**Two review rounds have run, both against superseded states. Neither
-passed.** All six verdict records are on
+**Four review rounds have run, each against a state now superseded. None
+passed.** All twelve verdict records are on
 [stewards#64](https://github.com/kodhama/stewards/pull/64).
 
 | Round | Binds to | Outcome |
 |---|---|---|
-| 1 | `90a7bbb` | decision `NEEDS-REVISION` · spec `NEEDS-REVISION` (8 blocking) · corpus not sound |
-| 2 | `ff1e47c` | decision `NEEDS-REVISION` · spec `NEEDS-REVISION` (7 blocking, 3 regressions) · corpus not sound |
+| 1 | `90a7bbb` | decision + spec `NEEDS-REVISION` (8 blocking) · corpus not sound |
+| 2 | `ff1e47c` | decision + spec `NEEDS-REVISION` (7 blocking, 3 regressions) · corpus not sound |
+| 3 | `7c0c54d` | decision + spec `NEEDS-REVISION` (6 blocking) · corpus not sound |
+| 4 | `228e7ed` | decision + spec `NEEDS-REVISION` (6 blocking) · corpus not sound |
 
-**Round 2 named the root cause:** the record and the taxonomy had been
-repaired in separate passes and diverged for five commits, so the record
-ratified an artifact it no longer described. This state answers round 2 and
-reconciles the two in a single pass — the record, the spec, the brief and the
-seeding script all move together.
+**The recurring failure is a process one, named by round 4's spec reviewer:**
+repairs are made at the point of the reported defect, and the passages that
+*depend on* the repaired text are not re-walked. This state was produced with
+the check it proposed — for each construct changed, grep every occurrence of
+its key terms and re-read each hit.
 
-**It owes a third review pass.** Nothing here has been reviewed in its
-current state.
+**It owes a fifth review pass.** Nothing here has been reviewed as it stands.
 
-**Three factual errors in the author's own evidence, all caught by review:**
+**Four factual errors in the author's own evidence, all caught by review:**
 
-- a claim that a repo triple-encoded kind including a native type — **wrong**;
-- its replacement, "0 of 465", carried a denominator inflated by pull
-  requests — **also wrong**. The correct figure is 0 of 294, org-wide;
-- `depends_on` used bare cross-repo ids on the strength of one record's
-  practice, which the declared grammar in `.grove/versioning.md` makes a
-  defect rather than a precedent.
+- a claim that a repo triple-encoded kind including a native type — wrong;
+- its replacement, "0 of 465", counted pull requests — also wrong;
+- `depends_on` used bare cross-repo ids on one record's practice, which the
+  author then called "a defect by the declared grammar" — an over-read: the
+  companions say such referents are *permitted*, not mandated, and state no
+  grammar for `depends_on` at all. Both claims are withdrawn;
+- an edit deleted a sentence's predicate and left the subject, shipping an
+  unreadable clause.
 
 **Nothing here authorises a change to any repository**: no label creation, no
 issue migration, no plugin enablement. Those are the wave's lanes, and the

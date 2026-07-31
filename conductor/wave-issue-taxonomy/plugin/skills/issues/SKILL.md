@@ -19,11 +19,14 @@ backlog.
 It requires six issue types. Three ship with every org; three must be created:
 
 ```bash
-gh api /orgs/<org>/issue-types --jq '.[].name'
+gh api /orgs/<org>/issue-types --jq '.[] | select(.is_enabled) | .name'
 ```
 
-**If any of `Research`, `Decision` or `Epic` is absent, this convention is not
-yet in force in that org.** Say so and stop — do not file half-typed issues
+**Select on `is_enabled`** — a disabled type still appears in the list and
+still cannot be set. **If any of the six is absent or disabled** — `Bug`,
+`Feature`, `Task`, `Research`, `Decision`, `Epic` — **this convention is not
+yet in force in that org.** The first three usually ship with an org, but an
+org can disable them. Say so and stop — do not file half-typed issues
 against it. Provisioning is a setup step, not a case to work around.
 
 If the command itself fails (no `read:org`, network, unknown org), you cannot
@@ -44,8 +47,8 @@ machine needs to filter on is structured metadata.
 ```
 
 **Titles state the situation, not the instruction.** "Fix X" and "Add Y" name
-the response; the title names what is true. A `Bug` reads as the symptom;
-everything else reads as the outcome. If you find yourself writing an
+the response; the title names what is true. A `Bug` reads as the symptom; a
+`Feature`, `Task` or `Epic` reads as the outcome. If you find yourself writing an
 imperative verb first, rewrite it:
 
 ```
@@ -92,7 +95,7 @@ noise; a halted *procedure* loses the fields you did know.
 |---|-----------|----------------|----------|
 | 1 | **Stage** | `stage: *` label | on every open issue **you file** |
 | 2 | **Type** | native GitHub issue type | once out of `triage` |
-| 3 | **Facing** | `facing: *` label | on `Bug` `Feature` `Task` `Epic` |
+| 3 | **Facing** | `facing: *` label | on `Bug` `Feature` `Task` |
 | 4 | **Area** | `area: *` label | if the repo defines any |
 | 5 | **Priority** | `priority: *` label | only when elevated or explicitly low |
 | 6 | **Status** | `blocked` · `needs-human` · `needs-design-system` · `deferred` | only when true |
@@ -105,13 +108,18 @@ required — the same rule as Legacy below.
 
 `stage: triage` → `shaping` → `drafting` → `ready` → `active` → `review`
 
-- `triage` — **noticed, not yet committed to.** The type may still be unset.
+Each value names **how far the issue has got**, not what anyone is doing right
+now:
+
+- `triage` — noticed, **not yet committed to**. The type may still be unset.
   This is the collective's "we should look at this" pile
-- `shaping` — accepted; the problem is being refined
-- `drafting` — the artifact that defines the work is being written
-- `ready` — approved and dispatchable; an agent can pick this up
-- `active` — the committed work is in flight
-- `review` — done, awaiting verification
+- `shaping` — accepted; **the problem is not yet settled**
+- `drafting` — the problem is settled; **the defining artifact is not yet
+  finished**
+- `ready` — that artifact is approved. **Dispatchable** unless a status label
+  says otherwise
+- `active` — approved and **started**, not yet done
+- `review` — done, **not yet verified**
 
 **Not every type visits every stage.** Take the path for your type:
 
@@ -124,18 +132,17 @@ required — the same rule as Legacy below.
 `Decision` has no `active`: writing the record *is* its work, so `drafting`
 is the working stage and `ready` precedes it — a shaped decision awaiting an
 author is exactly "dispatchable". `Research` has no `drafting`: the work *is*
-the finding. In every path `ready` sits immediately before the stage where
-the work happens. Skipping a stage your type does not have is correct, not an
-omission.
+the finding. For the three types with a committed-delivery stage, `ready`
+sits immediately before it. Skipping a stage your type does not have is
+correct, not an omission.
 
-**Stage marks how far the issue has got, not what is happening this minute.**
-An issue at `stage: shaping` that nobody is touching is still at `shaping`.
-That is why a `deferred` issue keeps the stage it reached rather than needing
-one of its own.
+Because the values name progress rather than activity, **an issue nobody is
+touching keeps the stage it reached.** A `deferred` issue needs no stage of
+its own, and a stalled one is not misfiled.
 
-**On close, strip the stage label.** A closed issue carrying `stage: active`
-asserts something false. **On reopen, set the stage the work is actually at**
-— `triage` only if it genuinely needs re-deciding.
+**On close, strip the stage label.** Stage describes an open issue's position
+in the pipeline, and a closed issue has left it. **On reopen, set the stage
+the work has got back to** — `triage` only if it needs re-deciding.
 
 ### 2. Type — what kind of thing is this?
 
@@ -147,7 +154,7 @@ Exactly one. This is a **native GitHub issue type**, not a label — set it with
 | `Epic` | It has children that ship separately, **and its own deliverable is that the set is coherent and complete** | It ships as one unit → the rows below |
 | `Decision` | A choice must be made and recorded before work can proceed. **Threshold: until the choice is made there is nothing to build.** If the correct state is derivable from the upstream, it is not a `Decision` | The choice is already made, or the upstream already settles it → `Bug` or `Task` |
 | `Research` | **The deliverable is a finding**, not a change | The deliverable is a change → the rows below |
-| `Bug` | Something is wrong against a stated expectation — **including an artifact contradicting an approved upstream, where nothing "behaves" at all** | Nothing was ever promised → `Feature` |
+| `Bug` | Something is wrong against a stated expectation. **The expectation need not be about behaviour, and the conflict need not be vertical** — an artifact contradicting its upstream, two peers contradicting each other, an artifact contradicting itself, or something stated and never implemented all qualify | Nothing was ever stated to expect → **the rows below** |
 | `Feature` | A new capability | It is a defect against something promised → `Bug` |
 | `Task` | The deliverable is a change to something that already exists — chores, cleanups, test gaps, bookkeeping, and **extending an existing capability to somewhere it was always meant to reach** | It is capability that did not exist before, anywhere → `Feature` |
 
@@ -194,7 +201,7 @@ from its children:
 - `drafting` — the epic's own breakdown work. An epic with no children yet is
   normally here
 - `ready` — the breakdown is approved and the epic can be picked up
-- `active` — the epic's own coordination work is in flight
+- `active` — the epic's own coordination is under way, not yet finished
 - `review` — the epic's own completeness check: did the set come out coherent
 
 **Read every one of those as describing the epic's work, not its children's
@@ -204,10 +211,13 @@ open.
 
 ### 3. Facing — who observes the difference?
 
-`facing: user` · `facing: system`. Set it on the delivery types — `Bug`,
-`Feature`, `Task`, `Epic`. A `Decision` and a `Research` issue produce a
-record and a finding, not a change anyone consumes, so they carry no
-`facing:`.
+`facing: user` · `facing: system`. Set it on `Bug`, `Feature` and `Task`.
+
+**`Decision`, `Research` and `Epic` carry no `facing:`.** A decision produces
+a record, a research issue a finding, and an epic a guarantee that a set is
+coherent — none of those is itself a change a consumer receives. An epic's
+children each carry their own, and reading one off the children would break
+the rule that an epic's metadata is its own.
 
 **The boundary is this repository's output**, not who maintains what:
 
@@ -265,6 +275,12 @@ Additive, and only when true. Closed vocabulary, four bare tokens.
 - `deferred` — nothing is stopping it; **we have chosen not to schedule it
   yet**, until a condition named in the body
 
+**Any status label suspends dispatch.** `stage: ready` means the defining
+artifact is approved; it does not by itself mean an agent may take the issue.
+A `ready` issue that becomes `blocked`, `needs-human` or `deferred` **keeps
+its stage** — the status label is what withholds it, which is why the
+dispatch query filters on both.
+
 **`blocked` and `deferred` are not the same shape.** `blocked` means the work
 *cannot* proceed; `deferred` means it *could* but we decided not to. "Waiting
 for the vendor to ship 2.0" is `blocked`. "Not before the Q3 release" is
@@ -302,11 +318,13 @@ exactly `completed`, `"not planned"`, and `duplicate`:
 ```bash
 gh issue close 57 --reason completed
 gh issue close 57 --reason "not planned"     # won't-do, stale
-gh issue close 57 --reason duplicate         # native — do not fold into "not planned"
+gh issue close 57 --duplicate-of 42          # native edge; implies --reason duplicate
 ```
 
-`duplicate` is a real close reason; use it and link the survivor in a comment.
-Strip the `stage:` label on close.
+**Use `--duplicate-of`, not a comment.** It records the survivor as a real
+edge — the same reason issue-to-issue blocking uses `--blocked-by` rather
+than prose. Never fold a duplicate into `"not planned"`. Strip the `stage:`
+label on close.
 
 ## Searching
 

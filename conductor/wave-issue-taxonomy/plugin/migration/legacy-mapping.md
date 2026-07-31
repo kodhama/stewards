@@ -76,7 +76,8 @@ occurrences across those repos.
 | `consider` | — | `stage: triage` |
 | `documentation` (stock) | — | `area: docs` |
 | `question` (stock) | — | type `Research` |
-| `duplicate` `invalid` `wontfix` (stock) | — | close with `--reason not-planned` |
+| `duplicate` (stock) | — | close with `--duplicate-of <survivor>` — a native edge, not a comment |
+| `invalid` `wontfix` (stock) | — | close with `--reason "not planned"` (the token has a space) |
 | `good first issue` `help wanted` (stock) | — | **keep**. GitHub surfaces these natively to outside contributors, and six of these repos are public |
 
 ## Judgment calls in the mapping
