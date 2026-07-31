@@ -87,8 +87,10 @@ propagates; it does not enable. Retired Spore is not a target.
       is host (`claude`/`codex`) not tracker, none of its thirteen roles is a
       product owner, and only two of its fourteen charters mention GitHub —
       hosting this would invent a tracker axis for an absent role. Graduation
-      path and the abstract/concrete split are recorded in
-      `wave-issue-taxonomy/plugin/DIRECTION.md`
+      path and the abstract/concrete split are recorded in `DIRECTION.md`,
+      which ships with the plugin — staged at
+      `wave-issue-taxonomy/plugin/DIRECTION.md`, published to
+      `plugins/kodhama/DIRECTION.md` by spec 0005
 - [ ] Open, unscheduled: decide what the `kodhama` plugin is for. This skill
       stays or moves on that answer
 - [x] **Maintainer ruling, 2026-07-31 — amend the standing scope claims.**
@@ -116,7 +118,19 @@ propagates; it does not enable. Retired Spore is not a target.
       `agent-workflow-parity.yml` and `claude-code-review.yml` carry no
       `paths:` filter and run on every PR. The ruling is about cost, and stands.
       Contract: spec 0005 §Closing the CI blind spot
-- [ ] Plugin published to the `kodhama` marketplace, per spec 0005
+- [ ] Plugin published to the `kodhama` marketplace, per spec 0005.
+      **Built and reviewed on the branch; ticks at merge, not before.** The
+      payload sits at `plugins/kodhama/` with `VERSION` at `0.3.0`, both
+      manifests and both catalog descriptions updated, and the four staged
+      files relocated. Conformance returned **PASS** — `SKILL.md` and
+      `reference/taxonomy.md` are the identical git blobs as their staged
+      predecessors, literal **G** is byte-identical, literal **H** landed at
+      line 39 as spec 0005 v8 predicted, and twenty independent mutations were
+      caught. Code review returned one HIGH — **the actuator's dry-run default
+      was asserted in six pinned literals and guarded by nothing**; spec 0005
+      v9 adds S17/R19 to close it. Left unchecked deliberately: nothing is
+      published until #64 merges, and `kodhama-0021` still reserves adoption to
+      each repository, so this tick is publication, never enablement
 
 **Lane C — cross-link ADRs** *(one PR per repo, independently reviewed)*
 - [ ] Grove

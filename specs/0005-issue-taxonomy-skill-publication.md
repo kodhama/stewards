@@ -6,10 +6,45 @@ depends_on: [kodhama-0026-issue-taxonomy, kodhama-0017-retire-family-release-cer
 implements: [kodhama-0026-issue-taxonomy]
 owner: agent
 updated: 2026-07-31
-version: 8
+version: 9
 ---
 
 # Publishing the issue-convention skill into the Kodhama plugin
+
+> **AMENDED 2026-07-31 — v8 → v9**
+>
+> **WHAT:** **S17 and R19 are new**, and they close a real hole: the actuator's
+> dry-run default was asserted in **six pinned literals and guarded by
+> nothing**. The criterion is behavioural — the script runs against a stub `gh`
+> and its call log is inspected — and carries the four measured mutations that
+> survived the v8 suite. Three smaller items: the S5/R3 arbiter row now records
+> the assertion that makes this spec's own sentence true, the `DIRECTION.md:55`
+> false-positive citation is repointed at the path publication creates, and the
+> wave ledger records the build.
+>
+> **WHY:** `APPLY=0` → `APPLY=1` in the shipped actuator — apply-by-default
+> against a live org with `admin:org` — passed the full gate: **27 tests OK,
+> validator green.** Three further mutations survive. The only test touching
+> the property asserted `assertIn("Dry-run by default", stdout)`, which pins
+> **the help text's claim, not the default**. The build is faithful to the
+> spec; the spec was the gap. This repository's own recorded discipline is that
+> a guard you can revert without turning a test red is not a guard.
+>
+> **SCOPE:** One new scenario and one new requirement — **the only things in
+> v9 that change behaviour**. Everything else is one arbiter row, one citation,
+> and a ledger entry.
+>
+> **POINTER:** `kodhama/stewards#64` — conformance **PASS**, code review one
+> **HIGH**, both against the built implementation.
+>
+> **VALUE:** Someone who reverts the dry-run default finds out from CI instead
+> of from an org that has been written to.
+>
+> **CONFIDENCE:** verified for the gap — the mutation and its green gate were
+> reproduced before this revision. **Inferred for the fix**: the stub-`gh`
+> technique and its credential-free read-only call set are the code reviewer's
+> measurement, not mine, and S17 is written to be falsified by the four named
+> mutations rather than trusted.
 
 > **AMENDED 2026-07-31 — v7 → v8**
 >
@@ -553,7 +588,7 @@ them:**
 
 | Hit | Why it is not a carrier |
 |---|---|
-| `conductor/wave-issue-taxonomy/plugin/DIRECTION.md:55` | *"This skill then becomes **thin**: the mapping from concept to surface, and nothing else."* Describes a **future** shape of the issue skill under a hypothesised abstract/concrete split — not what the package contains today. |
+| `plugins/kodhama/DIRECTION.md:58` | *"This skill then becomes **thin**: the mapping from concept to surface, and nothing else."* Describes a **future** shape of the issue skill under a hypothesised abstract/concrete split — not what the package contains today. *(v9: cited as `conductor/wave-issue-taxonomy/plugin/DIRECTION.md:55`, **a path R12 deletes**. Same displacement class as literal **H**: the file moves in the change that names it.)* |
 | `decisions/0018-stewards-dual-host-plugin-package.md:130` | *"`plugins/stewards/surfaces.json` describes only the Stewards plugin's own host…"* — an enumeration about an artifact `kodhama-0025` retired. Under `decisions/` and therefore excluded regardless. |
 | `decisions/0017…:228` | *"draws a positive boundary around the only retained goals"* — the record's own self-check describing its reasoning, not the repository's contents. |
 | `decisions/0017:16` | The forward pointer `kodhama-0025` wrote. It is the corpus **doing** the disclosure this rule cares about, so a hit here is a worked example, not a defect. |
@@ -872,7 +907,7 @@ the sentence into line with `scripts/keyless_admission_check.py`, which has said
 | `CLAUDE.md` | lines 66–68 → **F** | Separate from the marked block; same file, different obligation. |
 | `conductor/wave-issue-taxonomy/plugin/DIRECTION.md` | lines 45–47 → **G** | Authorised edit 2 to staged text. |
 | `.github/workflows/validate-marketplace-setup.yml` | add `"conductor/wave-issue-taxonomy/plugin/**"` to `on.pull_request.paths` | See §Closing the CI blind spot. |
-| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v8` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
+| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v9` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
 | `tests/test_kodhama_plugin.py` | the **fourteen** distinct `new: test_*` named in §How each criterion is checked, plus the updated literal **D** in `test_kodhama_catalog_entries_disclose_no_support_claim` | The criteria table is the authority for which tests exist; this row is a summary of it. The existing tests must keep passing unchanged; the module docstring, which names specs 0003 and 0004, gains this one. |
 | `conductor/wave-issue-taxonomy/README.md` | the staging table records each moved file's published home | S10's second clause. Reviewer-checked; prose currency is not mechanically checkable. |
 
@@ -1242,6 +1277,50 @@ adds the actuator disclosure and the corrected purpose wording)*
   dry-run by default; states that what the plugin is *for* has never been
   decided; and still contains the five strings the existing README test pins.
 
+**S17 — the actuator's dry-run default is a behaviour, not a claim**
+*(new in v9)*
+
+- **Given** the shipped `scripts/seed-issue-taxonomy.sh` and a stub `gh` first
+  on `PATH` that appends its own `"$@"` to a log and exits 0,
+- **When** the script is invoked **without `--apply`**,
+- **Then** the log contains **no write call** — none of
+  `api --method POST`, `api --method PATCH`, `label create` — and contains only
+  read calls drawn from `auth status`, `api /orgs/<org>/issue-types`,
+  `issue list`, `label list`.
+- **And** the same holds for a default invocation carrying **any** other
+  accepted flag: `--org`, `--repo`, `--types-only`, `--labels-only`, `--force`.
+  **`--apply` is the only argument that may set `APPLY=1`.**
+- **And** when the stub reports an empty backlog and `--force` is absent, the
+  log contains **no `label list` call for that repository** — the skip gate
+  holds.
+
+*Credential-free and offline.* The stub intercepts every `gh` invocation, so
+nothing reaches GitHub and no token is read; the test needs only an `env=`
+parameter on the existing `run()` helper in `tests/test_kodhama_plugin.py` so
+`PATH` can be prepended.
+
+*Mutation obligation — these four are measured survivors of the v8 suite, not
+hypotheses. Each must turn this criterion red:*
+
+| Mutation | Property it must break |
+|---|---|
+| `APPLY=0` → `APPLY=1` | no write call on a default invocation |
+| `run()`'s `if [[ $APPLY -eq 1 ]]` → `if true` | no write call on a default invocation |
+| `APPLY=1` added to the `--labels-only` handler | `--apply` is the only path that sets it |
+| the empty-backlog gate → `if false` | the skip gate holds without `--force` |
+
+*Why behavioural and not a static pin on `APPLY=0`.* A grep for the assignment
+catches the first mutation and the third, and **misses `if true` entirely** —
+the one that silently converts every `run()` call into an execution while the
+default still reads as `0`. The property that matters is what the script
+*does*, and only running it establishes that.
+
+*Why the third property is here, when the first two do not reach it.* The
+empty-backlog gate protects `--force`, not `--apply`, so neither write-call
+property fails when it is removed. Listing that mutation without a property
+that catches it would be a mutation obligation this criterion cannot discharge
+— the defect S9 and D1 were both about.
+
 ### Requirements
 
 - **R1 (ubiquitous):** The files under `plugins/kodhama/` shall be exactly the
@@ -1314,10 +1393,18 @@ adds the actuator disclosure and the corrected purpose wording)*
   shall not trigger on `conductor/` generally.
 - **R18 (ubiquitous):** `tests/TEST_DEPS.md` shall declare this spec among its
   `depends_on` **in the pinned `id@vN` form**, at the version the tests were
-  written against — `kodhama-spec-0005-issue-taxonomy-skill-publication@v8` as
+  written against — `kodhama-spec-0005-issue-taxonomy-skill-publication@v9` as
   of this revision. `specs/README.md` requires the pinned form for versioned
   spec dependencies, and the file already pins its sibling `@v5`; an unpinned
   entry would have satisfied v3's wording and matched neither.
+- **R19 (unwanted behavior):** If the shipped actuator is invoked without
+  `--apply`, it shall issue no call that creates or modifies an org issue type,
+  a repository label, or an issue — **established by execution against a stub
+  `gh`, never by the presence of `APPLY=0` or by the help text's claim**. No
+  argument other than `--apply` shall set `APPLY=1`, and a repository with an
+  empty backlog shall be skipped unless `--force` is given. *(v9: R11 already
+  said "shall change nothing without `--apply`", and six pinned literals
+  asserted it in prose; **nothing made it fail when it stopped being true.**)*
 
 ### How each criterion is checked
 
@@ -1331,7 +1418,8 @@ Every row names one arbiter. `new:` marks a test this publication must add to
 | S3 | `python3 scripts/validate_kodhama_plugin.py`, already re-run by `test_repository_package_and_carrier_parity_validate` |
 | R5, the value `0.3.0` | **Reviewer**, not the validator: `git diff origin/main...HEAD -- plugins/kodhama/VERSION`. The validator checks that the three carriers agree, never what they say |
 | S4 | `new: test_seed_script_is_runnable_and_fails_closed` — `os.access(X_OK)`, `bash -n`, `--help` exit `0`, `--bogus` exit `2`. Both invocations return before any `gh` call, so the test needs no network and no credentials |
-| S5, R3 | `new: test_the_skill_never_reaches_the_actuator` — scans every `SKILL.md` and `reference/*.md` under `plugins/kodhama/skills/` for `seed-issue-taxonomy`, `gh label create`, `gh api --method POST` |
+| S5, R3 | `new: test_the_skill_never_reaches_the_actuator` — scans every `SKILL.md` and `reference/*.md` under `plugins/kodhama/skills/` for `seed-issue-taxonomy`, `gh label create`, `gh api --method POST`, **and asserts no `*.sh` exists anywhere under `plugins/kodhama/skills/`**. *(v9: the text scan alone does **not** make §Why the actuator sits outside `skills/` true — conformance measured it, and moving the actuator into `skills/issues/` left this test green. Four other tests caught the move, so the protection held; the **named arbiter** did not. The executor added the `*.sh` assertion, which conformance ruled inside the contract because it makes a sentence the spec asserts about itself true and cannot false-red. It is recorded here rather than left implicit. **Match on `path.suffix == ".sh"`, not on the exact filename** — an exact match lets `skills/issues/seed.sh` through, and the technique is the one `test_the_migration_mapping_stays_out_of_the_package` argues for forty lines away: walk the tree so a rename does not walk past.)* |
+| S17, R19 | `new: test_the_actuator_makes_no_write_call_without_apply` — writes a stub `gh` into a temp dir, prepends it to `PATH` via a new `env=` parameter on the module's `run()` helper, invokes the shipped script with no `--apply` and then with each other accepted flag, and asserts the stub's log holds only read calls. A third case stubs an empty backlog and asserts no `label list` for that repository. **Mutation obligation: all four survivors named in S17 must fail it.** Credential-free, offline, no model turn |
 | S6, R4 | `new: test_the_migration_mapping_stays_out_of_the_package` — no `legacy-mapping.md` and no `migration/` under `plugins/kodhama/`, walked with `rglob` so a rename does not walk past it |
 | S7, R6 | `new: test_every_payload_relative_pointer_resolves` — the extraction rule quoted in S7, with the `/`-containing filter applied to the **token**. **Mutation obligation applies.** Bounded heuristic: path-shaped tokens only, `://` skipped |
 | S8, R9 | `new: test_the_in_force_gate_ships_intact` — literal `assertIn` on the probe, `is_enabled`, the six type names, and the stop instruction |
@@ -1483,7 +1571,10 @@ and the installed `.grove/versioning.md` and `.grove/relations.md`.
 - **Version pin** — spec 0004 pinned `@v5`; the **six** decisions
   (`kodhama-0017`, `-0018`, `-0020`, `-0021`, `-0025`, `-0026`) are append-only
   and correctly unpinned.
-- **Counter** — bumped `7 → 8`. **v6's bump was required**, per
+- **Counter** — bumped `8 → 9`. **Required, and the clearest case since v6:**
+  S17 and R19 are new testable clauses, so `.grove/versioning.md:59-61` binds
+  directly. They are also the only part of v9 that changes behaviour.
+- *(Prior counters, retained.)* **v6's bump was required**, per
   `.grove/versioning.md:59-61`: a testable-clause change bumps, and R15's
   `shall` text changed scope. v7 and v8 are the weaker case — no scenario,
   requirement, literal, arbiter or criterion moves in either. v7 realigned three
@@ -1503,8 +1594,8 @@ and the installed `.grove/versioning.md` and `.grove/relations.md`.
   that cannot be complete against a semantically stated rule, with its known
   false positives tabulated and its `decisions/` hits typed as forward-pointer
   candidates rather than edit obligations.
-- **Both grammars present** — sixteen GWT scenarios and eighteen EARS `shall`
-  requirements.
+- **Both grammars present** — **seventeen** GWT scenarios and **nineteen** EARS
+  `shall` requirements.
 - **Testability** — every criterion is mapped to one named arbiter. **Two are
   declared unmechanizable and are not dressed up as tests**: whether the pinned
   strings imply a plugin purpose, and whether publication changes behaviour
@@ -1639,6 +1730,17 @@ decision rather than inferred here. It was not cited when the ruling was made.
 | **Blocking — a false completeness claim about the discovery command's output.** The table and the v7 change table both said it covered *"every non-carrier hit the widened command returns"*. It returns roughly two dozen hits outside this spec; **eight are untabled** | The claim is withdrawn, not satisfied by padding. The table is now described as what it is — **the hits a reviewer would otherwise re-adjudicate** — with the untabled residue named, including that `decisions/0017:33` and `:208` are its two most consequential hits and are adjudicated in prose and open question 6 rather than in a row. The command's hits on **this spec and the records it quotes** are disclosed as **self-reference by construction**: a document that discusses scope enumerations contains the phrases that find them. **This was false enumeration one level up again** — the class §Standing scope claims exists to kill, asserted about the instrument, and flatly contradicting this spec's own *"a clean run is evidence, not proof"* |
 | **`specs/0004:141` looked like a ninth carrier and is not** | Tabled with the real reason, which is narrower than the one first reached: **the line wraps**, and `:141-142` reads *"the plugin's declared skill **directories**"* — already plural. The regex matches `declared skill\b` across the break. **Round 5's spec-adversary adjudicated this line for this reason, and an implementation planner adjudicated it again on v7.** Twice, by two agents, because it was absent from the table — which is the exact cost the table exists to remove, so the row earns its place on that alone |
 | **Literal H was pinned by a line number that its own sibling edit invalidates** | Re-anchored to a **string** at all four sites — the literal's own heading, carrier 5's row, S13, and the §Package changes row. **B** replaces 9 lines with 26 in the same file in the same change, displacing H's target from line 22 to **39**; an executor reading `readme.splitlines()[21]` asserts against the wrong line and ships **a red test against a correct package**. That is D1's class, and the wave's failure mode in miniature: **a dependant thirty lines below its own edit, in the same file**. The replacement text is unchanged; only its locator is |
+
+### What v9 changed, and why
+
+| Finding | Repair |
+|---|---|
+| **HIGH — the actuator's safety promise shipped unguarded through eight review rounds.** Dry-run-by-default is pinned **six times as prose** — literal **A** in three files, the shipped README twice, both catalog descriptions — and **zero times as behaviour**. The one test touching it asserted `assertIn("Dry-run by default", stdout)`, pinning the help text's claim rather than the default. Mutating `APPLY=0` → `APPLY=1` in the shipped script — apply-by-default against a live org with `admin:org` — passed the full gate: **27 tests OK, validator green.** Three more mutations survive | **S17 and R19**, behavioural. The script is run against a stub `gh` on `PATH` and its call log inspected for three properties: no write call on a default invocation, `--apply` as the only path that sets `APPLY=1`, and the empty-backlog skip holding without `--force`. The four measured survivors are named as the mutation obligation. **A static pin on `APPLY=0` was rejected** — it catches two of the four and misses `if true` entirely, which is the one that converts every `run()` into an execution while the default still *reads* as `0`. The third property exists because the empty-backlog mutation breaks neither write-call property, and naming a mutation this criterion could not discharge would be the defect S9 and D1 were both about |
+| **How it survived, stated plainly** | Every round tested the *literals* that assert the property and none tested the property. Sixteen scenarios and eighteen requirements, and R11's *"shall change nothing without `--apply`"* had **no arbiter that could fail** — S4 asked only for path, `X_OK`, `bash -n`, `--help` exit 0, `--bogus` exit 2, and the implementation matched S4 exactly. **The build was faithful; the contract was the gap.** Pinning a claim in six places creates the appearance of a guarded property, which is why it went eight rounds unexamined |
+| **m1 — the S5/R3 arbiter row over-claimed** | §Why the actuator sits outside `skills/` asserts *"S5 and R3 fail if they do"*. Conformance measured it: with the executor's addition stripped, moving the actuator into `skills/issues/` left the named test **green** — four other tests caught the move, so protection held in effect, but the named arbiter did not. The executor's `*.sh` assertion is recorded in the row as inside the contract, since it makes a sentence the spec asserts about itself true and cannot false-red. **And corrected while recording it:** match `path.suffix == ".sh"`, not the exact filename, or `skills/issues/seed.sh` walks through — the same technique `test_the_migration_mapping_stays_out_of_the_package` argues for forty lines away |
+| **m2 — a false-positive row cited a path R12 deletes** | `conductor/wave-issue-taxonomy/plugin/DIRECTION.md:55` → `plugins/kodhama/DIRECTION.md:58`. **Same displacement class as literal H**: a citation into a file the change relocates |
+| **m3 — the ledger is the ledger and no implementation commit touched it** | Lane B's publication item now records the build, the conformance PASS, the HIGH and its closure, and states it **ticks at merge, not before** — nothing is published until #64 lands, and the tick is publication, never enablement. Lane B's pointer at the staging `DIRECTION.md` now names both the staged and published paths |
+| Accounting, corrected rather than repeated | Against a fully pre-change tree, **four** criteria were vacuous (S7, S14, S6, S5/R3), and this spec carried **two** explicit mutation obligations (S7, S9 — S9 was never vacuous; it errors on the missing file). v9 adds a third, on S17. All are mutation-proven guarded |
 
 Result: **PASS**, holding at `gated`. `approved` is the maintainer's to give;
 no intent act has been recorded for this spec.
