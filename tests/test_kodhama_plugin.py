@@ -591,6 +591,14 @@ class IssueSkillPublicationTests(unittest.TestCase):
         the `id@vN` form for a versioned spec dependency — the file already
         pins its sibling `@v5` — so a bare id would satisfy the sentence and
         match neither the file's own practice nor the spec's requirement.
+
+        The bare-id case needs no assertion of its own: `matching` collects
+        every entry whose pre-`@` part is this id, so a bare entry lands in
+        it and breaks the equality below. An earlier `assertNotIn` looked
+        like a second guarantee and was not one — exhaustive enumeration
+        found **no input** where it could fail while the equality passed.
+        Pinned at `@v9`, the version these tests are written against: S17 and
+        R19 are v9 clauses.
         """
         text = (ROOT / "tests" / "TEST_DEPS.md").read_text(encoding="utf-8")
         entries = [
@@ -600,8 +608,7 @@ class IssueSkillPublicationTests(unittest.TestCase):
         ]
         spec_id = "kodhama-spec-0005-issue-taxonomy-skill-publication"
         matching = [entry for entry in entries if entry.split("@")[0] == spec_id]
-        self.assertEqual([f"{spec_id}@v8"], matching, entries)
-        self.assertNotIn(spec_id, [entry for entry in entries if "@" not in entry])
+        self.assertEqual([f"{spec_id}@v9"], matching, entries)
 
     def test_the_ci_filter_covers_the_staging_subtree(self) -> None:
         """spec-0005 S15/R17: the anti-drift guard reaches the staging tree.
