@@ -1116,6 +1116,14 @@ exit 0
         `SKILL.md` requires the `gh api /orgs/<org>/issue-types` probe under
         S8, so banning the broader form would make two criteria contradict
         and go red on a correct package.
+
+        **What the content scan covers, stated because it reads broader than
+        it is:** every `SKILL.md`, and every file beneath a directory
+        component named `reference`. A new sibling — `skills/issues/GUIDE.md`
+        — would **not** be scanned. Exposure is nil today and the dependency
+        is explicit: `test_the_package_inventory_is_closed` pins the package
+        at nine paths, so such a file cannot appear without failing there
+        first. If that inventory is ever opened, widen this scan with it.
         """
         skills = PLUGIN / "skills"
         # R3's first clause. The scan below cannot establish it: a script
@@ -1222,8 +1230,17 @@ exit 0
         The previous form called itself an allowlist and implemented a
         denylist. Injected into this same script, four of five added mutating
         commands survived it. A denylist can only forbid what someone thought
-        of; pinning the whole surface means **any** added `gh` invocation
-        changes the multiset, whatever its verb.
+        of; pinning the whole surface means any added invocation **written in
+        the literal `gh <sub>` form the script uses throughout** changes the
+        multiset, whatever its verb.
+
+        **It does not close indirection, and should not be read as doing so.**
+        Measured: appending `GHBIN=gh` and `"$GHBIN" issue edit 1
+        --add-label bad` leaves this multiset identical and this test green.
+        What catches that is
+        `test_the_actuator_makes_no_write_call_without_apply`, which runs the
+        script and reads the calls it actually makes — a text pin and a
+        behavioural one fail on opposite things, which is why both are here.
 
         Two of the nine occurrences are prose — the sentence "your gh token
         lacks the 'admin:org' scope" and the advice printed under it. The
