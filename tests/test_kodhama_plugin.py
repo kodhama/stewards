@@ -567,6 +567,45 @@ class IssueSkillPublicationTests(unittest.TestCase):
         # test gate must not run on a prose edit under `conductor/`.
         self.assertNotIn("conductor/**", entries)
 
+    def test_the_package_inventory_is_closed(self) -> None:
+        """spec-0005 S1/R1/R2: exactly these nine files, and no other.
+
+        A closed set rather than nine presence assertions. It proves
+        `DIRECTION.md` landed at the plugin root — where `taxonomy.md` §6.5's
+        `../../../DIRECTION.md` resolves and nowhere else — proves nothing
+        stray came with the payload, and makes any later legitimate growth a
+        deliberate spec revision instead of a silent one.
+
+        `.DS_Store` is filtered because this repository has no `.gitignore`
+        and `CLAUDE.md` tells the executor to run this suite locally; on macOS
+        a stray finder file would otherwise fail a correct package. CI is safe
+        on a fresh clone, so the risk this closes is local-red only.
+        """
+        self.assertEqual(
+            [
+                ".claude-plugin/plugin.json",
+                ".codex-plugin/plugin.json",
+                "DIRECTION.md",
+                "README.md",
+                "VERSION",
+                "scripts/seed-issue-taxonomy.sh",
+                "skills/issues/SKILL.md",
+                "skills/issues/reference/taxonomy.md",
+                "skills/setup-ci-marketplace/SKILL.md",
+            ],
+            sorted(
+                path.relative_to(PLUGIN).as_posix()
+                for path in PLUGIN.rglob("*")
+                if path.is_file() and path.name != ".DS_Store"
+            ),
+        )
+        # R2: the directory name must equal the skill's frontmatter `name`,
+        # because host discovery keys on the directory.
+        skill = (PLUGIN / "skills" / "issues" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("\nname: issues\n", skill)
+
     def test_the_staging_copies_are_gone(self) -> None:
         """spec-0005 S10/R12: publication moves rather than copies.
 
