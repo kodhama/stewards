@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -516,4 +517,53 @@ class IssueSkillPublicationTests(unittest.TestCase):
         matching = [entry for entry in entries if entry.split("@")[0] == spec_id]
         self.assertEqual([f"{spec_id}@v8"], matching, entries)
         self.assertNotIn(spec_id, [entry for entry in entries if "@" not in entry])
+
+    def test_the_ci_filter_covers_the_staging_subtree(self) -> None:
+        """spec-0005 S15/R17: the anti-drift guard reaches the staging tree.
+
+        Read by regex rather than by a YAML parse: neither `tests/` nor
+        `scripts/` imports `yaml` today, and the `repository-validation` job
+        installs no Python packages before running this suite, so an
+        `import yaml` would fail at collection on a clean runner.
+
+        The order is asserted, and the list is *not* sorted — the two plugin
+        scripts sit in the order they were added. Tidying them into
+        alphabetical order would produce a correct filter and a red test,
+        which is the wrong trade: the point of pinning order is that any
+        edit to the filter is read by a human.
+        """
+        lines = HOSTED_WORKFLOW.read_text(encoding="utf-8").splitlines()
+        start = next(
+            index
+            for index, line in enumerate(lines)
+            if re.fullmatch(r"\s*paths:\s*", line)
+        )
+        indent = len(lines[start]) - len(lines[start].lstrip())
+        entries: list[str] = []
+        for line in lines[start + 1 :]:
+            if not line.strip():
+                continue
+            if len(line) - len(line.lstrip()) <= indent:
+                break
+            match = re.fullmatch(r'\s*-\s*"([^"]+)"\s*', line)
+            self.assertIsNotNone(match, line)
+            assert match is not None
+            entries.append(match.group(1))
+
+        self.assertEqual(
+            [
+                ".agents/plugins/marketplace.json",
+                ".claude-plugin/marketplace.json",
+                ".github/workflows/validate-marketplace-setup.yml",
+                "conductor/wave-issue-taxonomy/plugin/**",
+                "plugins/kodhama/**",
+                "scripts/validate_kodhama_plugin.py",
+                "scripts/keyless_admission_check.py",
+                "tests/**",
+            ],
+            entries,
+        )
+        # R17's second half. The ruling closed the blind spot *narrowly*: the
+        # test gate must not run on a prose edit under `conductor/`.
+        self.assertNotIn("conductor/**", entries)
 
