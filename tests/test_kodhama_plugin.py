@@ -494,3 +494,26 @@ class SkillContractTests(unittest.TestCase):
         )
 
 
+class IssueSkillPublicationTests(unittest.TestCase):
+    """spec-0005: the issue-convention payload's publication into the package."""
+
+    def test_test_deps_declares_this_spec(self) -> None:
+        """spec-0005 R18: declared, and declared *pinned*.
+
+        `TEST_DEPS.md` says its tests "derive from the dependencies above",
+        and the tests below derive from spec 0005. `specs/README.md` requires
+        the `id@vN` form for a versioned spec dependency — the file already
+        pins its sibling `@v5` — so a bare id would satisfy the sentence and
+        match neither the file's own practice nor the spec's requirement.
+        """
+        text = (ROOT / "tests" / "TEST_DEPS.md").read_text(encoding="utf-8")
+        entries = [
+            line.strip()[2:].strip()
+            for line in text.splitlines()
+            if line.startswith("  - ")
+        ]
+        spec_id = "kodhama-spec-0005-issue-taxonomy-skill-publication"
+        matching = [entry for entry in entries if entry.split("@")[0] == spec_id]
+        self.assertEqual([f"{spec_id}@v8"], matching, entries)
+        self.assertNotIn(spec_id, [entry for entry in entries if "@" not in entry])
+
