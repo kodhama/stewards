@@ -43,8 +43,8 @@ dimension you are reaching for is below — use it instead.
 
 **Never invent a persona to satisfy the format.** "As a frontend developer I
 want to consume an API" is a fabricated user, written to make enabler work
-look like user-facing work. Enabler and infrastructure issues have no end
-user, and that is fine — state the system outcome plainly:
+look like user-facing work. That issue is `facing: system` and has an honest
+home — state its outcome plainly and drop the persona:
 
 ```
 ✗  As a frontend developer, I want a progress endpoint
@@ -66,9 +66,10 @@ continue.** An unset field is honest; a guessed one is noise; a halted
 |---|-----------|----------------|----------|
 | 1 | **Stage** | `stage: *` label | always |
 | 2 | **Type** | native GitHub issue type | once out of `triage` |
-| 3 | **Area** | `area: *` label | if the repo defines any |
-| 4 | **Priority** | `priority: *` label | only when elevated or explicitly low |
-| 5 | **Status** | `blocked` · `needs-human` · `needs-design-system` · `deferred` | only when true |
+| 3 | **Facing** | `facing: *` label | on `Feature`, `Bug`, `Task` |
+| 4 | **Area** | `area: *` label | if the repo defines any |
+| 5 | **Priority** | `priority: *` label | only when elevated or explicitly low |
+| 6 | **Status** | `blocked` · `needs-human` · `needs-design-system` · `deferred` | only when true |
 
 ### 1. Stage — where in the pipeline?
 
@@ -184,7 +185,39 @@ for. Each child should deliver value on its own; the epic's job is to make
 the set add up to a complete package, which is what its `review` checks. A
 tracker that coordinates work without shipping anything itself is an `Epic`.
 
-### 3. Area — what part of the system?
+### 3. Facing — does anyone outside this repo observe it?
+
+`facing: user` · `facing: system`. Set it on `Feature`, `Bug` and `Task`;
+leave it off the rest.
+
+**"User" means whoever consumes this repo** — a learner for a product, a
+consuming repository for a plugin. Not necessarily a human.
+
+| | |
+|---|---|
+| `facing: user` | someone outside this repo sees the difference |
+| `facing: system` | only the team building it does |
+
+The distinction cuts *inside* a type, not between types, which is why it is
+its own dimension. Two real chores from the same repo:
+
+```
+facing: system   Untrack the self-referencing node_modules symlink
+facing: user     Theme glyph renders flush against the name
+```
+
+Same type, same urgency class, entirely different audience — and the second
+is a learner looking at a wrong-looking screen.
+
+**This is where Story and Enabler live.** A `Feature` at `facing: user` is
+what agile calls a **Story**; at `facing: system`, an **Enabler**. They are
+one type seen from two sides, not two types — which is why an enabler never
+needs a fabricated persona to justify itself. It has an honest home.
+
+**Set it before writing the title**, because it decides which form the title
+takes — see the title rule above.
+
+### 4. Area — what part of the system?
 
 `area: <thing>` labels, defined **per repo**. Deliberately not standardised
 across the family: `area: dispatcher` in one repo and `area: tutoring` in
@@ -193,7 +226,7 @@ another have nothing to do with each other.
 Use an existing one. Only propose a new area when three or more issues would
 carry it.
 
-### 4. Priority
+### 5. Priority
 
 | Label | Means |
 |-------|-------|
@@ -205,7 +238,7 @@ carry it.
 Do not label normal-priority work. An unlabelled issue is the default, not an
 oversight.
 
-### 5. Status — what is true right now?
+### 6. Status — what is true right now?
 
 Additive, and only when true. Closed vocabulary, four bare tokens.
 

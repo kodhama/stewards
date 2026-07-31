@@ -23,7 +23,7 @@ occurrences across all repos.
 | `[execution]` | 18 | `stage: active` |
 | `[consider]` | 14 | `stage: triage` + the type its content implies |
 | `[high-priority]` / `HIGH:` | 12 | `priority: p1` |
-| `[Story]` | 11 | type `Feature`, as a sub-issue of its epic |
+| `[Story]` | 11 | type `Feature` + `facing: user`, as a sub-issue of its epic |
 | `[chore]` | 10 | type `Task` |
 | `[meta]` | 9 | `area: meta` |
 | `[divergent-research]` | 8 | type `Research` + `stage: shaping` |

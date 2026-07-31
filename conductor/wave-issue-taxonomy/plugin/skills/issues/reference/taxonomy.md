@@ -154,6 +154,26 @@ sweep this convention forbids.
 on a project board deliberately: agents query issues, and a label travels with
 the issue everywhere, while a project field only exists inside that project.
 
+### Facing — `facing: user` · `facing: system`
+
+Set on `Feature`, `Bug` and `Task`. "User" means whoever consumes the repo —
+a learner for a product, a consuming repository for a plugin.
+
+**Why this earns a dimension when provenance and routing did not.** Those two
+recorded where an issue came from, which changes nothing about the work.
+Facing changes three things: how the title is written, who can validate that
+it is done, and whether shipping it is visible outside the team. It also
+cuts *inside* every delivery type rather than between them, so it cannot be a
+type without multi-matching.
+
+The evidence it is load-bearing is in the corpus. Two issues carried the same
+`[chore]` label in the same repo: untracking a `node_modules` symlink, and a
+theme glyph rendering flush against a name. The first is invisible outside
+the team; the second is a learner looking at a wrong-looking screen. Nothing
+in the legacy scheme separated them. The same split appears in an infra repo,
+where "a consumer faces a wall of red checks" is an outward-facing chore
+whose user is another repository.
+
 ### Area — `area: *` label, repo-local
 
 **Deliberately not standardised across the family**, including by the seeding
@@ -235,8 +255,12 @@ The family's most developed practice used `[Story]` (11 uses, against 2 of
 `[feature]`), paired with `[Epic]` and an epic-story numbering scheme. The
 question was whether `Story` should replace the native `Feature` type.
 
-It should not, and the deciding reason is a failure mode of the **name**, not
-of the concept. Where a type is called `Story`, work with no end user gets a
+It should not — but not because the distinction it carries is unreal. That
+distinction is now encoded as `facing:`, above. **A `Feature` at
+`facing: user` is a Story; at `facing: system`, an Enabler.** What follows is
+why it is not a *type*.
+
+The deciding reason is a failure mode of the **name**, not of the concept. Where a type is called `Story`, work with no end user gets a
 fabricated persona so it can be written in the format — *"as a frontend
 developer I want to consume an API"* is the canonical example. That invents a
 reader who does not exist, which is the same class of defect as a guessed
@@ -250,10 +274,12 @@ independently deliverable; a second type would restate hierarchy that
 `Epic` + sub-issues already encodes, and would fire on the same issues as
 `Feature`, reviving the multi-match ambiguity §4's precedence order removes.
 
-The user-perspective discipline is real and worth keeping. It lives in the
-title rule, scoped so it cannot produce the cheat: state the outcome from the
-user's side **where there is a user**, and never invent one where there is
-not. `[Story]` maps to `Feature`, as a child of its epic.
+And the cheat has a cause worth naming: **a fabricated persona is what
+happens when only one shape is available.** Enabler work invents a reader
+because it has nowhere honest to sit. Giving it `facing: system` removes the
+pressure at its source, which one type name alone could not do.
+
+`[Story]` maps to `Feature · facing: user`, as a child of its epic.
 
 ## 5a. Remaining judgment calls
 
