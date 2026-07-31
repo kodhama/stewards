@@ -73,9 +73,13 @@ population. The conclusion is unchanged; the correct figure is smaller.
    a label. This closes the last two of the eight dimensions indicted above.
 8. **Priority stays a label, not a GitHub Issue Field**, until Issue Fields
    leaves public preview. At its GA this decision is superseded, not edited.
-9. **The taxonomy arrives by plugin, and repos restate nothing**
-   (`kodhama-0008` §4). No repo hand-authors a copy, an index, or a README
-   section. Bare pointers to the plugin-carried source are permitted.
+9. **The convention is carried by GitHub itself** — the org's issue types and
+   the seeded labels are what make it real, and it is operable the moment they
+   exist. A **skill teaches agents to apply it**, and that skill arrives by
+   plugin; **repos restate nothing** (`kodhama-0008` §4). No repo hand-authors
+   a copy, an index, or a README section; bare pointers to the plugin-carried
+   source are permitted. Which plugin carries the skill is a delivery choice
+   owned by the wave, not a term of this decision.
 10. **Grove owns the mapping from `(type, stage)` to its workflow steps.** No
    issue is named after a grove step. The type says what an issue *is*; the
    stage says where it *is*.
@@ -129,12 +133,13 @@ lives.
 
 ## Open questions
 
-**1. Where the plugin lives.** Not blocking this record — it is a delivery
-question, owned by the brief's Lane B. It is recorded here because Decision 9
-makes the plugin the sole carrier, so **no agent receives the convention** until
-it resolves — the record still fixes what the convention *is*, which is why
-this does not block ratification — and because **every candidate currently
-conflicts with something standing.** Three, none yet chosen:
+**1. Where the plugin lives — resolved 2026-07-31, and never a term of this
+record.** Maintainer direction: the `kodhama` plugin in Stewards, whose
+identity is the family's GitHub operations. Recorded here only because an
+earlier draft of Decision 9 made the plugin the sole carrier and so made this
+look like a gate. It was not; the convention is carried by the org's types and
+labels. The graduation path and the coming abstract/concrete split are in
+`plugin/DIRECTION.md`. The three candidates weighed were:
   - the Stewards `kodhama` plugin — but its scope is deliberately narrow
     (CI marketplace setup), and widening it contradicts that narrowness;
   - **grove** — which the standing corpus nominates, since `kodhama-0008` §3

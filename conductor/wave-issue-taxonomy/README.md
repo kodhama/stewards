@@ -11,8 +11,9 @@ resolves — see [`../wave-issue-taxonomy.md`](../wave-issue-taxonomy.md).
 | File | Final home | Blocked on |
 |------|-----------|------------|
 | `decision-0026-issue-taxonomy.md` | `kodhama/kodhama` → `decisions/0026-issue-taxonomy.md` | Lane A — a fresh review pass on this revision, then the maintainer's intent act. **Id confirmed free** 2026-07-31: `kodhama/kodhama` holds only `0009` |
-| `plugin/skills/issues/**` | the plugin that carries the taxonomy | A third review pass. Then Lane B — **plugin home unresolved (BLOCKING)**, three candidates including grove |
-| `plugin/scripts/seed-issue-taxonomy.sh` | same plugin, **outside** `skills/` | Lane B. Deliberately not inside the skill: bundling an actuator into reference content is what forced guardrails into the first draft |
+| `plugin/skills/issues/**` | the `kodhama` plugin in Stewards — **home resolved 2026-07-31** | a review pass on the current state |
+| `plugin/scripts/seed-issue-taxonomy.sh` | same plugin, **outside** `skills/` | Deliberately not inside the skill: bundling an actuator into reference content is what forced guardrails into the first draft |
+| `plugin/DIRECTION.md` | travels with the plugin | Nothing — direction, not a decision. Records the graduation path and the coming abstract/concrete split |
 | `plugin/migration/legacy-mapping.md` | rides the ratified decision, not the plugin | Lane A. Deliberately out of standing agent context — a mapping table plus counts reads as a backlog-sweep plan |
 
 ## Status
