@@ -25,6 +25,78 @@ HOSTED_WORKFLOW = (
     ROOT / ".github" / "workflows" / "validate-marketplace-setup.yml"
 )
 
+# spec-0005 literal A: the `distribution-scope` block, byte-identical in
+# all three carriers, markers included.
+DISTRIBUTION_SCOPE_BLOCK = """\
+<!-- distribution-scope:begin -->
+The install door includes the host-native Claude and Codex catalogs. Those
+catalogs list plugins this repository does not originate — each of those is
+sourced from the repository that owns it. The only plugin **originated here**
+is `kodhama`, which carries two skills and one provisioning script: verified
+Claude/Codex marketplace setup for CI, the kodhama issue convention (staged
+here while the issue skill's home is decided), and a dry-run-by-default
+label-and-type seeder. That is a description of present contents, not a scope:
+it moves when the contents move. The install door does not certify product
+releases or support and owns no universal version, tag, release-history,
+approval, runtime-sandbox, cross-repository-resolution, or effective-support
+machinery.
+<!-- distribution-scope:end -->
+"""
+
+# spec-0005 literal B: the shipped README's opening. Everything from
+# `## Where this works` onward is unchanged, which keeps the five strings
+# `test_shipped_readme_discloses_hosts_and_makes_no_support_claim` pins.
+SHIPPED_README_OPENING = """\
+# Kodhama
+
+This package carries two skills and one script.
+
+- **`skills/setup-ci-marketplace`** — adds verified Claude Code or Codex
+  marketplace setup to repository-owned GitHub Actions workflows. You point it
+  at the jobs that invoke a host CLI; it writes the exact, host-native
+  marketplace registration those jobs need, before they run. *That skill* edits
+  workflow configuration and nothing else: it is not installed into the
+  resulting CI job, and it provides no shared action, runtime, container, or
+  installer.
+- **`skills/issues`** — teaches the kodhama issue convention: titles are prose,
+  and every machine-readable dimension lives in GitHub's native issue types and
+  labels. **It only teaches.** The convention is carried by GitHub itself, not
+  by this package, and until an org's issue types exist and are enabled it is
+  not in force — the skill's first instruction is then to stop. This skill is
+  staged here while its home is decided; see `DIRECTION.md`.
+- **`scripts/seed-issue-taxonomy.sh`** — **an actuator, not a skill.** It
+  creates org issue types and repository labels, which is why it sits outside
+  `skills/` and why no skill points at it. It is dry-run by default, deletes
+  nothing, and changes nothing without `--apply`. Running it needs `admin:org`.
+
+**What this plugin is *for* has never been decided.** `kodhama-0020` named it
+the family's overarching dual-host plugin; what that plugin is for is a
+separate question nobody has answered, and `DIRECTION.md` records it. The list
+above is the package's present contents, not a statement of purpose.
+"""
+
+# spec-0005 literal F: `CLAUDE.md`'s CI-gate sentence. Byte-exact, so the
+# file must not be re-wrapped inside it -- only after `run on every PR.`
+CLAUDE_MD_TEST_GATE_SENTENCE = """\
+done; the **test gate** runs on any PR touching `tests/`, the two plugin
+scripts under `scripts/`, `plugins/kodhama/`, the issue-taxonomy staging tree
+under `conductor/`, either marketplace catalog, or the validation workflow
+itself — and on nothing else, so a docs-only PR pays none of its cost. It is
+not the only check: the Claude review and the workflow-parity job carry no
+`paths:` filter and run on every PR.
+"""
+
+# spec-0005 literal G: edited at the staged `DIRECTION.md`, verified at the
+# published one, which R12 requires the staged copy to have vacated.
+SHIPPED_DIRECTION_SCOPE_CLAUSE = """\
+**Nothing about this sequence claims the `kodhama` plugin's scope.** A staged
+skill sitting in it is a deferral, not an amendment. What publication does
+change is the *description* of what the package contains — a factual
+enumeration, not a scope — because deferring the question of what a plugin is
+for is not a licence to misdescribe what is in it
+(`kodhama-spec-0005-issue-taxonomy-skill-publication`).
+"""
+
 
 def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
@@ -641,6 +713,92 @@ class IssueSkillPublicationTests(unittest.TestCase):
                     rel = path.relative_to(ROOT).as_posix()
                     dangling.append(f"{rel} -> {pointer}")
         self.assertEqual([], dangling)
+
+    def test_no_standing_statement_understates_the_package(self) -> None:
+        """spec-0005 S13/R15: nothing left standing says the package is
+        narrower than it is.
+
+        Publishing a second skill and an actuator, and widening the CI
+        filter, falsifies eight statements across six files. Seven carry a
+        pinned literal; the eighth is the wave ledger's own Lane B line,
+        discharged by the correction in the commit that recorded the rulings
+        and asserted here as an absence.
+
+        Ratified decisions are **excluded by construction, not by omission**.
+        A record under `decisions/` is append-only — it states what was
+        decided when it was decided, and the corpus corrects it by forward
+        pointer or supersession, never by amendment — so a rule reaching them
+        would be a `shall` no executor could discharge. `kodhama-0017` AC3 is
+        the case that costs: it describes this repository accurately as of
+        its ratification and this publication diverges from it in both
+        directions. That is a **disclosure** gap, not a conformance failure,
+        and open question 6 parks the forward pointer for the maintainer.
+
+        **This checks the rule's closed half only.** It knows eight carriers;
+        it cannot know that a ninth was never written. The discovery command
+        in the spec's §Standing scope claims is the reviewer's instrument for
+        the open half, and it is a heuristic — a regex cannot be complete
+        against a semantically stated rule, so a clean run is evidence, not
+        proof.
+        """
+        # Carriers 1-3: the canonical block and its two hand-mirrored copies.
+        # Byte-identity between them is `test_..._mirrored_exactly`; this is
+        # the separate question of whether they carry the *right* text.
+        for name in ("distribution/repository-scope.md", "CLAUDE.md", "README.md"):
+            self.assertIn(
+                DISTRIBUTION_SCOPE_BLOCK,
+                (ROOT / name).read_text(encoding="utf-8"),
+                name,
+            )
+
+        # Carrier 8: `CLAUDE.md`'s CI-gate sentence. The replaced clause was
+        # false in two ways — the path list omitted the staging subtree, and
+        # "a docs-only PR gets no check at all" was already false before this
+        # publication, since two of the three workflows carry no `paths:`
+        # filter and run on every PR.
+        claude_md = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+        # `rstrip` because this literal ends mid-paragraph: the sentence it
+        # replaced ran on into "There is no typecheck gate", and that tail
+        # still continues on the literal's own last line. Re-wrapping the
+        # paragraph anywhere before `run on every PR.` breaks this
+        # assertion, which is the intended cost of pinning it byte-exactly.
+        self.assertIn(CLAUDE_MD_TEST_GATE_SENTENCE.rstrip("\n"), claude_md)
+        self.assertNotIn("so a docs-only PR gets no", claude_md)
+
+        # Carriers 4 and 5: both ship to consumers, so the package told its
+        # own installer it did not contain the skill they had just received.
+        readme = (PLUGIN / "README.md").read_text(encoding="utf-8")
+        self.assertTrue(
+            readme.startswith(SHIPPED_README_OPENING),
+            "the shipped README does not open with literal B",
+        )
+        # Literal H, located **by string and never by line number**: literal
+        # B replaces this file's first 9 lines with 26 in the same change,
+        # moving this sentence from line 22 to line 39. Keying on the line
+        # would assert against the wrong one and ship a red test against a
+        # correct package.
+        self.assertIn(
+            "and reports the declared skills in its component inventory.", readme
+        )
+        self.assertNotIn(
+            "and reports the declared skill in its component inventory.", readme
+        )
+
+        # Carrier 6: edited at the staged path, verified at the published one
+        # — R12 requires the staged copy to have vacated, and a deleted file
+        # cannot carry a literal.
+        direction = (PLUGIN / "DIRECTION.md").read_text(encoding="utf-8")
+        self.assertIn(SHIPPED_DIRECTION_SCOPE_CLAUSE, direction)
+        self.assertNotIn("declared distribution scope stays narrow", direction)
+
+        # Carrier 7: bears no literal. The wave's own ledger had asserted the
+        # opposite of the ruling that governs the wave.
+        self.assertNotIn(
+            "Its declared narrow scope is untouched.",
+            (ROOT / "conductor" / "wave-issue-taxonomy.md").read_text(
+                encoding="utf-8"
+            ),
+        )
 
     def test_the_distribution_scope_block_is_mirrored_exactly(self) -> None:
         """spec-0005 S14: three hand-mirrored copies, byte for byte.

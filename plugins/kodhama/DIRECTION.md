@@ -42,9 +42,12 @@ deepen a coupling grove has mostly avoided.
 Step 2 may be skipped entirely. Do not create a repository to hold one skill
 and one script.
 
-**Nothing about this sequence claims the `kodhama` plugin's scope.** Its
-declared distribution scope stays narrow until someone decides otherwise; a
-staged skill sitting in it is a deferral, not an amendment.
+**Nothing about this sequence claims the `kodhama` plugin's scope.** A staged
+skill sitting in it is a deferral, not an amendment. What publication does
+change is the *description* of what the package contains — a factual
+enumeration, not a scope — because deferring the question of what a plugin is
+for is not a licence to misdescribe what is in it
+(`kodhama-spec-0005-issue-taxonomy-skill-publication`).
 
 ## The split that is coming
 
