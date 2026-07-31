@@ -112,8 +112,7 @@ the work — or where the type is correct but not yet provisioned in the org.
 ### Stage — `stage: triage|shaping|drafting|ready|active|review`
 
 Mutually exclusive; exactly one on any issue filed or touched under this
-convention, **except `Epic`, which carries none**. `triage` is the
-pre-acceptance pile.
+convention. `triage` is the pre-acceptance pile.
 
 **Two values were renamed and the universal path was replaced by per-type
 paths.** `spec` and `building` were written in the language of a code change,
@@ -121,9 +120,23 @@ which left three of six types unstageable: a `Decision` is never built, a
 `Research` issue's deliverable is a finding, and an `Epic`'s children sit at
 different stages by construction while stage is exclusive. The vocabulary is
 now `drafting` and `active`, and each type declares which stages it visits —
-so skipping one is correct rather than an omission. `Epic` carries no stage
-at all, because a container has no single position. See `SKILL.md` for the
+so skipping one is correct rather than an omission. See `SKILL.md` for the
 per-type table.
+
+**On `Epic` specifically.** An intermediate draft gave `Epic` no stage at all,
+on the reasoning that its children carry them. That was wrong, and wrong in a
+way this document should have caught: §5 removes `Idea` as a type precisely
+because **commitment level belongs on stage** — and a stageless `Epic` cannot
+express commitment level, which reintroduces the same defect under a new name.
+A container nobody has agreed to and a container being actively filled are
+different states. Worse, an `Epic` with no children yet would have had
+*nothing* carrying a stage, making it invisible to every stage query including
+the triage pile it belongs in.
+
+The reviewer's actual finding was **derivation ambiguity** — max of children,
+min, none? The repair is to remove the derivation, not the field: an `Epic`'s
+stage is its own and is never computed from its children. There is then no
+function to choose.
 
 The invariant is scoped to issues you handle, not asserted over the whole
 corpus — an unqualified corpus invariant would license exactly the backlog

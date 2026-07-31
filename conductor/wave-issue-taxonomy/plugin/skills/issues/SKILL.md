@@ -36,15 +36,14 @@ dimension you are reaching for is below — use it instead.
 
 ## Filing an issue
 
-**Set the stage first — the one field every issue you touch carries, bar an
-`Epic`.**
+**Set the stage first — the one field every issue you touch carries.**
 Then work down. **Never stop at an unknown: leave that field unset and
 continue.** An unset field is honest; a guessed one is noise; a halted
 *procedure* loses the fields you did know.
 
 | # | Dimension | Where it lives | Required |
 |---|-----------|----------------|----------|
-| 1 | **Stage** | `stage: *` label | always, except on an `Epic` |
+| 1 | **Stage** | `stage: *` label | always |
 | 2 | **Type** | native GitHub issue type | once out of `triage` |
 | 3 | **Area** | `area: *` label | if the repo defines any |
 | 4 | **Priority** | `priority: *` label | only when elevated or explicitly low |
@@ -52,9 +51,8 @@ continue.** An unset field is honest; a guessed one is noise; a halted
 
 ### 1. Stage — where in the pipeline?
 
-`stage: *` labels. Exactly one on any issue you file or touch — except an
-`Epic`, which carries none. That is an invariant about **your** issue, not a
-claim about every issue in the repo.
+`stage: *` labels. Exactly one on any issue you file or touch. That is an
+invariant about **your** issue, not a claim about every issue in the repo.
 
 - `triage` — **noticed, not yet committed to.** The type may still be unset.
   This is the collective's "we should look at this" pile
@@ -71,12 +69,20 @@ claim about every issue in the repo.
 | `Bug` `Feature` `Task` | `triage` → `shaping` → `drafting` → `ready` → `active` → `review` |
 | `Decision` | `triage` → `shaping` → `drafting` → `review` |
 | `Research` | `triage` → `shaping` → `active` → `review` |
-| `Epic` | **none** — its children carry the stages |
+| `Epic` | `triage` → `shaping` → `active` → `review` |
 
 A `Decision` is never *built*, so it has no `ready`/`active`: its artifact is
 the record, drafted then reviewed. A `Research` issue has no `drafting` — the
-work *is* the finding. Skipping a stage your type does not have is correct,
-not an omission.
+work *is* the finding. An `Epic` has neither: it is never dispatched as a unit
+(its children are), and it has no defining artifact of its own. Skipping a
+stage your type does not have is correct, not an omission.
+
+**An `Epic`'s stage is its own, never derived from its children.** It says
+whether *the container* has been accepted and is being filled — not where its
+contents are. An `Epic` at `active` may hold children at `triage` and
+`review` simultaneously; that is normal, not a contradiction. A container
+nobody has agreed to yet sits at `triage` like anything else, and a container
+with no children yet is still at whatever stage its own work has reached.
 
 Closed vocabulary, one at a time. Moving forward replaces the label rather
 than adding to it.
