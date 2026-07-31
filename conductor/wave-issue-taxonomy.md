@@ -158,6 +158,29 @@ propagates; it does not enable. Retired Spore is not a target.
 2. **Priority → GitHub Issue Fields**, when Fields leaves public preview.
    Supersede `kodhama-0026`, do not edit it.
 3. **Migration of legacy issues**, per Boundaries.
+4. **Whether `kodhama-0017` gets a forward pointer for its AC3 scope
+   enumeration.** Publishing the issue skill makes this repository's
+   `distribution-scope` block describe different contents from the ones
+   `kodhama-0017` AC3 records — it **adds** the skill and the actuator, and
+   **removes** the marketplace-metadata description, since `kodhama-0025` §4
+   redirected that goal to the GitHub Actions run log. AC3 is a frozen record
+   rather than a statement of present state, so **nothing is owed as an edit**;
+   what is missing is disclosure at the record. **This parks against standing
+   practice**, which is why it needs an answer: in every corpus instance the
+   falsifying change writes the pointer in the same change (`kodhama-0025` →
+   `0017:15-18`; `-0003` → `0002:33`; `-0006` → `0002:41`), and
+   `decisions/0025:151-153` budgets for exactly that. The distinction that may
+   justify parking: every precedent is a *decision* annotating a decision, and
+   this is a **spec**. Full reasoning in
+   `specs/0005-issue-taxonomy-skill-publication.md` open question 6.
+
+**Batch discipline (`CLAUDE.md`, ≤3 at a time).** Only item 4 is asking for a
+decision now; 1–3 are gated on later events (this wave closing, Issue Fields
+GA, a separate migration authority) and are not in the current batch. Spec
+0005's other five open questions are deliberately **not** parked here — none
+carries a live decision, and batching them would spend the cap on questions
+nobody needs answered yet. That they have no ledger entry is a pre-existing
+gap, recorded here rather than fixed.
 
 ## Report
 

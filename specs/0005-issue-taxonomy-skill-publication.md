@@ -6,10 +6,40 @@ depends_on: [kodhama-0026-issue-taxonomy, kodhama-0017-retire-family-release-cer
 implements: [kodhama-0026-issue-taxonomy]
 owner: agent
 updated: 2026-07-31
-version: 6
+version: 7
 ---
 
 # Publishing the issue-convention skill into the Kodhama plugin
+
+> **AMENDED 2026-07-31 — v6 → v7**
+>
+> **WHAT:** v6's two rulings — that `kodhama-0017` AC3 is a frozen record and
+> that the debt is a **disclosure** gap rather than a conformance failure — were
+> stated at the rule and at open question 6, and **not carried back** into the
+> three older passages that still used the retired framing. Those are aligned.
+> The new ground for dropping the marketplace-metadata item is now sourced to
+> `decisions/0025:113` directly instead of through a derived restatement. Two
+> citation corrections and one accounting fix.
+>
+> **WHY:** The distinction is consequential exactly where it is handed over:
+> *conformance failure* implies an edit obligation on an append-only record —
+> the loophole v6 closed — while *disclosure gap* implies an optional
+> annotation, and open question 6 hands that call to the maintainer. Two
+> framings pointing opposite ways is worse than either one alone.
+>
+> **SCOPE:** Three passages realigned to a ruling already made, one citation
+> upgraded to its primary source, three corrections. **Nothing decided here that
+> was not decided in v6**; no criterion, literal, arbiter or requirement moves.
+>
+> **POINTER:** `kodhama/stewards#64`, conformance round 8. Labels F1–F3 are the
+> reviewer's, kept verbatim.
+>
+> **VALUE:** The maintainer answering open question 6 reads one framing of the
+> debt, not two that imply different answers.
+>
+> **CONFIDENCE:** verified — `CLAUDE.md:44`, `decisions/0025:113`, and
+> `conductor/wave-issue-taxonomy.md:99/:104/:105` were each read at the line
+> cited before this revision was written, and all three findings reproduced.
 
 > **AMENDED 2026-07-31 — v5 → v6**
 >
@@ -400,18 +430,29 @@ chosen badly because it made the exclusion look free. It is not free:
 > setup skill."*
 
 **The `distribution-scope` block literal A rewrites is that clause's
-rendering.** Unlike `kodhama-0018` §1, AC3 is accurate today and becomes
-inaccurate **because of this publication** — a third distributed thing, and a
-fourth in the actuator. `kodhama-0025` does not cover it: `decisions/0025:142`
-says *"`kodhama-0017` §2 — amended, not superseded. Its retained goal
-survives"*, retiring the schema-shaped implementation and leaving the scope
-enumeration standing.
+rendering.** Unlike `kodhama-0018` §1, AC3 describes this repository accurately
+as of its ratification, and **this publication is what makes it diverge — in
+both directions** *(v7: this passage stated only the addition, 25 lines below
+the ruling that named both)*:
 
-So publication lands with this repository's canonical scope document out of
-conformance with an approved decision. **The exclusion removes that from the
-edit obligation and v4 put nothing in its place**; open question 6 names the
-corpus's own remedy — the forward pointer, which `kodhama-0017` already carries
-two of.
+- **added** — a third distributed thing in the issue skill, and a fourth in the
+  actuator; and
+- **removed** — the marketplace-metadata description AC3 names, which leaves
+  literal **A** because `kodhama-0025` §4 redirected that goal to the GitHub
+  Actions run log, and a run log is not something the door distributes.
+
+`kodhama-0025` does not retire the enumeration: `decisions/0025:142` says
+*"`kodhama-0017` §2 — amended, not superseded. Its retained goal survives"*.
+
+So publication leaves this repository's canonical scope document describing
+different contents from the ones AC3 records. **That is a disclosure gap, not a
+conformance failure** — AC3 is a frozen record and the scope document is a
+statement of present state, so each is correct as the kind of artifact it is,
+and neither is owed an edit *(v7: this passage said "out of conformance with an
+approved decision", the framing the rule above retired)*. What is missing is a
+pointer at the record. **The exclusion removes the class from the edit
+obligation and v4 put nothing in its place**; open question 6 names the corpus's
+own remedy — the forward pointer, which `kodhama-0017` already carries two of.
 
 **The one adjacent case, and why it is different.** `kodhama-0026` carried the
 same shape of stale clause and *was* corrected, in `fcb7779`. That was possible
@@ -432,12 +473,20 @@ intent act"*, which is contradicted by the correction it was explaining. **Once
 *A supporting datum and an unreconciled one, both v6.* Supporting:
 `decisions/0002:36` — *"per the append-only rule its text below is preserved
 **as merged**"* — the corpus stating the boundary in its own words. Cutting the
-other way: **`CLAUDE.md:42` says *"never edit a **ratified** decision"***, which
+other way: **`CLAUDE.md:44` says *"never edit a **ratified** decision"***, which
 on a literal reading would have forbidden `fcb7779`. The reconciliation is that
 `CLAUDE.md` uses "ratified" loosely, as shorthand for a decision that has
-landed; the operative event in every worked instance is the merge. That looseness
-is noted rather than fixed — `CLAUDE.md:42` is not a carrier under the rule
-above, and tightening a governance sentence is not this publication's to do.
+landed; the operative event in every worked instance is the merge.
+
+That looseness is noted rather than fixed. Line 44 fails carrier condition 1 —
+it enumerates nothing — so R15 does not reach it. **But this publication edits
+`CLAUDE.md` twice**, so declining to tighten a third sentence in the same file
+is a **scope choice, not a limit**: those two edits are obligations the rule
+generates, while rewriting a governance rule about append-only editing is a
+different act needing its own authority. *(v7: this cited line 42, the bullet
+head; the sentence is at line 44. v6's CONFIDENCE line did not list `CLAUDE.md`
+among what was re-read, so the slip fell exactly outside the verified set —
+which is the case for keeping that list honest rather than generous.)*
 
 **Finding the next one** (reviewer-runnable, and **a heuristic that cannot be
 complete** — see the disclosure below):
@@ -475,11 +524,14 @@ them:**
 | `decisions/0017:16` | The forward pointer `kodhama-0025` wrote. It is the corpus **doing** the disclosure this rule cares about, so a hit here is a worked example, not a defect. |
 | `CLAUDE.md:8` and `README.md:5` | *"THREE things live here and nothing else"* — enumerates the repository's **top-level structure** (decisions, conductor, install door), which this publication does not change. |
 | `specs/0004:86` | *"carries exactly these host-specific fields, plus a `description` and nothing else"* — a JSON schema constraint on a catalog entry, unrelated to package contents. Still true. |
-| `conductor/wave-issue-taxonomy.md:99`, `:104`, `:105` | Lane C/D scope text about which repositories receive receipts. Enumerates repositories, not contents. |
+| `conductor/wave-issue-taxonomy.md:99`, `:104`, `:105` | **Lane B ruling text quoting the carriers themselves** — `:99` quotes carrier 4, `:104` carrier 8, `:105` carrier 5. They are the authorisation naming what to repair, so a hit is the ledger working, not a carrier. *(v7: v6 called these "Lane C/D scope text about which repositories receive receipts", which is wrong twice — Lane C begins at `:121` and returns no hits, and that reason would not have excluded them anyway, since carrier 7 proves Lane B text **can** be a carrier.)* |
 
-*(v6 added the last four rows plus `0017:16`. The table covered three of roughly
-eight non-carrier hits, which left the next reviewer to re-adjudicate five —
-the cost the table exists to avoid.)*
+*(v6 added the last **four** rows — `0017:16`, `CLAUDE.md:8`/`README.md:5`,
+`specs/0004:86`, and the three `wave-issue-taxonomy.md` hits — bringing the
+table to seven rows covering every non-carrier hit the widened command returns.
+Before that it covered three, leaving the next reviewer to re-adjudicate the
+rest, which is the cost the table exists to remove. v7 corrects this note and
+the matching change-table row, which counted rows and hits inconsistently.)*
 
 | # | Where | The false part | Replacement |
 |---|---|---|---|
@@ -532,17 +584,22 @@ opposite, four ways:**
   proposition.**
 - `decisions/0017:119-121`: §2 *"authorizes the goal, not a schema."* It never
   named an artifact, so nothing could be retired out of it.
+- **`decisions/0025:113` — the approved record saying where the goal went**:
+  *"That goal is met by the GitHub Actions run log, which records the checkout
+  revision with better provenance than a checked-in file."* This is the primary
+  source for the replacement ground below; *(v7: v6 routed the claim through
+  `specs/README.md`, a derived restatement, when the decision itself says it)*.
 - `specs/README.md:34-36` — this repository's own spec index, standing directly
-  above the paragraph v5 added to it: the goal *"is met by the GitHub Actions
-  run log rather than a schema, per `kodhama-0025`."*
+  above the paragraph v5 added to it, agreeing: the goal *"is met by the GitHub
+  Actions run log rather than a schema, per `kodhama-0025`."*
 
 The claim was also self-contradicting: of the same two-item enumeration, this
 spec said AC3 *"is accurate today"* in one section and *"was already false"* in
 another. Both cannot hold, whichever reading a reader prefers.
 
 **The correct ground reaches the same outcome and asserts no falsity.**
-`kodhama-0025` **redirected** the goal — from a distributed schema to the
-GitHub Actions run log. Literal **A** reframes the block as *a description of
+`kodhama-0025` §4 **redirected** the goal — from a distributed schema to the
+GitHub Actions run log (`decisions/0025:113`). Literal **A** reframes the block as *a description of
 present distributed contents*. A run log is not a distributed artifact: the
 install door does not ship it, and nobody installs it. So the item leaves the
 block because **it is no longer a description of anything the door
@@ -751,7 +808,7 @@ the sentence into line with `scripts/keyless_admission_check.py`, which has said
 | `CLAUDE.md` | lines 66–68 → **F** | Separate from the marked block; same file, different obligation. |
 | `conductor/wave-issue-taxonomy/plugin/DIRECTION.md` | lines 45–47 → **G** | Authorised edit 2 to staged text. |
 | `.github/workflows/validate-marketplace-setup.yml` | add `"conductor/wave-issue-taxonomy/plugin/**"` to `on.pull_request.paths` | See §Closing the CI blind spot. |
-| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v6` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
+| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v7` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
 | `tests/test_kodhama_plugin.py` | the **fourteen** distinct `new: test_*` named in §How each criterion is checked, plus the updated literal **D** in `test_kodhama_catalog_entries_disclose_no_support_claim` | The criteria table is the authority for which tests exist; this row is a summary of it. The existing tests must keep passing unchanged; the module docstring, which names specs 0003 and 0004, gains this one. |
 | `conductor/wave-issue-taxonomy/README.md` | the staging table records each moved file's published home | S10's second clause. Reviewer-checked; prose currency is not mechanically checkable. |
 
@@ -1191,7 +1248,7 @@ adds the actuator disclosure and the corrected purpose wording)*
   shall not trigger on `conductor/` generally.
 - **R18 (ubiquitous):** `tests/TEST_DEPS.md` shall declare this spec among its
   `depends_on` **in the pinned `id@vN` form**, at the version the tests were
-  written against — `kodhama-spec-0005-issue-taxonomy-skill-publication@v6` as
+  written against — `kodhama-spec-0005-issue-taxonomy-skill-publication@v7` as
   of this revision. `specs/README.md` requires the pinned form for versioned
   spec dependencies, and the file already pins its sibling `@v5`; an unpinned
   entry would have satisfied v3's wording and matched neither.
@@ -1360,12 +1417,15 @@ and the installed `.grove/versioning.md` and `.grove/relations.md`.
 - **Version pin** — spec 0004 pinned `@v5`; the **six** decisions
   (`kodhama-0017`, `-0018`, `-0020`, `-0021`, `-0025`, `-0026`) are append-only
   and correctly unpinned.
-- **Counter** — bumped `5 → 6`. Significant by `.grove/versioning.md`'s test
-  only in the weak sense — **no scenario, requirement or literal changes
-  behaviour in v6.** It is bumped because the spec's stated authority for a
-  deliberate scope widening was a false reading of two approved decisions, and
-  a reader pinning `@v5` would be pinning that reading. Counting an
-  authority-level correction as significant is the conservative call. The section-level delta note carries the five
+- **Counter** — bumped `6 → 7`. **v6's bump was required, not merely
+  conservative**, as the round-8 reviewer established against
+  `.grove/versioning.md:59-61`: a testable-clause change bumps, and R15's
+  `shall` text changed scope in v6. v7 is the weaker case — no scenario,
+  requirement, literal or arbiter moves — and is bumped because three passages
+  stating the debt's *kind* were realigned to a ruling the maintainer is being
+  asked to act on, so a reader pinning `@v6` would be pinning two incompatible
+  framings of the question. `tests/TEST_DEPS.md` does not yet name this spec,
+  so no pin goes stale. The section-level delta note carries the five
   fields plus VALUE and CONFIDENCE; S9, S10, S13, S15 and S16 carry
   scenario-level inline tags.
 - **Rule scope** — R15 binds statements of present state only. Ratified
@@ -1388,8 +1448,10 @@ and the installed `.grove/versioning.md` and `.grove/relations.md`.
   extractor cannot distinguish from commands.
 - **No invented scope** — the taxonomy is not restated except for the six type
   names S8 and R9 need as check inputs; **six** unresolved matters are parked
-  as open questions, the newest being the one conformance debt this publication
-  creates in the append-only corpus.
+  as open questions, the newest being the one **disclosure** debt this
+  publication creates against the append-only corpus — a missing pointer at
+  `kodhama-0017`, not a conformance failure, per the ruling in §Standing scope
+  claims.
 
 ### What v2 changed, and why
 
@@ -1475,13 +1537,33 @@ Labels are the round-7 reviewer's, kept verbatim. One row each.
 | **B1** (second half) — the parked debt was understated | Literal **A** does not only add; it also **removes** the retained-goal description AC3 names. Open question 6 now records both directions |
 | **B1** (second-order) — the rule used the past-act reading for the exclusion and the present-state reading for the debt | **Decided: AC3 is a past-act record and therefore *not* a carrier.** No edit is owed and the exclusion is not a loophole. The debt is re-typed as a **disclosure** debt rather than a conformance failure — a frozen record and a current document are each correct as their own kind of artifact; what is missing is a pointer at the record. Stated at the rule, where the ambiguity was |
 | **M1** — the repudiated rule still asserted in present tense | The v4 change-table row's closing clause (*"the line is the intent act, not the file"*) is corrected in place, with a note that the row is history and §Standing scope claims is current. Its stale `kodhama-0018` justification is pointed at the v5 replacement. The v5 errata row said *"two other statements … were already correct"*; there are **three** others, and this was the fourth |
-| **M1** (support) — the rule was better supported than shown, and one datum cuts against it | `decisions/0002:36` added — *"preserved **as merged**"*. And the tension is named rather than hidden: **`CLAUDE.md:42` says *"never edit a **ratified** decision"***, which read literally would forbid `fcb7779`. Reconciled as loose usage, noted, and deliberately not fixed — that line is not a carrier and tightening governance prose is not this publication's job |
+| **M1** (support) — the rule was better supported than shown, and one datum cuts against it | `decisions/0002:36` added — *"preserved **as merged**"*. And the tension is named rather than hidden: **`CLAUDE.md:42` says *"never edit a **ratified** decision"*** *(v6's line number, wrong; the sentence is at `:44` — see F3)*, which read literally would forbid `fcb7779`. Reconciled as loose usage, noted, and deliberately not fixed — that line is not a carrier and tightening governance prose is not this publication's job |
 | **M2** — the rubric was not re-walked against the dependency v5 added | `depends_on` carries **seven** ids. The two "five" bullets are replaced: five constraints the spec must not break, plus **one it diverges from**. The frontmatter bullet now documents 0017's v5 addition, which was its job that round. **And the edge is re-typed:** calling 0017 a constraint *"this spec must not break"* was false while open question 6 records that it does — it is a drift-bearing input, disclosed rather than satisfied |
 | **M3** — parking OQ6 against a precedent never surfaced | Open question 6 now names the standing practice and that this parks against it: `kodhama-0025` wrote `0017:15-18`, `-0003` wrote `0002:33`, `-0006` wrote `0002:41`, and `0025:151-153` budgets for exactly this. It also states that the `depends_on` edge **neither satisfies nor evades** — it leaves no trace where a reader of 0017 would find it. The reason for parking is given as a real distinction (every precedent is a *decision* annotating a decision; this is a spec) and explicitly left as the maintainer's call, since writing the pointer unilaterally would settle it by doing |
 | **m1** — R15 said all eight carriers *shall* carry literals; carrier 7 carries none | Scoped to the **seven literal-bearing** carriers; carrier 7 is discharged by its ledger correction, which S13 already asserted correctly |
 | **m2** — one arbiter row still said *"**G** in `DIRECTION.md`"* unqualified | Qualified to `plugins/kodhama/DIRECTION.md`. Last unnamed site of the v5 repair |
-| **m3** — the false-positive table covered three of ~eight non-carrier hits | Five rows added: `CLAUDE.md:8`/`README.md:5`, `specs/0004:86`, `conductor/wave-issue-taxonomy.md:99/104/105`, `decisions/0017:16`. Leaving five uncovered imposed exactly the re-adjudication cost the table exists to remove |
+| **m3** — the false-positive table covered three of ~eight non-carrier hits | **Four** rows added: `decisions/0017:16`, `CLAUDE.md:8`/`README.md:5`, `specs/0004:86`, and `conductor/wave-issue-taxonomy.md:99/104/105`. Leaving the rest uncovered imposed exactly the re-adjudication cost the table exists to remove. *(v7: this row said "Five rows added" and listed four, while the table's own note said "the last four rows plus `0017:16`" — which is one of the four. Rows and hits were being counted interchangeably.)* |
 | **m4** — `specs/README.md` cited *"`kodhama-0017` §33"* | Corrected to line 33, with §2 named as the amended section. That paragraph also now states the divergence in both directions and calls the debt a disclosure debt |
+
+### What v7 changed, and why
+
+Labels are the round-8 reviewer's, kept verbatim.
+
+| Label | Repair |
+|---|---|
+| **F1** — the v6 re-typing was stated at the rule and nowhere else | Three older passages still carried the retired framing, forty and a thousand lines from the ruling. `§Standing scope claims` no longer says publication leaves the scope document *"out of conformance with an approved decision"* — it says the two artifacts describe different contents, that each is correct as its own kind, and that the gap is one of **disclosure**. The Rubric check's *"one conformance debt this publication creates"* is likewise re-typed. **v6's own change table claimed the fix was "stated at the rule, where the ambiguity was" — which is exactly what happened, and exactly the defect**: a ruling landed in one place and its dependants were not re-walked, which is the failure mode this wave has hit in four separate rounds |
+| **F1** (fourth site) — the in-section divergence statement gave one direction | `§Standing scope claims` said AC3 *"becomes inaccurate … a third distributed thing, and a fourth in the actuator"*. It now states **both** directions as a list — added: the skill and the actuator; removed: the marketplace-metadata description — matching the ruling 25 lines above it and open question 6 |
+| **F2** — a v6-added false-positive row described text that is not at the lines it cites | `conductor/wave-issue-taxonomy.md:99/:104/:105` are **Lane B ruling text quoting the carriers themselves** (`:99` carrier 4, `:104` carrier 8, `:105` carrier 5), not *"Lane C/D scope text about which repositories receive receipts"* — Lane C starts at `:121` and returns no hits. The disposition was right and the reason was wrong, **and the wrong reason would not have excluded them anyway**, since carrier 7 proves Lane B text can be a carrier. Real reason given: they are the authorisation naming what to repair |
+| **F3** — `CLAUDE.md:42` cited for a sentence at `:44` | Corrected. Line 42 is the bullet head. Noted in place that v6's CONFIDENCE line did not list `CLAUDE.md` among what was re-read, so the slip fell outside the verified set — the confidence claim was accurate, which is the argument for keeping such lists honest rather than generous |
+| **F3** (follow-on) — whether naming the `CLAUDE.md` tension suffices | Left as-is per the reviewer, since line 44 fails carrier condition 1 and R15 does not reach it. **One clause added**: this publication edits `CLAUDE.md` twice, so declining to tighten a third sentence there is a **scope choice, not a limit** — the two edits are obligations the rule generates; rewriting a governance rule is a different act needing its own authority |
+| Uncited primary source | `decisions/0025:113` now cited directly — *"That goal is met by the GitHub Actions run log, which records the checkout revision with better provenance than a checked-in file."* v6 routed the claim through `specs/README.md:34-36`, a derived restatement of it. The approved record says it itself |
+| Accounting wobble | The false-positive table's note said *"the last four rows plus `0017:16`"* — which is one of the four — while its change-table row said *"Five rows added"* and listed four. **Four rows** in both places; the table now covers every non-carrier hit the widened command returns |
+
+**Corpus support the reviewer supplied and v7 records.**
+`decisions/0025:139-140` calls that record's own acceptance criteria *"false
+**when written**"* — the corpus indexing AC truth to the moment of writing,
+which is the past-act ruling in §Standing scope claims stated by an approved
+decision rather than inferred here. It was not cited when the ruling was made.
 
 Result: **PASS**, holding at `gated`. `approved` is the maintainer's to give;
 no intent act has been recorded for this spec.
