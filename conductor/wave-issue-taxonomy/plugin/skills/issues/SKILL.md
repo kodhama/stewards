@@ -66,23 +66,27 @@ invariant about **your** issue, not a claim about every issue in the repo.
 
 | Type | Path |
 |---|---|
-| `Bug` `Feature` `Task` | `triage` → `shaping` → `drafting` → `ready` → `active` → `review` |
+| `Bug` `Feature` `Task` `Epic` | `triage` → `shaping` → `drafting` → `ready` → `active` → `review` |
 | `Decision` | `triage` → `shaping` → `drafting` → `review` |
 | `Research` | `triage` → `shaping` → `active` → `review` |
-| `Epic` | `triage` → `shaping` → `active` → `review` |
 
 A `Decision` is never *built*, so it has no `ready`/`active`: its artifact is
 the record, drafted then reviewed. A `Research` issue has no `drafting` — the
-work *is* the finding. An `Epic` has neither: it is never dispatched as a unit
-(its children are), and it has no defining artifact of its own. Skipping a
-stage your type does not have is correct, not an omission.
+work *is* the finding. Skipping a stage your type does not have is correct,
+not an omission.
+
+**An `Epic` takes the full path**, because it is real work with its own
+deliverable. Its `drafting` is the **breakdown into children**, and that
+breakdown is a dispatchable artifact: an `Epic` at `ready` is one an agent can
+pick up and decompose. `active` is its children in flight; `review` asks
+whether the set turned out coherent and complete.
 
 **An `Epic`'s stage is its own, never derived from its children.** It says
-whether *the container* has been accepted and is being filled — not where its
-contents are. An `Epic` at `active` may hold children at `triage` and
-`review` simultaneously; that is normal, not a contradiction. A container
-nobody has agreed to yet sits at `triage` like anything else, and a container
-with no children yet is still at whatever stage its own work has reached.
+where *the epic* is, not where its contents are. An `Epic` at `active` may
+hold children at `triage` and `review` simultaneously; that is normal, not a
+contradiction. An epic nobody has agreed to sits at `triage`, and an epic with
+no children yet is at whatever stage its own work has reached — often
+`drafting`, since deciding what it contains is the work.
 
 Closed vocabulary, one at a time. Moving forward replaces the label rather
 than adding to it.
@@ -107,7 +111,7 @@ Exactly one. This is a **native GitHub issue type**, not a label — set it with
 | `Bug` | Something behaves wrong against a stated expectation | Nothing was ever promised → `Feature` |
 | `Feature` | A new capability | It is a defect against something promised → `Bug` |
 | `Task` | **The deliverable is a change** with an obvious done state — chores, cleanups, test gaps, rollouts, bookkeeping | The deliverable is a finding → `Research` |
-| `Epic` | A container for other issues. **Orthogonal** — never competes with the rows above | It ships as one unit → whatever it actually is |
+| `Epic` | A set of independently-deliverable children, plus the guarantee that the set is **coherent and complete**. **Orthogonal** — never competes with the rows above | It ships as one unit → whatever it actually is |
 
 **When two rows fire, the higher one wins.** The table is in precedence order:
 `Decision` → `Research` → `Bug` → `Feature` → `Task`. An issue that both
@@ -145,7 +149,8 @@ it *is*.
 ### Hierarchy — native sub-issues, not a naming convention
 
 `Epic` describes structure, not kind, which is why it never competes in the
-precedence order. Use real sub-issues:
+precedence order — an epic is *also* a `Feature`, a `Task`, or whatever its
+contents deliver. Use real sub-issues:
 
 ```bash
 gh issue create --title "..." --parent 42     # file under an epic
@@ -153,9 +158,10 @@ gh issue edit 57 --add-sub-issue 61           # attach an existing issue
 gh issue view 42 --json subIssues             # read the children
 ```
 
-An `Epic` may legitimately have no children yet — a container still being
-filled is still a container. A tracker that coordinates work without shipping
-anything itself is an `Epic`.
+An `Epic` may legitimately have no children yet — that is what `drafting` is
+for. Each child should deliver value on its own; the epic's job is to make
+the set add up to a complete package, which is what its `review` checks. A
+tracker that coordinates work without shipping anything itself is an `Epic`.
 
 ### 3. Area — what part of the system?
 

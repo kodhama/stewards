@@ -138,6 +138,14 @@ min, none? The repair is to remove the derivation, not the field: an `Epic`'s
 stage is its own and is never computed from its children. There is then no
 function to choose.
 
+A second draft gave `Epic` a shortened path on the reasoning that it is never
+dispatched as a unit. Also wrong, and it rested on a weak definition. An
+`Epic` is not a passive container: it is a set of independently-deliverable
+children **plus the guarantee that the set is coherent and complete**. That is
+a deliverable, so it has its own defining artifact — the breakdown — and an
+agent can be dispatched to produce it. `Epic` therefore takes the full path,
+and the per-type table loses a special case.
+
 The invariant is scoped to issues you handle, not asserted over the whole
 corpus — an unqualified corpus invariant would license exactly the backlog
 sweep this convention forbids.
