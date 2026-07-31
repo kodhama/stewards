@@ -1117,14 +1117,20 @@ exit 0
         # reversal would pass the very test that names R3. The closed
         # inventory does catch it — measured — but the requirement belongs
         # here too, where a reader looks for it.
+        #
+        # Matched on **suffix, not filename**: an exact match for
+        # `seed-issue-taxonomy.sh` lets `skills/issues/seed.sh` through, which
+        # is the same rename-walks-past defect
+        # `test_the_migration_mapping_stays_out_of_the_package` argues against
+        # forty lines below. No executable belongs under `skills/` at all.
         self.assertEqual(
             [],
             [
                 path.relative_to(PLUGIN).as_posix()
                 for path in sorted(skills.rglob("*"))
-                if path.is_file() and path.name == "seed-issue-taxonomy.sh"
+                if path.is_file() and path.suffix == ".sh"
             ],
-            "the actuator moved under skills/, where everything is "
+            "a script sits under skills/, where everything is "
             "agent-reachable by construction",
         )
 
