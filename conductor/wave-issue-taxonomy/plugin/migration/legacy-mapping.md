@@ -8,8 +8,9 @@ agent should be handed one as ambient context.
 Nothing here authorises an edit. Migrating existing issues is a separate,
 explicitly approved action.
 
-Source: scan of all ten kodhama repos, July 2026. Counts are observed
-occurrences across all repos.
+Source: scan of the nine live kodhama repos, July 2026 — retired Spore
+excluded, matching the decision record and the reference. Counts are observed
+occurrences across those repos.
 
 ---
 

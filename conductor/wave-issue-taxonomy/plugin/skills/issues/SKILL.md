@@ -22,9 +22,13 @@ It requires six issue types. Three ship with every org; three must be created:
 gh api /orgs/<org>/issue-types --jq '.[].name'
 ```
 
-If `Research`, `Decision` and `Epic` are missing, **this convention is not yet
-in force in that org.** Say so and stop — do not file half-typed issues
+**If any of `Research`, `Decision` or `Epic` is absent, this convention is not
+yet in force in that org.** Say so and stop — do not file half-typed issues
 against it. Provisioning is a setup step, not a case to work around.
+
+If the command itself fails (no `read:org`, network, unknown org), you cannot
+establish whether it is in force. Say that and stop too — do not assume
+either way.
 
 ## The rule that does the most work
 
@@ -36,7 +40,7 @@ machine needs to filter on is structured metadata.
 ```
 ✗  [execution] [high-priority] Fix the retry loop in the dispatcher
 ✓  Dispatcher retry loop drops the final attempt
-   → type Bug · priority: p1 · stage: active · facing: system
+   → type Bug · priority: p1 · stage: active · facing: user
 ```
 
 **Titles state the situation, not the instruction.** "Fix X" and "Add Y" name
@@ -49,6 +53,16 @@ imperative verb first, rewrite it:
 ✓  A self-referencing node_modules symlink blocks fresh clones
 ```
 
+**A `Decision` states the question, a `Research` issue states the unknown** —
+neither has a known outcome, which is what makes it one:
+
+```
+✗  Decide: should wisp file its own decision record
+✓  Whether wisp files its own decision record
+✗  Run a controlled experiment on reviewer value
+✓  Whether a second automated reviewer earns its subscription
+```
+
 **Where the issue has a consumer, state the outcome from their side.**
 
 ```
@@ -56,9 +70,9 @@ imperative verb first, rewrite it:
 ✓  A learner's streak survives one missed day
 ```
 
-**Never invent a consumer that does not exist.** Some work has no one outside
-the building team who observes it — a refactor, a lint rule, a test gap. That
-is fine and needs no persona:
+**Never invent a consumer that does not exist.** Some work changes nothing
+anyone consuming this repo would get — a refactor, a lint rule, a test gap.
+That is fine and needs no persona:
 
 ```
 ✗  As a maintainer, I want the reducer to be easier to reason about
@@ -76,16 +90,18 @@ noise; a halted *procedure* loses the fields you did know.
 
 | # | Dimension | Where it lives | Required |
 |---|-----------|----------------|----------|
-| 1 | **Stage** | `stage: *` label | on every open issue |
+| 1 | **Stage** | `stage: *` label | on every open issue **you file** |
 | 2 | **Type** | native GitHub issue type | once out of `triage` |
-| 3 | **Facing** | `facing: *` label | once the type is set |
+| 3 | **Facing** | `facing: *` label | on `Bug` `Feature` `Task` `Epic` |
 | 4 | **Area** | `area: *` label | if the repo defines any |
 | 5 | **Priority** | `priority: *` label | only when elevated or explicitly low |
 | 6 | **Status** | `blocked` · `needs-human` · `needs-design-system` · `deferred` | only when true |
 
 ### 1. Stage — where in the pipeline?
 
-`stage: *` labels. Exactly one on every **open** issue you file or touch.
+`stage: *` labels. Exactly one on every **open** issue you file. On an issue
+you are only editing for some other reason, adding one is permitted, not
+required — the same rule as Legacy below.
 
 `stage: triage` → `shaping` → `drafting` → `ready` → `active` → `review`
 
@@ -102,15 +118,20 @@ noise; a halted *procedure* loses the fields you did know.
 | Type | Path |
 |---|---|
 | `Bug` `Feature` `Task` `Epic` | the full path above |
-| `Decision` | `triage` → `shaping` → `drafting` → `ready` → `review` |
+| `Decision` | `triage` → `shaping` → `ready` → `drafting` → `review` |
 | `Research` | `triage` → `shaping` → `ready` → `active` → `review` |
 
-`Decision` has no `active`: writing the record *is* `drafting`, and once
-ratified there is nothing left to build. `Research` has no `drafting`: the
-work *is* the finding. Both keep `ready`, because both can be handed to an
-agent — that is what `ready` means, and it is the only stage that marks
-commitment. Skipping a stage your type does not have is correct, not an
+`Decision` has no `active`: writing the record *is* its work, so `drafting`
+is the working stage and `ready` precedes it — a shaped decision awaiting an
+author is exactly "dispatchable". `Research` has no `drafting`: the work *is*
+the finding. In every path `ready` sits immediately before the stage where
+the work happens. Skipping a stage your type does not have is correct, not an
 omission.
+
+**Stage marks how far the issue has got, not what is happening this minute.**
+An issue at `stage: shaping` that nobody is touching is still at `shaping`.
+That is why a `deferred` issue keeps the stage it reached rather than needing
+one of its own.
 
 **On close, strip the stage label.** A closed issue carrying `stage: active`
 asserts something false. **On reopen, set the stage the work is actually at**
@@ -124,18 +145,22 @@ Exactly one. This is a **native GitHub issue type**, not a label — set it with
 | Type | Use when | Not this when |
 |------|----------|---------------|
 | `Epic` | It has children that ship separately, **and its own deliverable is that the set is coherent and complete** | It ships as one unit → the rows below |
-| `Decision` | A choice must be made and recorded before work can proceed | The choice is already made and just needs doing → `Task` |
+| `Decision` | A choice must be made and recorded before work can proceed. **Threshold: until the choice is made there is nothing to build.** If the correct state is derivable from the upstream, it is not a `Decision` | The choice is already made, or the upstream already settles it → `Bug` or `Task` |
 | `Research` | **The deliverable is a finding**, not a change | The deliverable is a change → the rows below |
-| `Bug` | Something behaves wrong against a stated expectation | Nothing was ever promised → `Feature` |
+| `Bug` | Something is wrong against a stated expectation — **including an artifact contradicting an approved upstream, where nothing "behaves" at all** | Nothing was ever promised → `Feature` |
 | `Feature` | A new capability | It is a defect against something promised → `Bug` |
-| `Task` | The deliverable is a change to something that already exists — chores, cleanups, test gaps, rollouts, bookkeeping | It is new capability → `Feature` |
+| `Task` | The deliverable is a change to something that already exists — chores, cleanups, test gaps, bookkeeping, and **extending an existing capability to somewhere it was always meant to reach** | It is capability that did not exist before, anywhere → `Feature` |
 
 **When two rows fire, the higher one wins.** The table is in precedence order:
 `Epic` → `Decision` → `Research` → `Bug` → `Feature` → `Task`. `Epic` leads
-because a container is a container whatever its contents deliver. An issue
-that both reports a contradiction *and* requires choosing how to resolve it is
-a `Decision`. An issue that is both a rollout and an open question is
-`Research`.
+only when **both** its conditions hold — children that ship separately *and*
+coherence-of-the-set as its own deliverable. A bucket of unrelated follow-ups
+has children but no such deliverable, so it is not an `Epic`; classify it by
+what it actually delivers.
+
+An issue that both reports a contradiction *and* requires choosing how to
+resolve it is a `Decision`. An issue that is both a rollout and an open
+question is `Research`.
 
 `Task` and `Research` are separated on **one axis only — the deliverable.** A
 verification chore whose outcome is unknown is `Research`, because what it
@@ -166,29 +191,34 @@ gh issue view 42 --json subIssues             # read the children
 An `Epic`'s stage is **its own**, describing the epic's work, never computed
 from its children:
 
-- `drafting` — **the breakdown is being written.** This is where children get
-  created. An epic with no children yet is normally here
-- `ready` — the breakdown is approved; the children can be dispatched
+- `drafting` — the epic's own breakdown work. An epic with no children yet is
+  normally here
+- `ready` — the breakdown is approved and the epic can be picked up
 - `active` — the epic's own coordination work is in flight
-- `review` — the children are done; checking whether the set is coherent and
-  complete, which is the thing an epic uniquely promises
+- `review` — the epic's own completeness check: did the set come out coherent
 
-An `Epic` at `active` may hold children at any mix of stages. That is normal.
+**Read every one of those as describing the epic's work, not its children's
+state.** An `Epic` at any stage may hold children at any mix of stages, and an
+epic whose coordination is finished is at `review` even if children are still
+open.
 
 ### 3. Facing — who observes the difference?
 
-`facing: user` · `facing: system`. Set it once the type is set.
+`facing: user` · `facing: system`. Set it on the delivery types — `Bug`,
+`Feature`, `Task`, `Epic`. A `Decision` and a `Research` issue produce a
+record and a finding, not a change anyone consumes, so they carry no
+`facing:`.
 
-**The boundary is the building team**, in both directions:
+**The boundary is this repository's output**, not who maintains what:
 
 | | |
 |---|---|
-| `facing: user` | someone who did **not** build it observes the difference |
-| `facing: system` | only the people building it do |
+| `facing: user` | it changes what someone **consuming this repo** gets — a product's users, or another repository that installs or depends on it |
+| `facing: system` | it changes only how this repo is built or maintained |
 
-"Someone" need not be a human: a learner for a product, a **consuming
-repository** for a plugin. If another repo's agents or maintainers would
-notice, it is `facing: user` even though nobody outside the org ever sees it.
+Who maintains the consumer is irrelevant. A change a sibling repo would notice
+is `facing: user` even when the same people maintain both, and even when
+nobody outside the org ever sees it.
 
 The distinction cuts *inside* a type, not between types. Two real chores from
 the same repo:
@@ -257,7 +287,7 @@ The `blocked` label is only for blockers that are **not** issues.
 
 | | Has it been accepted? | Consequence |
 |---|---|---|
-| `stage: triage` | **No** — nobody has committed to it | no priority, no `deferred` |
+| `stage: triage` | **No** — nobody has committed to it | no `priority: p2`, no `deferred`. `p0`/`p1` are fine — an incident is often noticed before anyone triages it |
 | `priority: p2` | Yes, ranked low | competes for time, just badly |
 | `deferred` | Yes, but we chose not to schedule it | does not compete until the condition holds |
 
@@ -266,18 +296,27 @@ If nobody has agreed to do it at all, it is neither; it is `stage: triage`.
 
 ## Closing
 
-Always give a reason: `gh issue close --reason completed|not-planned`.
-`not-planned` covers won't-do, duplicate, and stale. Link the survivor in a
-comment before closing a duplicate. Strip the `stage:` label on close.
+Always give a reason. **The token has a space and needs quoting** — `gh` accepts
+exactly `completed`, `"not planned"`, and `duplicate`:
+
+```bash
+gh issue close 57 --reason completed
+gh issue close 57 --reason "not planned"     # won't-do, stale
+gh issue close 57 --reason duplicate         # native — do not fold into "not planned"
+```
+
+`duplicate` is a real close reason; use it and link the survivor in a comment.
+Strip the `stage:` label on close.
 
 ## Searching
 
 ```bash
 gh issue list --type Bug --label "priority: p0"
 gh issue list --label "stage: triage"                             # the untriaged pile
-gh issue list --label "stage: ready" --json number,title,labels   # agent-dispatchable
+gh issue list --label "stage: ready" --json number,title,labels \
+  --search '-label:needs-human -label:blocked -label:deferred'      # agent-dispatchable
 gh issue list --type Feature --label "facing: user"               # user-visible capability
-gh search issues --owner <org> --include-prs=false "type:Bug"     # across the family
+gh search issues --owner <org> "type:Bug"                          # across the family
 ```
 
 ## Legacy issues

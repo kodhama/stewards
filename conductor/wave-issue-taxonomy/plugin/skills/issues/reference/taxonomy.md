@@ -95,10 +95,17 @@ mapping from `(type, stage)` to its next step.
 
 The order exists because real issues match more than one row, and every value
 sits on the same single-valued native field — so there are no "orthogonal"
-types, only precedence. `Epic` leads: a container is a container whatever its
-contents deliver, which is the cleanest available tie-break and avoids the
-incoherence of calling a value of a single-valued field orthogonal to the
-other values.
+types, only precedence. `Epic` leads, but its row is **conjunctive**: children
+that ship separately *and* coherence-of-the-set as its own deliverable. A
+bucket of unrelated follow-ups satisfies the first and not the second, so it
+never reaches the tie-break at all.
+
+`Bug` covers artifact-against-artifact contradiction, not only running
+behaviour — the dominant shape in this corpus. The threshold against
+`Decision` is whether the correct state is derivable from the upstream: if it
+is, the contradiction is a `Bug`; if resolving it requires choosing, it is a
+`Decision`. That threshold is in `SKILL.md`'s operative table, not only
+here.
 
 `Task` and `Research` are drawn on **one axis: the deliverable** — a finding
 or a change. An earlier draft also gave `Task` an "obvious done state"
@@ -110,38 +117,54 @@ the work.
 
 ### Stage — `triage|shaping|drafting|ready|active|review`
 
-Mutually exclusive; exactly one on every open issue. `triage` is the
-pre-acceptance pile.
+Mutually exclusive; exactly one on every open issue **you file**. On an issue
+edited for some other reason it is permitted, not required — an unqualified
+corpus invariant would license exactly the backlog sweep this convention
+forbids. `triage` is the pre-acceptance pile.
 
-**Per-type paths.** `Decision` skips `active` (writing the record *is*
-`drafting`); `Research` skips `drafting` (the work *is* the finding).
-Everything else takes the full path. **Every type keeps `ready`** — it means
-"approved and dispatchable", which is true of a decision awaiting an author
-as much as of code awaiting an executor, and it is the only stage that marks
-commitment. `stage: ready` therefore remains a universal dispatch signal.
+**Per-type paths.** `Decision` skips `active` (writing the record *is* the
+work, so `drafting` is its working stage); `Research` skips `drafting` (the
+work *is* the finding). Everything else takes the full path. **`ready` always
+sits immediately before the stage where the work happens** — which is why
+`Decision`'s runs `shaping → ready → drafting`, not the reverse.
 
-**An `Epic`'s stage is its own and is never derived from its children.** Its
-`drafting` is where the breakdown is written and children are created; its
-`review` asks whether the set came out coherent and complete, which is the
-thing an epic uniquely promises. An `Epic` at `active` may hold children at
-any mix of stages.
+`stage: ready` is the dispatch signal, but it is **not sufficient on its own**:
+an issue also carrying `needs-human`, `blocked` or `deferred` is not
+dispatchable, and the query in `SKILL.md` excludes them.
+
+**Stage marks how far an issue has got, not what is happening this minute.**
+That is what lets a `deferred` issue keep the stage it reached instead of
+needing a stage of its own.
+
+**An `Epic`'s stage is its own and is never derived from its children** — at
+any stage, not only `active`. Every value describes the epic's own work:
+`drafting` is its breakdown work, `review` its completeness check. An epic
+whose coordination is finished is at `review` even with children still open,
+and an epic at any stage may hold children at any mix of stages. An earlier
+draft asserted the independence and then defined two of the values in terms
+of the children, which is why this is stated twice.
 
 ### Facing — `facing: user` · `facing: system`
 
-**The boundary is the building team.** `facing: user` means someone who did
-not build it observes the difference; `facing: system` means only the builders
-do. "Someone" need not be human — a consuming repository counts.
+**The boundary is this repository's output.** `facing: user` means the change
+alters what a consumer of this repo gets — a product's users, or another
+repository that installs or depends on it. `facing: system` means it changes
+only how this repo is built or maintained. **Who maintains the consumer is
+irrelevant**, which is what makes it decidable in a family where sibling repos
+share maintainers.
 
-An earlier draft defined the two values against *different* boundaries (one
-"outside this repo", the other "outside the team"), which are not complements
-in a family where most consumers are sibling repos. A single boundary, applied
-in both directions, removes that.
+Two earlier drafts keyed the two values on different boundaries — "outside
+this repo" against "outside the team" — which are not complements here. The
+repo-output boundary is one test, applied in both directions.
 
 **Why this earns a dimension when provenance and routing did not.** Those
 recorded where an issue came from, which changes nothing about the work.
 Facing changes how the title is written and whether shipping it is observable
 outside the building team. It also cuts *inside* every delivery type rather
-than between them, so it cannot be a type without multi-matching.
+than between them, so it cannot be a type without multi-matching. It is set on
+the delivery types only — `Bug`, `Feature`, `Task`, `Epic`; a `Decision`
+produces a record and a `Research` issue a finding, neither of which is a
+change a consumer receives.
 
 The evidence is in the corpus: two issues carried the same `[chore]` label in
 the same repo — a duplicated reducer branch, and a theme glyph rendering flush
@@ -238,14 +261,7 @@ moves under one change at a time. A named exemption, not an oversight.
 **6.2 — Issue Fields is public preview.** Priority stays a label until GA,
 then supersede this document rather than edit it.
 
-**6.3 — `Decision`'s precedence position may over-capture.** Its trigger — a
-choice that must be made before work proceeds — is satisfied by many
-non-trivial issues while sitting near the top of the order. The intended
-threshold is that *until the choice is made there is nothing to build*. If
-that proves insufficient in practice, the threshold needs to move into the
-operative table in `SKILL.md`.
-
-**6.4 — Whether existing issues get migrated at all.** The migration mapping
+**6.3 — Whether existing issues get migrated at all.** The migration mapping
 rides the ratifying decision; it does not authorise the edit.
 
 ---

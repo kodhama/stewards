@@ -57,9 +57,9 @@ propagates; it does not enable. Retired Spore is not a target.
 
 **Lane A — decision (kodhama/kodhama)**
 - [x] Id confirmed free (2026-07-31): `kodhama/kodhama` holds only `0009`;
-      Stewards holds 0001–0023 + 0025. `0024` is also free and unexplained by
-      any record — minting `0026` leaves that hole unaccounted for, accepted
-      as a known cost
+      Stewards holds 0001–0023 + 0025. `0024` is free and **explained** —
+      `wave-family-consolidation.md` records it was reclassified to
+      `research/family-audit-2026-07.md`; there is no unaccounted hole
 - [x] `kodhama-0026` independently reviewed — `grove:decision-adversary`
       returned **NEEDS-REVISION** (posted to stewards#64, binding `90a7bbb`).
       Its F1 was a real conflict with approved `kodhama-0021`
@@ -71,10 +71,13 @@ propagates; it does not enable. Retired Spore is not a target.
 - [ ] Decision ratified by maintainer intent act
 
 **Lane B — plugin home + publication**
-- [ ] Resolve where the plugin lives. The Stewards `kodhama` plugin is scoped
-      to CI marketplace setup and widening it contradicts that narrowness; its
-      own repo on the grove/trellis/wisp `git-subdir` pattern is the
-      consistent alternative
+- [ ] Resolve where the plugin lives — **three candidates, each conflicting
+      with something standing.** The Stewards `kodhama` plugin is scoped to CI
+      marketplace setup, and widening it contradicts that narrowness; **grove**
+      is what `kodhama-0008` §3 nominates, but `CLAUDE.md` declares direction
+      "strictly downward (wisp → grove → trellis)" while Trellis is a
+      propagation target; its own repo on the `git-subdir` pattern adds an
+      unplaced node to that same topology
 - [ ] Plugin published to the `kodhama` marketplace
 
 **Lane C — cross-link ADRs** *(one PR per repo, independently reviewed)*

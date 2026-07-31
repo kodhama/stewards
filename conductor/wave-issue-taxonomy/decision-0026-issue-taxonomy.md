@@ -82,6 +82,12 @@ population. The conclusion is unchanged; the correct figure is smaller.
     authoritative and available; it does not enable a plugin anywhere.
     Nothing here amends or supersedes `kodhama-0021`.
 
+    **Between ratification and provisioning the convention is decided but not
+    operable.** Until an org creates `Research`, `Decision` and `Epic`, the
+    skill's first instruction is to stop, so ratifying this record changes no
+    repository's behaviour by itself. That is the intended order — decide,
+    provision, adopt — stated here so the gate's owner is not surprised by it.
+
 ## Propagation (`kodhama-0022`)
 
 Applicable plugin repositories, from the marketplace catalog: **Grove**,
@@ -126,7 +132,7 @@ standing.** Three, none yet chosen:
   - the Stewards `kodhama` plugin — but its scope is deliberately narrow
     (CI marketplace setup), and widening it contradicts that narrowness;
   - **grove** — which the standing corpus nominates, since `kodhama-0008` §3
-    holds that "operational content is grove's" and Decision 9 already hands
+    holds that "operational content is grove's" and Decision 10 already hands
     grove the `(type, stage)` mapping. The cost is that repositories which
     never install grove would not receive the taxonomy — and, sharper, that
     **Trellis is a propagation target while `CLAUDE.md` declares dependency
@@ -155,7 +161,7 @@ practice is a defect by the declared grammar, not a precedent.
 record `kodhama-0002` **bare**; Stewards' `kodhama-0022` references `0009` as
 `kodhama/kodhama-0009-…`. Three of four cross-repo references in the shared
 namespace are bare. This record follows the destination repository's own
-precedent and uses bare ids throughout. A ruling would settle four existing
+A ruling would settle four existing
 records as well as this one.
 
 **4. `roadmap`** (45 uses, math-quest only) is a selection, not a dimension —
@@ -172,11 +178,12 @@ preference; the evidence — 38 issues examined, 10 of them closed COMPLETED —
 is recorded with the taxonomy and was independently checked and confirmed
 arithmetically sound by the spec-adversary.
 
-**This revision answers three independent reviews**, all posted to
-stewards#64 against commit `90a7bbb`:
+**Review history, so this state is not overstated.** Three rounds have run —
+nine verdict records on stewards#64, binding `90a7bbb`, `ff1e47c` and
+`7c0c54d`. **None passed.** The items below were round 1's:
 - the conflict with approved `kodhama-0021` was real and uncited. Resolved by
   maintainer direction of 2026-07-31: **narrow the Done-when** to publication
-  plus repo-owned opt-in, rather than supersede 0021. Decision 10 now states
+  plus repo-owned opt-in, rather than supersede 0021. Decision 11 now states
   the convention/plugin split explicitly;
 - the `kodhama-0022` invocation named no targets. A propagation section now
   does, and the mechanism's reach over an org-layer upstream is recorded as
@@ -186,15 +193,18 @@ stewards#64 against commit `90a7bbb`:
   candidate the standing corpus nominates and the earlier draft omitted —
   is named;
 - the id is now **confirmed** free: `kodhama/kodhama` holds only `0009`.
-  `0024` is also free and unexplained by any record; minting `0026` leaves
-  that hole unaccounted for, which is a known and accepted cost;
+  `0024` is also free and **explained**: `conductor/wave-family-consolidation.md`
+  records that the intended `0024` was reclassified to
+  `research/family-audit-2026-07.md`, so "the ids jump 0023 → 0025". An
+  earlier draft called it unexplained and accepted a cost that does not
+  exist — the claim was false against a brief in the same directory;
 - `status` moved `draft` → `gated`, and `(DRAFT)` is out of the title. An
   approved record in this corpus has carried `(DRAFT)` in its H1 since
   2026-07-12 because append-only would not let anyone remove it;
 - the "triple-encoded" claim in the Why was factually wrong and is corrected
   above, with the measurement that replaced it;
 - routing and provenance, two of the eight indicted dimensions, were
-  dispositioned only in a mutable file. Decision 6 now closes them here.
+  dispositioned only in a mutable file. Decision 7 now closes them here.
 
 **The taxonomy has been repaired twice and reviewed twice.** Round 1's eight
 blocking spec findings are all addressed. Round 2 returned seven further

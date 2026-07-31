@@ -96,8 +96,8 @@ LABELS=(
   "stage: active|1d76db|The committed work is in flight"
   "stage: review|5319e7|Done, awaiting verification"
 
-  "facing: user|0e8a16|Someone outside this repo sees the difference"
-  "facing: system|5319e7|Only the team building it does"
+  "facing: user|0e8a16|Changes what a consumer of this repo gets"
+  "facing: system|5319e7|Changes only how this repo is built or maintained"
 
   "blocked|b60205|Blocked by something that is not an issue (issue-to-issue is a native dependency)"
   "deferred|cfd3d7|Accepted, but waiting on a condition stated in the body"
