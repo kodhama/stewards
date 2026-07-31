@@ -606,6 +606,41 @@ class IssueSkillPublicationTests(unittest.TestCase):
         )
         self.assertIn("\nname: issues\n", skill)
 
+    def test_every_payload_relative_pointer_resolves(self) -> None:
+        """spec-0005 S7/R6: no shipped file points at something that is gone.
+
+        The extraction rule is the spec's, and the `/` qualifier belongs on
+        the **token**, not on the pattern's tail. An earlier form required a
+        `/` *after* the first path component, which `../../../DIRECTION.md`
+        does not have — so it returned no match and passed against a
+        genuinely dangling pointer.
+
+        The qualifier is required rather than incidental:
+        `skills/issues/reference/taxonomy.md` names bare `SKILL.md` three
+        times, and without it those become demands that
+        `skills/issues/reference/SKILL.md` exist, which it must not.
+
+        A bounded heuristic, stated so it is not mistaken for more: it sees
+        path-shaped tokens ending `.md` or `.sh`, and skips anything a `://`
+        introduces.
+        """
+        token = re.compile(r"(?:\.\.?/)*[\w.-]+(?:/[\w.-]+)*\.(?:md|sh)")
+        dangling: list[str] = []
+        for path in sorted(PLUGIN.rglob("*")):
+            if not path.is_file() or path.suffix not in (".md", ".sh"):
+                continue
+            text = path.read_text(encoding="utf-8")
+            for match in token.finditer(text):
+                pointer = match.group(0)
+                if "/" not in pointer:
+                    continue
+                if text[max(0, match.start() - 3) : match.start()] == "://":
+                    continue
+                if not (path.parent / pointer).resolve().exists():
+                    rel = path.relative_to(ROOT).as_posix()
+                    dangling.append(f"{rel} -> {pointer}")
+        self.assertEqual([], dangling)
+
     def test_the_staging_copies_are_gone(self) -> None:
         """spec-0005 S10/R12: publication moves rather than copies.
 

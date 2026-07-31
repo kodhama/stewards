@@ -155,7 +155,7 @@ seed_labels() {
   done
   if [[ ${#found[@]} -gt 0 ]]; then
     echo "  ─ now redundant, NOT deleted: ${found[*]}"
-    echo "    migrate the issues carrying them first (see migration/legacy-mapping.md),"
+    echo "    migrate the issues carrying them first (see the legacy-issue mapping that rides kodhama-0026),"
     echo "    then remove by hand once each is at zero uses."
   fi
   echo
