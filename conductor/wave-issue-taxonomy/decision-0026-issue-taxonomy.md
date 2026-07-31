@@ -199,55 +199,66 @@ record does not authorise the edit.
 
 ## Self-check (gate)
 
-Two vocabulary questions were settled against the corpus rather than by
-preference; the evidence — 38 issues examined, 10 of them closed COMPLETED —
-is recorded with the taxonomy and was independently checked and confirmed
-arithmetically sound by the spec-adversary.
+**Four independent review rounds have run. None passed.** Twelve verdict
+records on stewards#64, binding `90a7bbb`, `ff1e47c`, `7c0c54d` and `228e7ed`
+— a decision-adversary, a spec-adversary and a corpus-reviewer each round,
+dispatched cold. **The current state is not among them and is unreviewed.**
 
-**Review history, so this state is not overstated.** Four rounds have run —
-twelve verdict records on stewards#64, binding `90a7bbb`, `ff1e47c`,
-`7c0c54d` and `228e7ed`. **None passed.** The items below were round 1's:
-- the conflict with approved `kodhama-0021` was real and uncited. Resolved by
-  maintainer direction of 2026-07-31: **narrow the Done-when** to publication
-  plus repo-owned opt-in, rather than supersede 0021. Decision 11 now states
-  the convention/plugin split explicitly;
-- the `kodhama-0022` invocation named no targets. A propagation section now
-  does, and the mechanism's reach over an org-layer upstream is recorded as
-  an open gap rather than assumed;
-- the plugin home was marked "parked, not blocking" while a Done-when
-  criterion depended on it. The Done-when no longer carries that criterion, so
-  it is no longer blocking — and **grove** — the
-  candidate the standing corpus nominates and the earlier draft omitted —
-  is named;
-- the id is now **confirmed** free: `kodhama/kodhama` holds only `0009`.
-  `0024` is also free and **explained**: `conductor/wave-family-consolidation.md`
-  records that the plan citing `0024` had wrong pointers, and that the audit
-  it named lives at
-  `research/family-audit-2026-07.md`, so "the ids jump 0023 → 0025". An
-  earlier draft called it unexplained and accepted a cost that does not
-  exist — the claim was false against a brief one directory up. No artifact
-  records a decision to reclassify; what is recorded is the corrected pointer;
-- `status` moved `draft` → `gated`, and `(DRAFT)` is out of the title. An
-  approved record in this corpus has carried `(DRAFT)` in its H1 since
-  2026-07-12 because append-only would not let anyone remove it;
-- the "triple-encoded" claim in the Why was factually wrong and is corrected
-  above, with the measurement that replaced it;
-- routing and provenance, two of the eight indicted dimensions, were
-  dispositioned only in a mutable file. Decision 7 now closes them here.
+What the rounds found, in order, because the shape of the sequence is itself
+disclosure:
 
-**The taxonomy has been repaired four times and reviewed four times.** Round 1's eight
-blocking spec findings are all addressed. Round 2 returned seven further
-blocking findings against the constructs those repairs introduced — `facing:`
-defined against two boundaries, `Epic` called orthogonal to a single-valued
-field, an `Epic` stage rule answering one question three ways, and
-`Decision`/`Research` losing their dispatch stage. This revision answers those
-and reconciles the record to the spec, which is the root cause round 2 named:
-the two had been repaired in separate passes and diverged for five commits.
+1. **A conflict with approved `kodhama-0021`**, uncited — the record required
+   plugin enablement in a product repo whose adoption 0021 reserves to its
+   maintainer. Plus eight blocking spec findings: undecidable vocabularies,
+   two flat internal contradictions, and a stage set undefined for half the
+   type table.
+2. **The record no longer described the taxonomy it ratifies.** The two had
+   been repaired in separate passes and had diverged for five commits. Seven
+   further blocking spec findings, all in constructs round 1's repairs had
+   introduced.
+3. **Stale text beside new text** — a fixed rule next to its unfixed
+   neighbour, a renamed thing next to its old name. Six blocking spec
+   findings, and four internal cross-references left pointing one clause low
+   after a clause was inserted.
+4. **The record's account of itself.** Six blocking spec findings; a sentence
+   shipped with its predicate deleted; the review history stated three
+   incompatible ways. Round 4's reviewer named the recurring cause: repairs
+   were made at the point of the reported defect, and passages *depending on*
+   the repaired text were not re-walked. The current state was produced with
+   the check it proposed — for each construct changed, grep every occurrence
+   of its key terms and re-read each hit.
 
-**Not independently reviewed in this state.** The four rounds bind to
-`90a7bbb`, `ff1e47c`, `7c0c54d` and `228e7ed`; this is the fifth state and
-owes a fresh pass. Round 2
-also found the author's own *corrected* measurement still wrong — the count
-that replaced a false claim carried a denominator inflated by pull requests.
-Two independent readers caught it; the author did not. The author did not
-grade its own decision and did not open the intent gate.
+**Four factual errors in the author's own evidence, every one caught by review
+rather than by the author:**
+
+- a claim that a repo triple-encoded kind including a native type — **wrong**;
+- its replacement, "0 of 465", counted pull requests — **also wrong**. The
+  figure is 0 of ~296, reproduced independently three times since;
+- `depends_on` used bare cross-repo ids on one record's practice, which the
+  author then called *"a defect by the declared grammar"* — an **over-read**:
+  the companions say such referents are *permitted*, not mandated, and state
+  no grammar for `depends_on` at all. Both claims withdrawn, and open question
+  3 now says plainly that no ruling exists;
+- an edit deleted a sentence's predicate and shipped the fragment.
+
+**Two corrections of shape, both prompted by the maintainer rather than by a
+reviewer** — and both the same mistake, one clause apart. The Done-when
+listed five delivery criteria while disclaiming delivery, which made an
+unresolved plugin home block a decision about issue classification; it now
+tests only whether the convention is decided. And Decision 9 called the plugin
+the *sole carrier*, which made the same welding one clause further along; the
+convention is carried by the org's types and labels, and the skill teaches it.
+
+**What is settled, and on what.** The two vocabulary questions — no `Idea`
+type, no `Story` type — were settled against the corpus rather than by
+preference, on 38 issues of which 10 closed COMPLETED; the arithmetic has been
+independently reproduced in three separate rounds. Every closed vocabulary the
+record declares is enumerated in the record, so the closure is enforceable
+here rather than by a file this points at.
+
+**What remains open** is listed above as open questions, and none of it blocks
+this record: the plugin home is settled for now as a staging choice, `roadmap`
+is a named exemption, Issue Fields waits on GA, the cross-repo grammar wants a
+ruling that would bind five records, and migration is unauthorised.
+
+**The author did not grade its own decision and did not open the intent gate.**
