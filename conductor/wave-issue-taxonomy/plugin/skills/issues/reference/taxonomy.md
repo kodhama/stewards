@@ -229,6 +229,32 @@ distinction is principled rather than preferential: the test is whether the
 category dissolves on completion. An idea that ships stops being an idea; a
 container that completes is still a container.
 
+## 5b. Settled: why there is no `Story` type
+
+The family's most developed practice used `[Story]` (11 uses, against 2 of
+`[feature]`), paired with `[Epic]` and an epic-story numbering scheme. The
+question was whether `Story` should replace the native `Feature` type.
+
+It should not, and the deciding reason is a failure mode of the **name**, not
+of the concept. Where a type is called `Story`, work with no end user gets a
+fabricated persona so it can be written in the format — *"as a frontend
+developer I want to consume an API"* is the canonical example. That invents a
+reader who does not exist, which is the same class of defect as a guessed
+label: a field asserting something untrue. A type name that pressures authors
+into fiction is a bad type name.
+
+What `Story` genuinely carries is **independent deliverability**, and that is
+not a kind of thing — it is a structural fact already expressed by the
+sub-issue relationship. A child of an `Epic` that closes on its own *is*
+independently deliverable; a second type would restate hierarchy that
+`Epic` + sub-issues already encodes, and would fire on the same issues as
+`Feature`, reviving the multi-match ambiguity §4's precedence order removes.
+
+The user-perspective discipline is real and worth keeping. It lives in the
+title rule, scoped so it cannot produce the cheat: state the outcome from the
+user's side **where there is a user**, and never invent one where there is
+not. `[Story]` maps to `Feature`, as a child of its epic.
+
 ## 5a. Remaining judgment calls
 
 Flagged so they can be overturned rather than inherited silently.

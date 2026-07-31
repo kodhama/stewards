@@ -34,6 +34,27 @@ the response; the title names what is true. A `Bug` reads as the symptom
 their cursor"*). If you find yourself writing an imperative verb first, the
 dimension you are reaching for is below — use it instead.
 
+**Where there is a real end user, state the outcome from their side.**
+
+```
+✗  Add streak-freeze logic to the progress reducer
+✓  A learner's streak survives one missed day
+```
+
+**Never invent a persona to satisfy the format.** "As a frontend developer I
+want to consume an API" is a fabricated user, written to make enabler work
+look like user-facing work. Enabler and infrastructure issues have no end
+user, and that is fine — state the system outcome plainly:
+
+```
+✗  As a frontend developer, I want a progress endpoint
+✓  Progress API exposes per-session totals
+```
+
+The test is whether the persona is someone who would ever read the issue. If
+not, drop it. A missing user is honest; an imaginary one is the same class of
+error as a guessed label.
+
 ## Filing an issue
 
 **Set the stage first — the one field every issue you touch carries.**
