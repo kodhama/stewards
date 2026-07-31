@@ -20,16 +20,16 @@ occurrences across those repos.
 |--------|-------|---------|
 | `[bug]` | 24 | type `Bug` |
 | `[idea]` | 19 | `stage: triage` + the type its content implies |
-| `[shaping]` | 19 | `stage: shaping` |
+| `[shaping]` | 19 | `stage: triage` |
 | `[execution]` | 18 | `stage: active` |
 | `[consider]` | 14 | `stage: triage` + the type its content implies |
-| `[high-priority]` / `HIGH:` | 12 | `priority: p1` |
+| `[high-priority]` / `HIGH:` | 12 | `priority: high` |
 | `[Story]` | 11 | type `Feature` + `facing: user`, as a sub-issue of its epic |
 | `[chore]` | 10 | type `Task` |
 | `[meta]` | 9 | `area: meta` |
-| `[divergent-research]` | 8 | type `Research` + `stage: shaping` |
+| `[divergent-research]` | 8 | type `Research` + `stage: triage` |
 | `[Epic]` | 6 | type `Epic`, with real sub-issues attached |
-| `[design-upstream]` | 6 | **per-issue judgment — see below** |
+| `[design-upstream]` | 6 | **per-issue judgment** — a genuine wait becomes a native `--blocked-by` edge on the design-system issue; a question *for* design becomes an issue filed there |
 | `idea:` | 5 | `stage: triage` + the type its content implies |
 | `Tutoring:` `Morph:` `Riders:` `Settings:` `b3:` | 5 | `area: *`, repo-local — these were areas all along |
 | `[kit]` `[gate]` `[durability]` `[adjudicate]` | 4 | `area: *`, repo-local to sdd-gauntlet |
@@ -40,8 +40,8 @@ occurrences across those repos.
 | `[design-feedback]` | 2 | `area: design` |
 | `Decide:` | 2 | type `Decision` |
 | `[validation]` | 1 | `stage: review` |
-| `[discovery]` | 1 | type `Research` + `stage: shaping` |
-| `[papercut]` | 1 | type `Bug` + `priority: p2` |
+| `[discovery]` | 1 | type `Research` + `stage: triage` |
+| `[papercut]` | 1 | type `Bug` + `severity: papercut` |
 | `[maintainer-action]` | 1 | `needs-human` |
 | `[user-feedback]` | 1 | `area: <feature>` + note the source in the body |
 | `[program]` | 1 | type `Epic` |
@@ -63,16 +63,16 @@ occurrences across those repos.
 | `idea` | 12+ | `stage: triage` |
 | `bug` (stock) | 11 | type `Bug` |
 | `chore` | 10 | type `Task` |
-| `priority: low` | 6 | `priority: p2` |
-| `design-upstream` | 6 | **per-issue judgment — see below** |
+| `priority: low` | 6 | `priority: low` |
+| `design-upstream` | 6 | **per-issue judgment** — see below |
 | `meta` | 4 | `area: meta` |
 | `enhancement` (stock) | 4 | type `Feature` |
 | `agent-task` | 3 | `stage: ready` |
-| `priority: high` | 2 | `priority: p1` |
+| `priority: high` | 2 | `priority: high` |
 | `priority: medium` | 1 | *(unset — normal is the default)* |
 | `program` | 1 | type `Epic` |
 | `design-feedback` | 1 | `area: design` |
-| `shaping` | — | `stage: shaping` |
+| `shaping` | — | `stage: triage` |
 | `consider` | — | `stage: triage` |
 | `documentation` (stock) | — | `area: docs` |
 | `question` (stock) | — | type `Research` |
@@ -96,14 +96,15 @@ Flagged so they can be overturned rather than inherited silently.
   repo *asking* design a question. `needs-design-system` means the opposite:
   this issue is *waiting on* a design-system change. Same label, two
   directions. Each of the six needs reading: a question for design becomes an
-  issue filed in design-system; only a genuine wait becomes
-  `needs-design-system`.
+  issue filed in design-system; only a genuine wait becomes a native
+  `--blocked-by` edge. The `needs-design-system` label was cut.
 - **`[user-feedback]` and `[design-feedback]` lose their provenance
   dimension.** Three occurrences did not justify a ninth dimension, so the
   source moves into the issue body and gets no label — Decision 7 forbids a
   provenance label, so there is no `from:` namespace to reach for.
-- **`[papercut]` becomes `Bug` + `priority: p2`** rather than its own type.
-  It describes size and annoyance, not kind.
+- **`[papercut]` becomes `Bug` + `severity: papercut`.** An earlier draft sent
+  it to `priority: p2`, collapsing impact into urgency; severity is now its own
+  dimension and `papercut` is one of its values.
 - **`[stage-0/1/2]` in sdd-gauntlet are deliberately NOT mapped to
   `stage: *`.** They are that experiment's protocol phases and collide by
   name only. Mapping them would be a false cognate.

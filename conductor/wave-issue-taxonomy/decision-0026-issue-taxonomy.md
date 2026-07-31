@@ -45,19 +45,21 @@ population. The conclusion is unchanged; the correct figure is smaller.
    dissolves the moment work finishes is a lifecycle position, not a kind —
    which is also why `Epic` **is** a type: a container does not dissolve on
    completion.
-4. **Stage, priority, facing, status and area are labels.** Every closed one
-   is enumerated in this record — these four here, `facing:` in clause 5 —
-   so the closure is enforceable by the record rather than by a file it
-   points at:
-   - `stage:` — `triage` · `shaping` · `drafting` · `ready` · `active` ·
-     `review`. Mutually exclusive. The sequence is the default; a type may
-     visit a subset in its own order, which the plugin states
-   - `priority:` — `p0` · `p1` · `p2`, with **unset** meaning normal
-   - status — `blocked` · `needs-human` · `needs-design-system` · `deferred`.
-     Bare tokens; **status is not a namespace**
+4. **Stage, severity, priority, facing, status and area are labels.** Every
+   closed one is enumerated in this record — these five here, `facing:` in
+   clause 5 — so the closure is enforceable by the record rather than by a
+   file it points at:
+   - `stage:` — `triage` · `ready` · `active` · `review`. Mutually exclusive,
+     one sequence, every type
+   - `severity:` — `session-blocker` · `broken-feature` · `papercut`. Impact,
+     which is a different axis from urgency
+   - `priority:` — `urgent` · `high` · `low`, with **unset** meaning normal
+   - status — `blocked` · `needs-human` · `deferred`. Bare tokens;
+     **status is not a namespace**
    - `area:` — **open and deliberately repo-local**, the only open vocabulary
 
-   Which stages each type visits, and every rule for applying these, is the
+   **Severity is impact and priority is urgency**; they are independent and
+   neither substitutes for the other. Every rule for applying these is the
    plugin's to state. **Membership is this record's.**
 5. **`facing: user` / `facing: system`** — a closed pair — records whether
    the change alters what a **consumer of this repository** gets: a product's

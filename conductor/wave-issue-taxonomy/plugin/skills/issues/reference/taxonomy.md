@@ -1,9 +1,9 @@
 # The kodhama issue taxonomy — full reference
 
 The long form behind `SKILL.md`: why each dimension exists, and what is still
-open. The mapping from legacy prefixes and labels is **not** here. It is a
-one-time migration exercise that rides the ratifying decision and is
-deliberately kept out of standing agent context.
+open. The legacy mapping is **not** here — it is a one-time migration exercise
+that rides `kodhama-0026` and is deliberately kept out of standing agent
+context.
 
 Where this document and `SKILL.md` disagree, `SKILL.md` wins — it is the
 operative text.
@@ -15,80 +15,54 @@ operative text.
 A scan of the live kodhama repos (July 2026; retired Spore excluded) found:
 
 - **Labels were not the problem — they were unused.** Six of the nine live
-  repos carried GitHub's stock nine labels, untouched. Only three had ever
-  added one.
-- **The real carrier was a `[bracket]` prefix in the title**, and it was
-  holding **eight orthogonal dimensions in one slot**: kind, workflow stage,
-  priority, triage state, hierarchy, routing, provenance, and area — with
-  inconsistent casing and a second, competing `prefix:` form.
-- **`(none)` was the most common prefix in four of the nine** — trellis
-  26/35, grove 31/76, stewards 9/16, wisp 7/11.
+  repos carried GitHub's stock nine labels, untouched.
+- **The real carrier was a `[bracket]` prefix in the title**, holding **eight
+  orthogonal dimensions in one slot**: kind, workflow stage, priority, triage
+  state, hierarchy, routing, provenance, and area — with inconsistent casing
+  and a second, competing `prefix:` form.
+- **`(none)` was the most common prefix in four of the nine.**
 - **One repo double-encoded kind**: a `[bug]` title prefix *and* a `bug`
   label — 21 prefixes against 11 labels.
 
 One slot cannot carry eight dimensions. That is the whole diagnosis.
 
 **Method note, so §1 is checkable.** A "prefix" means a leading `[bracket]`
-**or** a leading `word:` before the first space — both forms were counted.
+**or** a leading `word:` before the first space.
 
 **A measured fact that bears on cost.** The org has `Task`, `Bug` and
-`Feature` provisioned as native issue types, and **not one issue in the org
-carries a type — 0 of ~296**, counted across all nine live repos on
-2026-07-31 with pull requests excluded. The denominator drifts daily as issues
-are filed; the zero is the load-bearing part and has been reproduced
-independently three times. The native dimension is available and
-entirely unadopted. Two earlier drafts got this wrong in opposite directions:
-one claimed a repo already used native types (false), the other reported a
-denominator of 465 (which had counted pull requests, and exceeded the org's
-whole issue population). The conclusion is unchanged and the correct figure is
-smaller and cleaner.
+`Feature` provisioned, and **not one issue carries a type — 0 of ~296**,
+counted across all nine live repos on 2026-07-31 with pull requests excluded.
+The denominator drifts daily; the zero has been reproduced independently four
+times. Two earlier drafts got this wrong in opposite directions — one claimed
+a repo already used native types, the other reported 465, which had counted
+pull requests.
 
 ## 2. Why native types, not labels
 
-GitHub shipped most of this natively, and re-implementing it in labels would
-be building a worse copy:
+- **Issue Types** are GA and org-level. One type per issue is enforced.
+- **Sub-issues** are GA, replacing `[Epic]`/`[Story]`/`[program]`.
+- **Issue dependencies** are GA (`--blocked-by`/`--blocking`). An
+  issue-to-issue blocker is a native edge, never a label plus a prose link.
+- **`--duplicate-of`** records a duplicate as an edge, not a comment.
+- **Issue Fields** went to public preview in May 2026 with `Priority`,
+  `Effort`, `Start date` and `Target date` preconfigured.
 
-- **Issue Types** are GA and org-level. One type per issue is enforced — a
-  label scheme cannot enforce that.
-- **Sub-issues** are GA, replacing `[Epic]` / `[Story]` / `[program]` with
-  real hierarchy that renders in the UI and rolls up in Projects.
-- **Issue dependencies** are GA (`--blocked-by` / `--blocking`). An
-  issue-to-issue blocker is a native edge, never a label plus a prose link;
-  the `blocked` label survives only for blockers that are not issues.
-- **Issue Fields** went to public preview for all orgs in May 2026, with
-  `Priority`, `Effort`, `Start date` and `Target date` preconfigured.
-
-**This taxonomy uses only the GA surface** — types, sub-issues, dependencies,
-and labels. Priority is a label, not an Issue Field, because Issue Fields is
-still public preview and a convention should not be built on unsettled
-ground. When Fields reaches GA, `priority: *` migrates into it and
-**`kodhama-0026` is superseded, not edited** — the obligation is the record's,
-per its Decision 8, not this document's.
+**This taxonomy uses only the GA surface.** Priority is a label, not an Issue
+Field, because Fields is still public preview. When Fields reaches GA,
+`priority: *` migrates into it and **`kodhama-0026` is superseded, not
+edited** — the obligation is the record's, per its Decision 8.
 
 **Provisioning is a precondition, not an edge case.** Three of the six types
-must be created before the convention is in force. An earlier draft told
-agents to leave the type unset and stay at `stage: triage` when a type was
-missing — which, combined with "type required once out of triage", was a
-permanent pin that parked accepted work in the disposable pile. `SKILL.md`
-now says to stop and report instead.
-
-Prior art consulted: the namespaced-label pattern used by
-[IPFS](https://github.com/ipfs/community/blob/master/ISSUE_LABELS.md) and
-[github-standard-labels](https://github.com/yoshuawuyts/github-standard-labels).
-The namespacing is borrowed; the type dimension is not, because GitHub now
-does it natively and better.
+must be created *and enabled* before the convention is in force.
 
 ## 3. Type vs. stage — the distinction that matters
 
-The most common error in the legacy data was collapsing these.
 `[divergent-research]` named a **workflow step** as if it were a kind of
 issue. A research issue is `Research` for its whole life; the step it is in
 changes. Encoding the step as identity means an issue that finishes research
-has a now-lying name, renaming a step becomes a whole-backlog migration, and
-the backlog depends on the workflow's vocabulary rather than the reverse.
+has a now-lying name, and renaming a step becomes a whole-backlog migration.
 
-**Type is what the issue *is*; stage is where it *is*.** The workflow owns the
-mapping from `(type, stage)` to its next step.
+**Type is what the issue *is*; stage is where it *is*.**
 
 ## 4. The dimensions
 
@@ -96,194 +70,194 @@ mapping from `(type, stage)` to its next step.
 
 `Epic` → `Decision` → `Research` → `Bug` → `Feature` → `Task`.
 
-The order exists because real issues match more than one row, and every value
-sits on the same single-valued native field — so there are no "orthogonal"
-types, only precedence. `Epic` leads, but its row is **conjunctive**: children
-that ship separately *and* coherence-of-the-set as its own deliverable. A
-bucket of unrelated follow-ups satisfies the first and not the second, so it
-never reaches the tie-break at all.
+Every value sits on the same single-valued native field, so there are no
+"orthogonal" types, only precedence. `Epic` leads, but its row is
+**conjunctive** — children *and* coherence-of-the-set as its own deliverable —
+so a bucket of unrelated follow-ups never reaches the tie-break.
 
 `Bug` covers artifact-against-artifact contradiction, not only running
-behaviour — the dominant shape in this corpus. The threshold against
-`Decision` is whether the correct state is derivable from the upstream: if it
-is, the contradiction is a `Bug`; if resolving it requires choosing, it is a
-`Decision`. That threshold is in `SKILL.md`'s operative table, not only
-here.
+behaviour, and not only vertical conflict. The threshold against `Decision` is
+whether the correct state is derivable from the upstream.
 
-`Task` and `Research` are drawn on **one axis: the deliverable** — a finding
-or a change. An earlier draft also gave `Task` an "obvious done state"
-criterion, which is a different axis and crossed the first: a verification
-chore satisfies both and neither rule resolved it.
+`Task` and `Research` are drawn on **one axis: the deliverable.**
 
-Unset is legitimate **only** at `stage: triage`, where deciding the type is
-the work.
+### Stage — `triage | ready | active | review`
 
-### Stage — `triage|shaping|drafting|ready|active|review`
+**Four values, one path, every type.** An earlier draft had six values and
+per-type paths, which produced two defects a practitioner review named
+directly: `shaping` and `drafting` are grove's artifact pipeline, and mean
+nothing in four of the nine repos; and the per-type table put `Decision`'s
+`ready` before its `drafting`, an inversion that was rewritten twice and
+flagged in two rounds. Collapsing removes the table, the inversion, and two
+labels per repo.
 
-Mutually exclusive; exactly one on every open issue **you file**. On an issue
-edited for some other reason it is permitted, not required — an unqualified
-corpus invariant would license exactly the backlog sweep this convention
-forbids. `triage` is the pre-acceptance pile.
+What was lost is real and worth naming: **the issue can no longer distinguish
+"being shaped" from "contract being written".** Grove runs still track that
+internally; the backlog does not, on the grounds that eight of nine repos were
+never going to.
 
-**Per-type paths.** `Decision` skips `active` (writing the record *is* the
-work, so `drafting` is its working stage); `Research` skips `drafting` (the
-work *is* the finding). Everything else takes the full path. For the three types with a
-committed-delivery stage, **`ready` sits immediately before it** — which is
-why `Decision`'s runs `shaping → ready → drafting`, not the reverse.
+`triage` is now *not yet dispatchable* rather than *not yet accepted* — it
+covers both "noticed" and "accepted but still being worked out". The
+commitment moment is leaving it.
 
-`stage: ready` means the defining artifact is approved. **Any of the four
-status labels suspends dispatch** — a `ready` issue that becomes `blocked`,
-`needs-human`, `needs-design-system` or `deferred` keeps its stage, and the status label is what withholds it. The
-query in `SKILL.md` filters on both.
-
-**Every stage value names how far an issue has got, not what anyone is doing
-right now** — which is why the values are worded as positions rather than
-activities, and why a `deferred` issue keeps the stage it reached.
+Every value names **how far an issue has got**, not what anyone is doing right
+now, which is what lets a `deferred` issue keep the stage it reached.
 
 **An `Epic`'s stage is its own and is never derived from its children** — at
-any stage, not only `active`. Every value describes the epic's own work:
-`drafting` is its breakdown work, `review` its completeness check. An epic
-whose coordination is finished is at `review` even with children still open,
-and an epic at any stage may hold children at any mix of stages. An earlier
-draft asserted the independence and then defined two of the values in terms
-of the children, which is why this is stated twice.
+any stage, not only one. An earlier draft asserted the independence and then
+defined two values in terms of the children.
 
 ### Facing — `facing: user` · `facing: system`
 
 **The boundary is this repository's output.** `facing: user` means the change
-alters what a consumer of this repo gets — a product's users, or another
-repository that installs or depends on it. `facing: system` means it changes
+alters what a consumer of this repo gets; `facing: system` means it changes
 only how this repo is built or maintained. **Who maintains the consumer is
-irrelevant**, which is what makes it decidable in a family where sibling repos
-share maintainers.
+irrelevant** — which is what makes it decidable where sibling repos share
+maintainers. Two earlier drafts keyed the values on different boundaries.
 
-Two earlier drafts keyed the two values on different boundaries — "outside
-this repo" against "outside the team" — which are not complements here. The
-repo-output boundary is one test, applied in both directions.
+Set on `Bug`, `Feature` and `Task`. `Decision`, `Research` and `Epic` are
+exempt by the same test.
 
-**Why this earns a dimension when provenance and routing did not.** Those
-recorded where an issue came from, which changes nothing about the work.
-Facing changes how the title is written and whether shipping it is observable
-outside the building team. It also cuts *inside* every delivery type rather
-than between them, so it cannot be a type without multi-matching. It is set on
-`Bug`, `Feature` and `Task` only. `Decision`, `Research` and `Epic` are exempt
-by the same test: a record, a finding and a coherence guarantee are none of
-them a change a consumer receives. Reading an epic's `facing:` off its
-children would also break the rule that an epic's metadata is its own.
+**Kept mandatory against a review recommendation.** A practitioner argued it
+does not partition grove, trellis or wisp — nearly everything there is
+`facing: user` by the repo-output test — and should be optional there. The
+reviewer marked that claim as inference rather than measurement, and it was
+not adopted: a uniformly-`user` repo is still answering the question, and an
+optional dimension decays to an unused one. **Revisit if measurement shows the
+split is genuinely absent.**
 
-The evidence is in the corpus: two issues carried the same `[chore]` label in
-the same repo — a duplicated reducer branch, and a theme glyph rendering flush
-against a name. The first is invisible outside the team; the second is a
-learner looking at a wrong-looking screen.
+### Severity — `session-blocker | broken-feature | papercut`
+
+Required on `Bug`. **Severity is impact; priority is urgency**, and they are
+independent: a papercut on the first screen every user sees can be urgent, and
+a session-blocker in an unreleased feature can be unprioritised.
+
+This vocabulary is not invented. It is the required dropdown in math-quest's
+existing `bug-report.yml`, in daily use before this convention existed — the
+team was already recording impact, and an earlier draft of the mapping
+discarded it by collapsing `[papercut]` into `priority: p2`.
+
+Values are defined generically so they carry outside a product repo:
+"someone is blocked right now" rather than "a kid's session".
 
 ### Area — `area: *`, repo-local
 
 **Deliberately not standardised across the family**, including by the seeding
-script, which provisions no `area:` label at all. Three-issue minimum before
-adding one.
+script, which provisions no `area:` label at all. Three-issue minimum.
 
-### Priority — `p0` · `p1` · *(unset)* · `p2`
+### Priority — `urgent | high | (unset) | low`
 
-Unset is the default and the majority case.
+Words, not `p0`/`p1`/`p2`. A numbered scale reads as monotone, so
+`p0 < p1 < unlabelled < p2` is a trap — the unlabelled default sits *between*
+two numbered values, which no reader expects. The legacy vocabulary said
+`low`, and it said what it meant.
 
-### Status — `blocked` · `needs-human` · `needs-design-system` · `deferred`
+### Status — `blocked` · `needs-human` · `deferred`
 
-Four bare tokens. **Status is not a namespace**, deliberately: an earlier
+Three bare tokens. **Status is not a namespace**, deliberately: an earlier
 draft wrote `needs: design-system`, a namespace-of-one inside a closed
-vocabulary, which invited agents to coin `needs: grove` by analogy.
+vocabulary, which invited coining `needs: grove` by analogy.
 
-`needs-human` and `needs-design-system` are **specific forms of blocked**, not
-additions to it. `blocked` and `deferred` differ in kind, not degree: blocked
-means the work *cannot* proceed, deferred means it *could* and we chose not
-to schedule it.
+**`needs-design-system` was then cut entirely.** It hardcoded one sibling repo
+into an org-wide vocabulary, and the thing it expressed — waiting on an
+upstream change in another repo — is exactly what the native `--blocked-by`
+edge carries, cross-repo included. The migration mapping had already conceded
+its six legacy uses point the *opposite* direction.
+
+`blocked` and `deferred` differ in kind, not degree: blocked means the work
+*cannot* proceed, deferred means it *could* and we chose not to schedule it.
+
+**Any status label suspends dispatch**, and the issue keeps its stage.
 
 ### "Not now" — the discriminator
 
-`stage: triage`, `priority: p2` and `deferred` all read as "not now" and were
-once separated only by a negation. The test is acceptance, then condition:
-not accepted → `triage`; accepted and ranked low → `p2`; accepted but held
-against a **nameable condition** → `deferred`. If you cannot name the
-condition, it is `p2`.
+Committed to? No → `triage`. Yes and ranked low → `priority: low`. Yes but
+waiting on a **nameable condition** → `deferred`. If you cannot name the
+condition, it is `low`.
 
 ## 5. Settled: why there is no `Idea` type
 
 Settled against the corpus — 38 issues carrying `[consider]`, `[idea]`, or
 `idea:`.
 
-**They are the same thing — repo dialect.** One repo says `consider` (14
-uses, against 2 of `idea`); another says `idea` (17, no `consider`). Outcomes
-are indistinguishable: 29% of `consider` closed completed, against 25% of
-`idea`.
+**They are the same thing — repo dialect.** One repo says `consider` (14 uses,
+against 2 of `idea`); another says `idea` (17, no `consider`). Outcomes are
+indistinguishable: 29% of `consider` closed completed, against 25% of `idea`.
 
-**Neither is a type.** Both span every kind of work — decisions, defects,
-tasks and coordination containers all appear under both words.
+**Neither is a type.** Both span every kind of work.
 
-**The decisive evidence: 10 of the 38 closed as COMPLETED** — six `idea`,
-four `consider`. A category that dissolves the moment work finishes is not a
-kind of thing; it is a position in a lifecycle. Were `Idea` a type, every idea
-that shipped would need its type rewritten on completion.
-
-So both words name a **commitment level**, and commitment is what stage
-tracks. `stage: triage` is the pre-acceptance stage.
+**The decisive evidence: 10 of the 38 closed as COMPLETED.** A category that
+dissolves the moment work finishes is not a kind of thing; it is a position in
+a lifecycle. Were `Idea` a type, every idea that shipped would need its type
+rewritten on completion.
 
 **This is also why `Epic` survives where `Idea` does not**: an idea that ships
 stops being an idea; a container that completes is still a container.
 
 ## 5a. Settled: why there is no `Story` type
 
-The family's most developed practice used `[Story]` — 11 uses in one product
-repo, which has no `[feature]` at all. The two `[feature]` uses are in a
-different repo which has no `[Story]`. So the vocabularies are per-repo, not
-competing within one.
+`[Story]` appears 11 times in one product repo, which has no `[feature]` at
+all; the two `[feature]` uses are in a different repo with no `[Story]`. The
+vocabularies are per-repo, not competing.
 
-`Story` is not a separate type, because **the distinction it carries is
-`facing:`**. A `Feature` at `facing: user` is a Story; at `facing: system`, an
-Enabler. As a type it would fire on the same issues as `Feature`, reviving
-the multi-match the precedence order exists to remove.
+`Story` is not a separate type because **the distinction it carries is
+`facing:`** — a `Feature` at `facing: user` is a Story, at `facing: system` an
+Enabler. As a type it would fire on the same issues as `Feature`.
 
 **And the name has a failure mode worth recording.** Where a type is called
 `Story`, work with no consumer gets a fabricated persona so it can be written
-in the format — *"as a frontend developer I want to consume an API"*. That
-invents a reader, which is the same class of defect as a guessed label. The
-cause is having only one available shape; giving enabler work `facing: system`
-removes the pressure at its source, which a type name alone could not do.
-
-`[Story]` maps to `Feature · facing: user`, as a child of its epic.
+in the format. That invents a reader. The cause is having only one available
+shape; giving enabler work `facing: system` removes the pressure at its source.
 
 ## 5b. Remaining judgment calls
 
 - **Provenance is not a dimension, and does not become one.** "A real user
   asked for this" goes in the body. It gets no label — `kodhama-0026`
   Decision 7 forbids it, and inventing `from: user` would coin exactly the
-  namespace-of-one this document condemns two sections up.
+  namespace-of-one this document condemns above.
 - **Routing is not a dimension either.** Cross-repo blocking is a native
-  dependency edge; nothing else routed.
+  dependency edge.
 
 ## 6. Open questions
 
-**6.1 — `roadmap`** (45 uses, one repo) is a selection, not a dimension —
-Projects territory. Deferred until this taxonomy is ratified, so the backlog
-moves under one change at a time. A named exemption, not an oversight.
+**6.1 — `roadmap`** (45 uses, one repo, on 22 of its 41 open issues) is a
+selection, not a dimension — Projects territory. Deferred, so the backlog
+moves under one change at a time. **Note the cost of deferring**: at launch
+the convention sits *on top of* a live selection mechanism rather than
+replacing it.
 
 **6.2 — Issue Fields is public preview.** Priority stays a label until GA,
 then supersede `kodhama-0026` rather than edit it.
 
-**6.3 — Whether existing issues get migrated at all.** The migration mapping
-rides the ratifying decision; it does not authorise the edit.
+**6.3 — Effort, assignees and milestones are absent.** Assignees and
+milestones are native and free and simply unmentioned; effort waits on Issue
+Fields. Consequence, named by a practitioner review: `stage: ready` is an
+undifferentiated queue that a week cannot be planned from.
+
+**6.4 — Nothing enforces this.** No linter, no CI check, no template. The org
+gates a plugin validator on every PR touching `plugins/` and would ship its
+filing convention as unenforced prose.
+
+**6.5 — Templates.** Deliberately not owned here; see `../../../DIRECTION.md`
+and stewards#65. Templates are transferable across surfaces and belong with
+the abstract role; only their projection is GitHub-specific.
+
+**6.6 — Whether existing issues get migrated at all.** The mapping rides
+`kodhama-0026`; it does not authorise the edit.
 
 ---
 
 ## Revision note
 
-Kept short and last, deliberately: superseded rules stated in the same voice
-as live ones are a hazard in standing agent context. Constructs that changed
-shape across four review rounds: `Epic` (no stage → short path → full path;
-orthogonal → first in precedence; carried `facing:` → exempt), `facing:`
-(added, then re-keyed twice, finally to this repository's output), the stage
-vocabulary (`spec`/`building` → `drafting`/`active`, then reworded from
-activities to positions), `Decision` (gained a derivability threshold, and
-`ready` moved before `drafting`), `Bug` (widened to non-behavioural and
-non-vertical conflicts), `Task` (redrawn on the deliverable axis), and the
-close block (twice). The reasoning
-for each is folded into §4 above rather than narrated here. Full history is in
-the commits and in the verdict records on stewards#64.
+Kept short and last: superseded rules stated in the same voice as live ones
+are a hazard in standing agent context. Constructs that changed shape across
+four adversarial rounds plus a conformance and a practitioner review: `Epic`
+(no stage → short path → full path; orthogonal → first in precedence; carries
+`facing:` → exempt), `facing:` (added, re-keyed twice, kept mandatory against
+a recommendation), the stage vocabulary (`spec`/`building` →
+`drafting`/`active` → collapsed to four values and one path), `Decision`
+(gained a derivability threshold; its path inversion deleted with the
+collapse), `Bug` (widened to non-behavioural and non-vertical conflicts),
+`Task` (redrawn on the deliverable axis), priority (`p0/p1/p2` → words),
+status (four tokens → three), the close block (twice), and severity (added).
+Full history is in the commits and the verdict records on stewards#64.

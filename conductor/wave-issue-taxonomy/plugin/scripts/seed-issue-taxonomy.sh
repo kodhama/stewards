@@ -16,6 +16,7 @@ ORG="kodhama"
 APPLY=0
 TYPES_ONLY=0
 LABELS_ONLY=0
+FORCE=0
 REPOS=()
 
 ALL_REPOS=(trellis grove wisp math-quest design-system kodhama stewards sdd-gauntlet homebrew-tap)
@@ -27,6 +28,7 @@ while [[ $# -gt 0 ]]; do
     --apply)       APPLY=1; shift ;;
     --types-only)  TYPES_ONLY=1; shift ;;
     --labels-only) LABELS_ONLY=1; shift ;;
+    --force)       FORCE=1; shift ;;
     -h|--help)     sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
@@ -95,34 +97,41 @@ seed_types() {
 
 # name|color|description
 LABELS=(
-  "priority: p0|b60205|Drop other work — broken or blocking now"
-  "priority: p1|d93f0b|Next up, ahead of unlabelled work"
-  "priority: p2|c5def5|Accepted and wanted, ranked below normal"
-
-  "stage: triage|fef2c0|Noticed, not yet committed to — the type may still be unset"
-  "stage: shaping|c2e0c6|Accepted; the problem is not yet settled"
-  "stage: drafting|bfd4f2|The defining artifact is not yet finished"
-  "stage: ready|0e8a16|Defining artifact approved; dispatchable unless a status label says otherwise"
-  "stage: active|1d76db|Approved and started, not yet done"
+  "stage: triage|fef2c0|Not yet dispatchable — noticed, or accepted and still being worked out"
+  "stage: ready|0e8a16|Dispatchable; what had to be decided is decided"
+  "stage: active|1d76db|Started, not yet done"
   "stage: review|5319e7|Done, not yet verified"
 
   "facing: user|0e8a16|Changes what a consumer of this repo gets"
   "facing: system|5319e7|Changes only how this repo is built or maintained"
 
+  "severity: session-blocker|b60205|Someone is blocked right now, with no way through"
+  "severity: broken-feature|d93f0b|A path is unusable; the default path still works"
+  "severity: papercut|fef2c0|Annoying, cosmetic, or has a workaround"
+
+  "priority: urgent|b60205|Drop other work"
+  "priority: high|d93f0b|Next up, ahead of unlabelled work"
+  "priority: low|c5def5|Wanted, ranked below normal"
+
   "blocked|b60205|Blocked by something that is not an issue (issue-to-issue is a native dependency)"
-  "deferred|cfd3d7|Accepted, but waiting on a condition stated in the body"
   "needs-human|fbca04|Requires a person; an agent must not proceed alone"
-  "needs-design-system|d4c5f9|Waiting on an upstream design-system change"
+  "deferred|cfd3d7|Could proceed; we chose not to schedule it until a condition stated in the body"
 )
 
 # Stock labels this taxonomy makes redundant. Reported, never deleted.
 REDUNDANT=(bug enhancement documentation question duplicate invalid wontfix idea chore
            consider shaping agent-task meta program design-upstream design-feedback
-           user-feedback "priority: high" "priority: medium" "priority: low")
+           user-feedback "priority: medium")
 
 seed_labels() {
   local repo="$1"
   echo "== labels: $ORG/$repo =="
+
+  local n
+  n="$(gh issue list -R "$ORG/$repo" --state all --limit 1 --json number --jq 'length' 2>/dev/null || echo 0)"
+  if [[ "$n" == "0" && $FORCE -eq 0 ]]; then
+    echo "  - no issues ever filed here — skipped (--force to seed anyway)"; echo; return
+  fi
 
   local existing
   if ! existing="$(gh label list -R "$ORG/$repo" --limit 200 --json name --jq '.[].name' 2>/dev/null)"; then
