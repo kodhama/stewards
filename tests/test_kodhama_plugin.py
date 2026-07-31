@@ -642,6 +642,32 @@ class IssueSkillPublicationTests(unittest.TestCase):
                     dangling.append(f"{rel} -> {pointer}")
         self.assertEqual([], dangling)
 
+    def test_capabilities_enumerates_the_skill_directories(self) -> None:
+        """spec-0005 R16: one element per skill directory, derived not
+        remembered.
+
+        The rule is stated so it is checkable: `interface.capabilities` shall
+        contain exactly one element per directory under
+        `plugins/kodhama/skills/`, in the order those names sort, each
+        containing `skills/<directory-name>`. That makes the array's length,
+        ordering and membership derivable from the package, so this compares
+        it against the filesystem rather than against a remembered list.
+
+        `is_dir()` guards the derivation: a stray `.DS_Store` or a `README.md`
+        beside the skill directories would otherwise make the *expected*
+        array wrong and fail a correct package.
+        """
+        manifest = json.loads(
+            (PLUGIN / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
+        )
+        capabilities = manifest["interface"]["capabilities"]
+        directories = sorted(
+            entry.name for entry in (PLUGIN / "skills").iterdir() if entry.is_dir()
+        )
+        self.assertEqual(len(directories), len(capabilities), capabilities)
+        for directory, capability in zip(directories, capabilities):
+            self.assertIn(f"skills/{directory}", capability)
+
     def test_seed_script_is_runnable_and_fails_closed(self) -> None:
         """spec-0005 S4: the actuator ships runnable, and refuses what it
         does not understand.
