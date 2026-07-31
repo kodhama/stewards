@@ -642,6 +642,89 @@ class IssueSkillPublicationTests(unittest.TestCase):
                     dangling.append(f"{rel} -> {pointer}")
         self.assertEqual([], dangling)
 
+    def test_the_skill_never_reaches_the_actuator(self) -> None:
+        """spec-0005 S5/R3: instruction and actuator stay apart.
+
+        `scripts/seed-issue-taxonomy.sh` creates org issue types and
+        repository labels; the skill only teaches. Everything under `skills/`
+        is agent-reachable context by construction, and the staging record
+        states the cost of merging the two: bundling an actuator into
+        reference content is what forced guardrails into the first draft.
+
+        So an agent that reads the skill learns the convention and cannot
+        learn, *from the skill*, that a provisioning command exists. A later
+        reader who moves the script under `skills/` to "keep the skill
+        together" reverses this, and fails here.
+
+        This constrains `skills/` only. The shipped `README.md` names the
+        actuator by design — hiding it from the skill is context safety;
+        hiding it from the human who installed the package is not — and S16
+        requires it there.
+
+        `gh api --method POST` is banned, not `gh api`: the shipped
+        `SKILL.md` requires the `gh api /orgs/<org>/issue-types` probe under
+        S8, so banning the broader form would make two criteria contradict
+        and go red on a correct package.
+        """
+        skills = PLUGIN / "skills"
+        # R3's first clause. The scan below cannot establish it: a script
+        # moved to `skills/issues/` is neither a `SKILL.md` nor a reference,
+        # so nothing would read it and the "keep the skill together"
+        # reversal would pass the very test that names R3. The closed
+        # inventory does catch it — measured — but the requirement belongs
+        # here too, where a reader looks for it.
+        self.assertEqual(
+            [],
+            [
+                path.relative_to(PLUGIN).as_posix()
+                for path in sorted(skills.rglob("*"))
+                if path.is_file() and path.name == "seed-issue-taxonomy.sh"
+            ],
+            "the actuator moved under skills/, where everything is "
+            "agent-reachable by construction",
+        )
+
+        scanned: list[Path] = []
+        for path in sorted(skills.rglob("*")):
+            if not path.is_file():
+                continue
+            parts = path.relative_to(skills).parts
+            if path.name == "SKILL.md" or "reference" in parts:
+                scanned.append(path)
+        self.assertTrue(scanned, "no skill content was scanned")
+        for path in scanned:
+            text = path.read_text(encoding="utf-8")
+            for forbidden in (
+                "seed-issue-taxonomy",
+                "gh label create",
+                "gh api --method POST",
+            ):
+                self.assertNotIn(forbidden, text, path.relative_to(ROOT).as_posix())
+
+    def test_the_migration_mapping_stays_out_of_the_package(self) -> None:
+        """spec-0005 S6/R4: the mapping is not published.
+
+        Two independent reasons, both already written down. It is not
+        standing agent context — its own header says a mapping table plus
+        occurrence counts reads as a backlog-sweep plan, and no agent should
+        be handed one as ambient context. And it authorises nothing:
+        `kodhama-0026` open question 5 leaves migration unauthorised, while a
+        file shipping with an installable plugin reads as available to act
+        on.
+
+        A later reader who "reunites" the mapping with the skill it explains
+        reverses both, and fails here. Walked with `rglob` rather than
+        matching two exact paths, so a rename does not walk past it.
+        """
+        offenders = []
+        for path in sorted(PLUGIN.rglob("*")):
+            rel = path.relative_to(PLUGIN).as_posix()
+            if path.is_dir() and path.name == "migration":
+                offenders.append(f"{rel}/ (migration directory)")
+            if path.is_file() and path.name == "legacy-mapping.md":
+                offenders.append(f"{rel} (the mapping itself)")
+        self.assertEqual([], offenders)
+
     def test_the_in_force_gate_ships_intact(self) -> None:
         """spec-0005 S8/R9: the shipped skill still stops when it must.
 
