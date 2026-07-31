@@ -66,16 +66,26 @@ seed_types() {
     echo
   fi
 
-  local existing
-  existing="$(gh api "/orgs/$ORG/issue-types" --jq '.[].name' 2>/dev/null || echo "")"
+  # name<TAB>is_enabled<TAB>id — a DISABLED type still appears here and still
+  # cannot be set, so name-only matching would report it provisioned forever.
+  local all
+  all="$(gh api "/orgs/$ORG/issue-types" --jq '.[] | [.name, (.is_enabled|tostring), (.id|tostring)] | @tsv' 2>/dev/null || echo "")"
 
   for spec in "${CUSTOM_TYPES[@]}"; do
     IFS='|' read -r name color desc <<< "$spec"
-    if grep -qxF "$name" <<< "$existing"; then
-      echo "  = $name (exists)"
-    else
+    local row enabled id
+    row="$(awk -F'\t' -v n="$name" '$1==n{print; exit}' <<< "$all")"
+    if [[ -z "$row" ]]; then
       run "type $name" gh api --method POST "/orgs/$ORG/issue-types" \
         -f "name=$name" -f "color=$color" -f "description=$desc" -F is_enabled=true
+      continue
+    fi
+    enabled="$(cut -f2 <<< "$row")"; id="$(cut -f3 <<< "$row")"
+    if [[ "$enabled" == "true" ]]; then
+      echo "  = $name (exists, enabled)"
+    else
+      echo "  ! $name exists but is DISABLED — present in the API, unusable on an issue"
+      run "enable $name" gh api --method PATCH "/orgs/$ORG/issue-types/$id" -F is_enabled=true
     fi
   done
   echo

@@ -2,13 +2,26 @@
 name: issues
 description: The kodhama issue convention — how to file, type, prioritise, label, and search GitHub issues in any kodhama repo. Titles are prose; every dimension lives in structured metadata.
 when_to_use: Use when creating, filing, triaging, labelling, closing, or searching a GitHub issue; when writing an issue title or body; when deciding what kind of work an issue represents; or when a user asks what label, type, or priority something should get.
+implements: kodhama-0026-issue-taxonomy
 ---
 
 # The kodhama issue convention
 
+Implements `kodhama-0026-issue-taxonomy`. That record fixes the vocabularies;
+this skill states how to apply them. Where they disagree, the record wins.
+
 **One fact, one home.** Every dimension below lives in exactly one place. If a
 fact is already in the issue type, it does not also go in the title, the body,
 or a label.
+
+**Two things never become labels.** Where a request came from ("a user asked
+for this", "surfaced in design review") goes in the **body**. What an issue
+depends on goes in a **native dependency edge**. Neither gets a label, and
+neither gets a new namespace.
+
+**No repo hand-authors a copy of this convention** — not a README section, not
+an index, not a `CONTRIBUTING` paragraph. A bare pointer to this skill is
+fine; a restatement goes stale and then competes.
 
 This describes how issues are *filed*. It applies to **the issue at hand** —
 the one you are creating or editing. It is never an instruction to sweep the
@@ -275,10 +288,10 @@ Additive, and only when true. Closed vocabulary, four bare tokens.
 - `deferred` — nothing is stopping it; **we have chosen not to schedule it
   yet**, until a condition named in the body
 
-**Any status label suspends dispatch.** `stage: ready` means the defining
-artifact is approved; it does not by itself mean an agent may take the issue.
-A `ready` issue that becomes `blocked`, `needs-human` or `deferred` **keeps
-its stage** — the status label is what withholds it, which is why the
+**Any status label suspends dispatch — all four of them.** `stage: ready`
+means the defining artifact is approved; it does not by itself mean an agent
+may take the issue. A `ready` issue that becomes `blocked`, `needs-human`,
+`needs-design-system` or `deferred` **keeps its stage** — the status label is what withholds it, which is why the
 dispatch query filters on both.
 
 **`blocked` and `deferred` are not the same shape.** `blocked` means the work
@@ -332,7 +345,7 @@ label on close.
 gh issue list --type Bug --label "priority: p0"
 gh issue list --label "stage: triage"                             # the untriaged pile
 gh issue list --label "stage: ready" --json number,title,labels \
-  --search '-label:needs-human -label:blocked -label:deferred'      # agent-dispatchable
+  --search '-label:needs-human -label:blocked -label:deferred -label:needs-design-system'
 gh issue list --type Feature --label "facing: user"               # user-visible capability
 gh search issues --owner <org> "type:Bug"                          # across the family
 ```

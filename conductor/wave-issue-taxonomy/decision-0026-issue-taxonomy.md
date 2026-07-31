@@ -25,7 +25,7 @@ has no reliable signal to read, and the same fact drifts between its copies.
 
 **A measured fact that bears on cost.** The org has `Task`, `Bug` and
 `Feature` provisioned as native issue types, and **not one issue in the org
-carries a type — 0 of 294**, counted across all nine live repos on 2026-07-31
+carries a type — 0 of ~296**, counted across all nine live repos on 2026-07-31
 with pull requests excluded. The native dimension is available and entirely
 unadopted. Two earlier drafts got this wrong in opposite directions: one
 claimed math-quest already used native types, the other reported 465 — a

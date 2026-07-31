@@ -100,7 +100,8 @@ Flagged so they can be overturned rather than inherited silently.
   `needs-design-system`.
 - **`[user-feedback]` and `[design-feedback]` lose their provenance
   dimension.** Three occurrences did not justify a ninth dimension, so the
-  source moves into the issue body. If it must be filterable, add `from: user`.
+  source moves into the issue body and gets no label — Decision 7 forbids a
+  provenance label, so there is no `from:` namespace to reach for.
 - **`[papercut]` becomes `Bug` + `priority: p2`** rather than its own type.
   It describes size and annoyance, not kind.
 - **`[stage-0/1/2]` in sdd-gauntlet are deliberately NOT mapped to

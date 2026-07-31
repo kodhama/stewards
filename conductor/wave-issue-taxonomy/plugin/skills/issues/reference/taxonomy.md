@@ -61,8 +61,9 @@ be building a worse copy:
 **This taxonomy uses only the GA surface** — types, sub-issues, dependencies,
 and labels. Priority is a label, not an Issue Field, because Issue Fields is
 still public preview and a convention should not be built on unsettled
-ground. When Fields reaches GA, `priority: *` migrates into it and this
-document is superseded, not edited.
+ground. When Fields reaches GA, `priority: *` migrates into it and
+**`kodhama-0026` is superseded, not edited** — the obligation is the record's,
+per its Decision 8, not this document's.
 
 **Provisioning is a precondition, not an edge case.** Three of the six types
 must be created before the convention is in force. An earlier draft told
@@ -130,9 +131,9 @@ work *is* the finding). Everything else takes the full path. For the three types
 committed-delivery stage, **`ready` sits immediately before it** — which is
 why `Decision`'s runs `shaping → ready → drafting`, not the reverse.
 
-`stage: ready` means the defining artifact is approved. **Any status label
-suspends dispatch** — a `ready` issue that becomes `blocked`, `needs-human` or
-`deferred` keeps its stage, and the status label is what withholds it. The
+`stage: ready` means the defining artifact is approved. **Any of the four
+status labels suspends dispatch** — a `ready` issue that becomes `blocked`,
+`needs-human`, `needs-design-system` or `deferred` keeps its stage, and the status label is what withholds it. The
 query in `SKILL.md` filters on both.
 
 **Every stage value names how far an issue has got, not what anyone is doing
@@ -251,8 +252,10 @@ removes the pressure at its source, which a type name alone could not do.
 
 ## 5b. Remaining judgment calls
 
-- **Provenance is not a dimension.** "A real user asked for this" goes in the
-  body. If it must be filterable, add `from: user` explicitly.
+- **Provenance is not a dimension, and does not become one.** "A real user
+  asked for this" goes in the body. It gets no label — `kodhama-0026`
+  Decision 7 forbids it, and inventing `from: user` would coin exactly the
+  namespace-of-one this document condemns two sections up.
 - **Routing is not a dimension either.** Cross-repo blocking is a native
   dependency edge; nothing else routed.
 
@@ -263,7 +266,7 @@ Projects territory. Deferred until this taxonomy is ratified, so the backlog
 moves under one change at a time. A named exemption, not an oversight.
 
 **6.2 — Issue Fields is public preview.** Priority stays a label until GA,
-then supersede this document rather than edit it.
+then supersede `kodhama-0026` rather than edit it.
 
 **6.3 — Whether existing issues get migrated at all.** The migration mapping
 rides the ratifying decision; it does not authorise the edit.

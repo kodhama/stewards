@@ -67,6 +67,19 @@ Jira, a tracker that is not GitHub — against the same abstract role.
 | `stage:`, `priority:`, status | Encoding only. Stay here |
 | §3 type-vs-stage, §5 no-`Idea`-type, §5a no-`Story`-type | **Abstract reasoning.** This is what moves to the role |
 
+### Templates sit on the abstract side
+
+Issue **templates** are transferable: a story template is the same artifact on
+GitHub, Linear or Jira. What is surface-specific is the **projection** — how a
+template lands as `.github/ISSUE_TEMPLATE/*.yml`, with front-matter, a default
+title and default labels.
+
+So templates belong with the future role, and their projection belongs here.
+Deliberately **not** taken up now — this skill neither defines nor ships
+templates, and saying so is the point: an adapter that quietly grew template
+ownership would have re-merged the two halves this document is trying to keep
+apart.
+
 *Rule of thumb for the eventual extraction:* if a passage would still be true
 on Linear, it belongs to the role. If it names a `gh` flag, a GitHub type or a
 label, it belongs here.
