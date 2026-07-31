@@ -625,11 +625,23 @@ class IssueSkillPublicationTests(unittest.TestCase):
         edit to the filter is read by a human.
         """
         lines = HOSTED_WORKFLOW.read_text(encoding="utf-8").splitlines()
+        # Deleting the filter outright is the headline regression this test
+        # exists for — it is also the one input that reaches no assertion, so
+        # it gets a message rather than a bare StopIteration.
         start = next(
-            index
-            for index, line in enumerate(lines)
-            if re.fullmatch(r"\s*paths:\s*", line)
+            (
+                index
+                for index, line in enumerate(lines)
+                if re.fullmatch(r"\s*paths:\s*", line)
+            ),
+            None,
         )
+        self.assertIsNotNone(
+            start,
+            f"{HOSTED_WORKFLOW.name} declares no `paths:` filter at all, so "
+            "the test gate no longer has a pinned trigger set",
+        )
+        assert start is not None
         indent = len(lines[start]) - len(lines[start].lstrip())
         entries: list[str] = []
         for line in lines[start + 1 :]:
