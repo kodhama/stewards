@@ -28,7 +28,7 @@ occurrences across all repos.
 | `[meta]` | 9 | `area: meta` |
 | `[divergent-research]` | 8 | type `Research` + `stage: shaping` |
 | `[Epic]` | 6 | type `Epic`, with real sub-issues attached |
-| `[design-upstream]` | 6 | `needs: design-system` |
+| `[design-upstream]` | 6 | **per-issue judgment — see below** |
 | `idea:` | 5 | `stage: triage` + the type its content implies |
 | `Tutoring:` `Morph:` `Riders:` `Settings:` `b3:` | 5 | `area: *`, repo-local — these were areas all along |
 | `[kit]` `[gate]` `[durability]` `[adjudicate]` | 4 | `area: *`, repo-local to sdd-gauntlet |
@@ -63,7 +63,7 @@ occurrences across all repos.
 | `bug` (stock) | 11 | type `Bug` |
 | `chore` | 10 | type `Task` |
 | `priority: low` | 6 | `priority: p2` |
-| `design-upstream` | 6 | `needs: design-system` |
+| `design-upstream` | 6 | **per-issue judgment — see below** |
 | `meta` | 4 | `area: meta` |
 | `enhancement` (stock) | 4 | type `Feature` |
 | `agent-task` | 3 | `stage: ready` |
@@ -89,6 +89,13 @@ Flagged so they can be overturned rather than inherited silently.
   the 38 closed as COMPLETED. A label that dissolves when work finishes is a
   lifecycle position, not a kind. **Each such issue needs its real type
   assigned during migration** — that is the bulk of the work here.
+- **`[design-upstream]` (6) cannot be mapped mechanically.** In its origin
+  repo the label is documented as "findings queued FOR the design side" — the
+  repo *asking* design a question. `needs-design-system` means the opposite:
+  this issue is *waiting on* a design-system change. Same label, two
+  directions. Each of the six needs reading: a question for design becomes an
+  issue filed in design-system; only a genuine wait becomes
+  `needs-design-system`.
 - **`[user-feedback]` and `[design-feedback]` lose their provenance
   dimension.** Three occurrences did not justify a ninth dimension, so the
   source moves into the issue body. If it must be filterable, add `from: user`.

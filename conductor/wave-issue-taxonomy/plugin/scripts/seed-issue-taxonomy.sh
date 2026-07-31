@@ -87,7 +87,7 @@ seed_types() {
 LABELS=(
   "priority: p0|b60205|Drop other work — broken or blocking now"
   "priority: p1|d93f0b|Next up, ahead of unlabelled work"
-  "priority: p2|c5def5|Explicitly deprioritised, but still wanted"
+  "priority: p2|c5def5|Accepted and wanted, ranked below normal"
 
   "stage: triage|fef2c0|Noticed, not yet committed to — the type may still be unset"
   "stage: shaping|c2e0c6|Accepted; the problem is being refined"
@@ -97,12 +97,9 @@ LABELS=(
   "stage: review|5319e7|Built, awaiting verification"
 
   "blocked|b60205|Cannot proceed — the cause is linked in the body"
-  "deferred|cfd3d7|Consciously parked. Not the same as low priority"
+  "deferred|cfd3d7|Accepted, but waiting on a condition stated in the body"
   "needs-human|fbca04|Requires a person; an agent must not proceed alone"
-  "needs: design-system|d4c5f9|Blocked on an upstream design-system change"
-
-  "area: docs|ededed|Documentation"
-  "area: meta|ededed|This repo's own process and upkeep"
+  "needs-design-system|d4c5f9|Waiting on an upstream design-system change"
 )
 
 # Stock labels this taxonomy makes redundant. Reported, never deleted.
@@ -150,8 +147,8 @@ fi
 cat <<'EOF'
 Notes
   · Issue types are org-wide — seed them once, not per repo.
-  · `area:` labels beyond docs/meta are deliberately repo-local. Add them by
-    hand, and only when three or more issues would carry one.
+  · No `area:` label is seeded. They are deliberately repo-local — add them
+    by hand, and only when three or more issues would carry one.
   · No label is ever deleted by this script, and no existing issue is touched.
     Migrating existing issues is a separate, explicitly approved action.
 EOF
