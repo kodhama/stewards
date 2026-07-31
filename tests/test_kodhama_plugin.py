@@ -642,6 +642,35 @@ class IssueSkillPublicationTests(unittest.TestCase):
                     dangling.append(f"{rel} -> {pointer}")
         self.assertEqual([], dangling)
 
+    def test_seed_script_is_runnable_and_fails_closed(self) -> None:
+        """spec-0005 S4: the actuator ships runnable, and refuses what it
+        does not understand.
+
+        Both invocations return before any `gh` call, so this needs no
+        network and no credentials — an actuator's test that reached the
+        network would be the actuator running.
+
+        The executable bit is asserted rather than assumed: publication moved
+        this file with `git mv`, and a copy-then-delete would have dropped
+        `100755` silently, leaving a script the host can read and nobody can
+        run.
+        """
+        script = PLUGIN / "scripts" / "seed-issue-taxonomy.sh"
+        self.assertTrue(os.access(script, os.X_OK), "the actuator is not executable")
+
+        syntax = run("bash", "-n", str(script), check=False)
+        self.assertEqual(0, syntax.returncode, syntax.stderr)
+
+        helped = run(str(script), "--help", check=False)
+        self.assertEqual(0, helped.returncode, helped.stderr)
+        self.assertIn("Dry-run by default", helped.stdout)
+
+        # Fail closed: an argument it does not recognise is an operator
+        # error on a script that can create org-level state.
+        bogus = run(str(script), "--bogus", check=False)
+        self.assertEqual(2, bogus.returncode, bogus.stdout)
+        self.assertIn("unknown argument: --bogus", bogus.stderr)
+
     def test_the_skill_never_reaches_the_actuator(self) -> None:
         """spec-0005 S5/R3: instruction and actuator stay apart.
 
