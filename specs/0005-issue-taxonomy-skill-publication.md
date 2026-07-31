@@ -6,10 +6,45 @@ depends_on: [kodhama-0026-issue-taxonomy, kodhama-0017-retire-family-release-cer
 implements: [kodhama-0026-issue-taxonomy]
 owner: agent
 updated: 2026-07-31
-version: 7
+version: 8
 ---
 
 # Publishing the issue-convention skill into the Kodhama plugin
+
+> **AMENDED 2026-07-31 — v7 → v8**
+>
+> **WHAT:** The false-positive table claimed to cover *"every non-carrier hit
+> the widened command returns"*; it does not, and the claim is withdrawn rather
+> than made true by padding the table. One row added for `specs/0004:141`,
+> which two agents have now separately adjudicated. Literal **H** is re-anchored
+> to a **string** at all four sites that named its line number.
+>
+> **WHY:** Two of the three are the wave's own recurring failure modes caught
+> one last time in the document that describes them. The completeness claim is
+> **false enumeration** — the class §Standing scope claims exists to kill —
+> asserted, this time, about the instrument rather than the carriers, and in
+> direct contradiction of this spec's own *"a clean run is evidence, not
+> proof"*. Literal **H**'s line number is a **dependant thirty lines below its
+> own edit in the same file**: literal **B** turns 9 lines into 26, moving H's
+> target from line 22 to 39, so an executor keying on 22 ships a red test
+> against a correct package.
+>
+> **SCOPE:** One disclosure restated, one table row, one anchoring change
+> propagated to four sites. **No scenario, requirement, literal, arbiter or
+> criterion moves** — H's replacement text is byte-identical; only how it is
+> located changes.
+>
+> **POINTER:** `kodhama/stewards#64`; an implementation planner read v7 cold
+> and returned *executable as written*, having re-derived S9 and S7 and
+> confirmed all fourteen `new: test_*` map to arbiters with no gaps.
+>
+> **VALUE:** The executor locates the one-word edit by the text it is changing,
+> and no reader mistakes a curated table for a complete one.
+>
+> **CONFIDENCE:** verified — `specs/0004:141-142` was read and the wrap
+> confirmed (*"the plugin's declared skill / directories"*, already plural), and
+> H's post-**B** displacement is arithmetic on literals pinned in this document:
+> 22 − 9 + 26 = 39.
 
 > **AMENDED 2026-07-31 — v6 → v7**
 >
@@ -524,14 +559,31 @@ them:**
 | `decisions/0017:16` | The forward pointer `kodhama-0025` wrote. It is the corpus **doing** the disclosure this rule cares about, so a hit here is a worked example, not a defect. |
 | `CLAUDE.md:8` and `README.md:5` | *"THREE things live here and nothing else"* — enumerates the repository's **top-level structure** (decisions, conductor, install door), which this publication does not change. |
 | `specs/0004:86` | *"carries exactly these host-specific fields, plus a `description` and nothing else"* — a JSON schema constraint on a catalog entry, unrelated to package contents. Still true. |
+| `specs/0004:141` | *"the host's component inventory matches the plugin's declared skill"* — reads like carrier 5's singular, and is not: **the line wraps**, and the full phrase at `:141-142` is *"the plugin's declared skill **directories**"*, already plural. The regex matches `declared skill\b` across the break. **Round 5's spec-adversary adjudicated this exact line for this exact reason, and an implementation planner adjudicated it again on v7** — twice, by two agents, because it was not in the table. It earns its row on that alone. |
 | `conductor/wave-issue-taxonomy.md:99`, `:104`, `:105` | **Lane B ruling text quoting the carriers themselves** — `:99` quotes carrier 4, `:104` carrier 8, `:105` carrier 5. They are the authorisation naming what to repair, so a hit is the ledger working, not a carrier. *(v7: v6 called these "Lane C/D scope text about which repositories receive receipts", which is wrong twice — Lane C begins at `:121` and returns no hits, and that reason would not have excluded them anyway, since carrier 7 proves Lane B text **can** be a carrier.)* |
 
-*(v6 added the last **four** rows — `0017:16`, `CLAUDE.md:8`/`README.md:5`,
-`specs/0004:86`, and the three `wave-issue-taxonomy.md` hits — bringing the
-table to seven rows covering every non-carrier hit the widened command returns.
-Before that it covered three, leaving the next reviewer to re-adjudicate the
-rest, which is the cost the table exists to remove. v7 corrects this note and
-the matching change-table row, which counted rows and hits inconsistently.)*
+**What this table is, and is not** *(restated v8)*. It holds **the hits a
+reviewer would otherwise re-adjudicate** — non-carriers whose disposition is
+not obvious from the line itself. **It is not an enumeration of the command's
+output, and v7's claim that it covered "every non-carrier hit the widened
+command returns" was false.** The command returns roughly two dozen hits
+outside this spec; eight remain untabled, and two of those — `decisions/0017:33`
+and `:208` — are the most consequential hits it produces, adjudicated at length
+in §Why the marketplace-metadata item leaves the block and open question 6
+rather than in a table row.
+
+**The command also hits this spec, and the records this spec quotes** —
+`decisions/0017:33`, `:208`, `decisions/0025:142`, `specs/README.md:34`, `:40`,
+`:41`. That is **self-reference by construction**: a document that discusses
+scope enumerations contains the phrases that find scope enumerations, and so
+does the index entry describing it. Those hits carry no disposition because
+there is nothing to dispose of.
+
+*That correction matters more than its size.* This spec says one level up that
+**a clean run is evidence, not proof**; claiming a complete enumeration of the
+instrument's own output contradicted exactly that, and it is the same false-
+completeness class the §Standing scope claims rule exists to eliminate — this
+time in the artifact describing the instrument rather than in the carrier list.
 
 | # | Where | The false part | Replacement |
 |---|---|---|---|
@@ -539,7 +591,7 @@ the matching change-table row, which counted rows and hits inconsistently.)*
 | 2 | `CLAUDE.md` lines 14–22 | Hand-mirrored copy of the same block. | **A** |
 | 3 | `README.md` lines 7–15 | The second hand-mirrored copy. | **A** |
 | 4 | `plugins/kodhama/README.md` lines 1–9 | *"It edits workflow configuration and nothing else."* **Ships to consumers**, so the package tells its installer it does not contain the skill they just received. | **B** |
-| 5 | `plugins/kodhama/README.md` line 22 | *"reports the declared skill in its component inventory"* — **singular**, and the package now declares two. **Ships to consumers.** Already out of step with `scripts/keyless_admission_check.py` line 27, which says *"skill directories"*. | **H** |
+| 5 | `plugins/kodhama/README.md`, the `declared skill` sentence — line 22 before literal **B** applies, **line 39 after**; match it by string | *"reports the declared skill in its component inventory"* — **singular**, and the package now declares two. **Ships to consumers.** Already out of step with `scripts/keyless_admission_check.py` line 27, which says *"skill directories"*. | **H** |
 | 6 | `conductor/wave-issue-taxonomy/plugin/DIRECTION.md` lines 45–47 — **edited here, verified at `plugins/kodhama/DIRECTION.md`**, since publication moves the file (R12) | *"Its declared distribution scope stays narrow until someone decides otherwise."* **Ships to consumers.** | **G** |
 | 7 | `conductor/wave-issue-taxonomy.md` Lane B | *"Its declared narrow scope is untouched."* The wave's own ledger asserting the opposite of the ruling that governs the wave. | corrected in the ledger commit that records the rulings — see below |
 | 8 | `CLAUDE.md` lines 66–68 | *"CI enforces them on any PR touching `tests/`, `scripts/`, `plugins/`, or either marketplace catalog, **and on nothing else**, so a docs-only PR gets no check at all."* R17 falsifies the path list — and the trailing clause is **already false**, independently of this publication: two of three workflows have no `paths:` filter. | **F** |
@@ -786,10 +838,22 @@ for is not a licence to misdescribe what is in it
 (`kodhama-spec-0005-issue-taxonomy-skill-publication`).
 ```
 
-**H. `plugins/kodhama/README.md` line 22** — one word, singular to plural:
+**H. `plugins/kodhama/README.md`, the Claude row of the evidence table** — one
+word, singular to plural. **Anchored by string, never by line number:**
 
 - **Before:** `and reports the declared skill in its component inventory.`
 - **After:** `and reports the declared skills in its component inventory.`
+
+**Why the line number must not be used** *(v8; both this literal and its two
+dependants named "line 22", which is the pre-edit position)*. Literal **B**
+replaces the file's first 9 lines with 26, and **both edits land in the same
+file in the same change**. After **B** applies, this sentence sits at **line
+39**, not 22. An executor reading `readme.splitlines()[21]` would assert
+against the wrong line and ship **a red test against a correct package** —
+D1's defect class, and this wave's own failure mode in miniature: an edit whose
+dependant sits thirty lines below it in the same file. Locate the sentence by
+its `Before` string; if `B` has already applied, that string is still unique in
+the file and still the only occurrence.
 
 This touches none of the five strings the existing README test pins, and brings
 the sentence into line with `scripts/keyless_admission_check.py`, which has said
@@ -803,12 +867,12 @@ the sentence into line with `scripts/keyless_admission_check.py`, which has said
 | `plugins/kodhama/.claude-plugin/plugin.json` | `version` → `0.3.0`; `description` → **C** | Must equal `VERSION` exactly. |
 | `plugins/kodhama/.codex-plugin/plugin.json` | `version` → `0.3.0`; `description` → **C**; `interface` fields → **E** | Must equal `VERSION` exactly. `"skills": "./skills/"` is a directory declaration and needs no change. |
 | `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json` | the `kodhama` entry's `description` → **D** | The entry `description` is this repository's only carrier of the `kodhama-0021` §2 disclosure. The literal is pinned in `tests/test_kodhama_plugin.py`, updated in the same change. |
-| `plugins/kodhama/README.md` | lines 1–9 → **B**; line 22 → **H** | Everything else unchanged, preserving the five strings the existing README test pins. |
+| `plugins/kodhama/README.md` | lines 1–9 → **B**; the `declared skill` sentence → **H**, located **by string** | Everything else unchanged, preserving the five strings the existing README test pins. **H's target is not at a fixed line:** **B** turns 9 lines into 26 in the same file, moving it from 22 to 39. |
 | `distribution/repository-scope.md`, `CLAUDE.md`, `README.md` | the marked block → **A**, byte-identical in all three | See §Standing scope claims. |
 | `CLAUDE.md` | lines 66–68 → **F** | Separate from the marked block; same file, different obligation. |
 | `conductor/wave-issue-taxonomy/plugin/DIRECTION.md` | lines 45–47 → **G** | Authorised edit 2 to staged text. |
 | `.github/workflows/validate-marketplace-setup.yml` | add `"conductor/wave-issue-taxonomy/plugin/**"` to `on.pull_request.paths` | See §Closing the CI blind spot. |
-| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v7` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
+| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v8` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
 | `tests/test_kodhama_plugin.py` | the **fourteen** distinct `new: test_*` named in §How each criterion is checked, plus the updated literal **D** in `test_kodhama_catalog_entries_disclose_no_support_claim` | The criteria table is the authority for which tests exist; this row is a summary of it. The existing tests must keep passing unchanged; the module docstring, which names specs 0003 and 0004, gains this one. |
 | `conductor/wave-issue-taxonomy/README.md` | the staging table records each moved file's published home | S10's second clause. Reviewer-checked; prose currency is not mechanically checkable. |
 
@@ -1128,7 +1192,9 @@ the workflow file S15 requires editing)*
 - **Then** `distribution/repository-scope.md`, `CLAUDE.md` and `README.md` each
   carry literal **A** between their `distribution-scope` markers; `CLAUDE.md`
   carries literal **F**; `plugins/kodhama/README.md` carries literal **B** as
-  its opening and literal **H** at line 22; **`plugins/kodhama/DIRECTION.md`**
+  its opening and literal **H** as its `declared skill` sentence — **matched as
+  a string, not at a line number, since **B** displaces it from line 22 to line
+  39 in the same change**; **`plugins/kodhama/DIRECTION.md`**
   carries literal **G**; `conductor/wave-issue-taxonomy.md` Lane B asserts no
   untouched scope; and the discovery command in §Standing scope claims surfaces
   no further carrier.
@@ -1248,7 +1314,7 @@ adds the actuator disclosure and the corrected purpose wording)*
   shall not trigger on `conductor/` generally.
 - **R18 (ubiquitous):** `tests/TEST_DEPS.md` shall declare this spec among its
   `depends_on` **in the pinned `id@vN` form**, at the version the tests were
-  written against — `kodhama-spec-0005-issue-taxonomy-skill-publication@v7` as
+  written against — `kodhama-spec-0005-issue-taxonomy-skill-publication@v8` as
   of this revision. `specs/README.md` requires the pinned form for versioned
   spec dependencies, and the file already pins its sibling `@v5`; an unpinned
   entry would have satisfied v3's wording and matched neither.
@@ -1417,15 +1483,16 @@ and the installed `.grove/versioning.md` and `.grove/relations.md`.
 - **Version pin** — spec 0004 pinned `@v5`; the **six** decisions
   (`kodhama-0017`, `-0018`, `-0020`, `-0021`, `-0025`, `-0026`) are append-only
   and correctly unpinned.
-- **Counter** — bumped `6 → 7`. **v6's bump was required, not merely
-  conservative**, as the round-8 reviewer established against
+- **Counter** — bumped `7 → 8`. **v6's bump was required**, per
   `.grove/versioning.md:59-61`: a testable-clause change bumps, and R15's
-  `shall` text changed scope in v6. v7 is the weaker case — no scenario,
-  requirement, literal or arbiter moves — and is bumped because three passages
-  stating the debt's *kind* were realigned to a ruling the maintainer is being
-  asked to act on, so a reader pinning `@v6` would be pinning two incompatible
-  framings of the question. `tests/TEST_DEPS.md` does not yet name this spec,
-  so no pin goes stale. The section-level delta note carries the five
+  `shall` text changed scope. v7 and v8 are the weaker case — no scenario,
+  requirement, literal, arbiter or criterion moves in either. v7 realigned three
+  passages stating the debt's *kind* to a ruling the maintainer is being asked
+  to act on; v8 withdraws a false completeness claim and changes how literal
+  **H** is located, which is a correctness-of-application change an executor
+  reads as binding. A reader pinning `@v7` would be pinning both defects.
+  `tests/TEST_DEPS.md` does not yet name this spec, so no pin goes stale, and
+  R18's `@vN` is written by the executor at whatever version lands. The section-level delta note carries the five
   fields plus VALUE and CONFIDENCE; S9, S10, S13, S15 and S16 carry
   scenario-level inline tags.
 - **Rule scope** — R15 binds statements of present state only. Ratified
@@ -1557,13 +1624,21 @@ Labels are the round-8 reviewer's, kept verbatim.
 | **F3** — `CLAUDE.md:42` cited for a sentence at `:44` | Corrected. Line 42 is the bullet head. Noted in place that v6's CONFIDENCE line did not list `CLAUDE.md` among what was re-read, so the slip fell outside the verified set — the confidence claim was accurate, which is the argument for keeping such lists honest rather than generous |
 | **F3** (follow-on) — whether naming the `CLAUDE.md` tension suffices | Left as-is per the reviewer, since line 44 fails carrier condition 1 and R15 does not reach it. **One clause added**: this publication edits `CLAUDE.md` twice, so declining to tighten a third sentence there is a **scope choice, not a limit** — the two edits are obligations the rule generates; rewriting a governance rule is a different act needing its own authority |
 | Uncited primary source | `decisions/0025:113` now cited directly — *"That goal is met by the GitHub Actions run log, which records the checkout revision with better provenance than a checked-in file."* v6 routed the claim through `specs/README.md:34-36`, a derived restatement of it. The approved record says it itself |
-| Accounting wobble | The false-positive table's note said *"the last four rows plus `0017:16`"* — which is one of the four — while its change-table row said *"Five rows added"* and listed four. **Four rows** in both places; the table now covers every non-carrier hit the widened command returns |
+| Accounting wobble | The false-positive table's note said *"the last four rows plus `0017:16`"* — which is one of the four — while its change-table row said *"Five rows added"* and listed four. **Four rows** in both places; the table now covers every non-carrier hit the widened command returns *(v8: that last clause was false and is withdrawn — see the v8 table)* |
 
 **Corpus support the reviewer supplied and v7 records.**
 `decisions/0025:139-140` calls that record's own acceptance criteria *"false
 **when written**"* — the corpus indexing AC truth to the moment of writing,
 which is the past-act ruling in §Standing scope claims stated by an approved
 decision rather than inferred here. It was not cited when the ruling was made.
+
+### What v8 changed, and why
+
+| Finding | Repair |
+|---|---|
+| **Blocking — a false completeness claim about the discovery command's output.** The table and the v7 change table both said it covered *"every non-carrier hit the widened command returns"*. It returns roughly two dozen hits outside this spec; **eight are untabled** | The claim is withdrawn, not satisfied by padding. The table is now described as what it is — **the hits a reviewer would otherwise re-adjudicate** — with the untabled residue named, including that `decisions/0017:33` and `:208` are its two most consequential hits and are adjudicated in prose and open question 6 rather than in a row. The command's hits on **this spec and the records it quotes** are disclosed as **self-reference by construction**: a document that discusses scope enumerations contains the phrases that find them. **This was false enumeration one level up again** — the class §Standing scope claims exists to kill, asserted about the instrument, and flatly contradicting this spec's own *"a clean run is evidence, not proof"* |
+| **`specs/0004:141` looked like a ninth carrier and is not** | Tabled with the real reason, which is narrower than the one first reached: **the line wraps**, and `:141-142` reads *"the plugin's declared skill **directories**"* — already plural. The regex matches `declared skill\b` across the break. **Round 5's spec-adversary adjudicated this line for this reason, and an implementation planner adjudicated it again on v7.** Twice, by two agents, because it was absent from the table — which is the exact cost the table exists to remove, so the row earns its place on that alone |
+| **Literal H was pinned by a line number that its own sibling edit invalidates** | Re-anchored to a **string** at all four sites — the literal's own heading, carrier 5's row, S13, and the §Package changes row. **B** replaces 9 lines with 26 in the same file in the same change, displacing H's target from line 22 to **39**; an executor reading `readme.splitlines()[21]` asserts against the wrong line and ships **a red test against a correct package**. That is D1's class, and the wave's failure mode in miniature: **a dependant thirty lines below its own edit, in the same file**. The replacement text is unchanged; only its locator is |
 
 Result: **PASS**, holding at `gated`. `approved` is the maintainer's to give;
 no intent act has been recorded for this spec.
