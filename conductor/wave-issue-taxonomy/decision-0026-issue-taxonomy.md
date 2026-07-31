@@ -45,12 +45,20 @@ population. The conclusion is unchanged; the correct figure is smaller.
    dissolves the moment work finishes is a lifecycle position, not a kind —
    which is also why `Epic` **is** a type: a container does not dissolve on
    completion.
-4. **Stage, priority, facing, status and area are labels.** `stage:`,
-   `priority:` and `facing:` are closed vocabularies; `area:` is open and
-   **deliberately repo-local**; **status is a closed set of bare tokens and is
-   not a namespace**.
-5. **`facing: user` / `facing: system`** records whether anyone outside the
-   building team observes the change. It is a dimension rather than a type
+4. **Stage, priority, facing, status and area are labels**, and every closed
+   one is enumerated here so the closure is enforceable by this record rather
+   than by a file it points at:
+   - `stage:` — `triage` · `shaping` · `drafting` · `ready` · `active` ·
+     `review`. Ordered, mutually exclusive
+   - `priority:` — `p0` · `p1` · `p2`, with **unset** meaning normal
+   - status — `blocked` · `needs-human` · `needs-design-system` · `deferred`.
+     Bare tokens; **status is not a namespace**
+   - `area:` — **open and deliberately repo-local**, the only open vocabulary
+
+   Which stages each type visits, and every rule for applying these, is the
+   plugin's to state. **Membership is this record's.**
+5. **`facing: user` / `facing: system`** — a closed pair — records whether
+   anyone outside the building team observes the change. It is a dimension rather than a type
    because it cuts *inside* every delivery type — and it is what lets an agile
    Story and an Enabler be one type seen from two sides, which removes the
    pressure to invent a persona for work that has no consumer.
@@ -91,23 +99,30 @@ text. See open question 2.
 
 ## Done when
 
-- The plugin carrying the taxonomy skill is **published** to the `kodhama`
-  marketplace. **Adoption is not part of this record's completion** — each
-  repository opts in by its own act, on its own authority.
-- Org issue types `Research`, `Decision` and `Epic` exist. This requires a
-  credential with `admin:org`; the maintainer's current token carries
-  `read:org` only, so Decision 2's vocabulary is unimplementable until that
-  is resolved.
-- Cross-link ADRs exist in the four repositories named under Propagation.
-- math-quest carries its own receiving issue.
-- The rollout brief `conductor/wave-issue-taxonomy.md` is closed with a
-  report. Rollout completion is the **brief's** ledger, not this record's.
+This record decides a convention. Its completion test is whether the
+convention is decided — **not whether it has been delivered anywhere.**
+
+- Every vocabulary this record calls closed is **enumerated in this record**:
+  the six types, the six stage values, the four status tokens, the two
+  `facing:` values, and the priority set. A closure the record does not
+  enumerate is a closure it cannot enforce.
+- The record is ratified by the maintainer's intent act.
+
+**Nothing about delivery is a criterion here.** Publication, org-type
+provisioning, cross-link ADRs, math-quest's receiving issue and per-repo
+adoption are rollout facts, and rollout completion is the **brief's** ledger
+(`conductor/wave-issue-taxonomy.md`, Lanes A–F). An earlier draft listed all
+five here while simultaneously disclaiming them — which made an unresolved
+plugin home block a decision that has nothing to do with where a plugin
+lives.
 
 ## Open questions
 
-**1. Where the plugin lives — BLOCKING.** Decision 8 makes the plugin the
-sole carrier, so the first Done-when criterion cannot be evaluated until this
-resolves. Three candidates, none yet chosen:
+**1. Where the plugin lives.** Not blocking this record — it is a delivery
+question, owned by the brief's Lane B. It is recorded here because Decision 9
+makes the plugin the sole carrier, so the convention reaches no one until it
+resolves, and because **every candidate currently conflicts with something
+standing.** Three, none yet chosen:
   - the Stewards `kodhama` plugin — but its scope is deliberately narrow
     (CI marketplace setup), and widening it contradicts that narrowness;
   - **grove** — which the standing corpus nominates, since `kodhama-0008` §3
