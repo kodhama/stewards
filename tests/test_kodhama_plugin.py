@@ -642,6 +642,40 @@ class IssueSkillPublicationTests(unittest.TestCase):
                     dangling.append(f"{rel} -> {pointer}")
         self.assertEqual([], dangling)
 
+    def test_the_in_force_gate_ships_intact(self) -> None:
+        """spec-0005 S8/R9: the shipped skill still stops when it must.
+
+        `kodhama-0026` D12 makes the convention inert until all six issue
+        types exist **and are enabled**, and the skill's own first
+        instruction is to check that and stop. This is the single clause that
+        makes publication a non-event for every repository, so it is asserted
+        literally rather than trusted to survive an edit.
+
+        The six type names are quoted from `kodhama-0026` D2 **as check
+        inputs**. This test owns neither their membership nor their meaning.
+
+        Normalised whitespace, so a re-wrap cannot make a required sentence
+        "absent" and quietly weaken the guard.
+        """
+        text = " ".join(
+            (PLUGIN / "skills" / "issues" / "SKILL.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        self.assertIn("gh api /orgs/<org>/issue-types", text)
+        # Selection on `is_enabled`, not on presence: a disabled type still
+        # appears in the list and still cannot be set on an issue.
+        self.assertIn("select(.is_enabled)", text)
+        self.assertIn("**Select on `is_enabled`**", text)
+        for issue_type in ("Bug", "Feature", "Task", "Research", "Decision", "Epic"):
+            self.assertIn(f"`{issue_type}`", text)
+        self.assertIn(
+            "**If any of the six is absent or disabled** — `Bug`, `Feature`, "
+            "`Task`, `Research`, `Decision`, `Epic` — **this convention is not "
+            "yet in force in that org.** Say so and stop.",
+            text,
+        )
+
     def test_the_actuator_gh_surface_is_pinned(self) -> None:
         """spec-0005 S9/R11: a closed multiset, not a denylist.
 
