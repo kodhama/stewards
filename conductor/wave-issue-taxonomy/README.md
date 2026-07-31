@@ -35,7 +35,14 @@ repairs are made at the point of the reported defect, and the passages that
 the check it proposed — for each construct changed, grep every occurrence of
 its key terms and re-read each hit.
 
-**It owes a fifth review pass.** Nothing here has been reviewed as it stands.
+**Ratified 2026-07-31** by the maintainer's intent act, recorded as an in-PR
+status flip. Round 5 added the first conformance review (**fidelity PASS both
+directions**) and a practitioner review (**"ship it"**); their four blockers
+were cleared in `191b7c5`.
+
+**Not yet in force.** By the skill's own gate the convention is inert until
+`Research`, `Decision` and `Epic` exist and are enabled in the org — that is
+Lane E, and it needs `admin:org`.
 
 **Four factual errors in the author's own evidence, all caught by review:**
 

@@ -1,7 +1,7 @@
 ---
 id: kodhama-0026-issue-taxonomy
 type: decision
-status: gated  # author self-check recorded. Four independent review rounds have run (90a7bbb, ff1e47c, 7c0c54d, 228e7ed); twelve verdict records on stewards#64; NONE PASSED. This state answers round 4 and is itself unreviewed. The maintainer's intent act remains open and is not opened by an agent
+status: approved  # maintainer intent act 2026-07-31 ("I approve, flip it, just need to check the PR though") — in-PR flip recording the act, per the kodhama-0008 precedent; the agent did not open the gate. Delivery (relocation to kodhama/kodhama, propagation, provisioning) is the wave brief's ledger
 depends_on: [kodhama-0009-org-topology-spirit-stewards-trees, stewards/kodhama-0008-family-inheritance-restate-nothing, stewards/kodhama-0021-separate-adoption-posture-from-support, stewards/kodhama-0022-propagate-collective-strategy]
 owner: agent
 updated: 2026-07-31
@@ -263,4 +263,21 @@ this record: the plugin home is settled for now as a staging choice, `roadmap`
 is a named exemption, Issue Fields waits on GA, the cross-repo grammar wants a
 ruling that would bind five records, and migration is unauthorised.
 
-**The author did not grade its own decision and did not open the intent gate.**
+**Ratified 2026-07-31.** The maintainer's intent act — *"I approve, flip it,
+just need to check the PR though"* — is recorded by the in-PR status flip, the
+same mechanism `kodhama-0008` used for the same words. **The author did not
+grade its own decision and did not open the intent gate.**
+
+**Review history at ratification: five rounds, seventeen verdict records** on
+stewards#64. Four adversarial rounds — `90a7bbb`, `ff1e47c`, `7c0c54d`,
+`228e7ed` — each returned NEEDS-REVISION and each was answered. The fifth, on
+`736b603`, added the first **conformance** review, which returned **fidelity
+PASS in both directions** with its only blocking finding in this record rather
+than in the artifacts, and a **practitioner** review that returned *"ship
+it"*. Their four blockers were cleared in `191b7c5`.
+
+**What ratification does not do.** It does not provision the org types, and by
+the skill's own gate the convention is **not in force** until `Research`,
+`Decision` and `Epic` exist and are enabled. It does not enable a plugin
+anywhere — Decision 11 stands and `kodhama-0021` is untouched. It does not
+authorise migrating a single existing issue.

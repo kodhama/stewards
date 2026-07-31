@@ -1,8 +1,9 @@
 # Wave: issue taxonomy rollout
 
-**NOT OPEN — authority pending.** Drafted 2026-07-30. This brief opens only
-when `kodhama-0026-issue-taxonomy` is ratified in `kodhama/kodhama`; the
-intent gate is not opened by an agent.
+**OPEN.** Drafted 2026-07-30. **Authority: `kodhama-0026-issue-taxonomy`,
+ratified by the maintainer's intent act on 2026-07-31** — *"I approve, flip
+it, just need to check the PR though"* — recorded by an in-PR status flip. The
+agent did not open the gate.
 
 Working drafts are staged in
 [`wave-issue-taxonomy/`](wave-issue-taxonomy/README.md) — the decision text,
@@ -70,7 +71,9 @@ propagates; it does not enable. Retired Spore is not a target.
       which resolves it more completely than the direction asked. Delivery
       lives in these lanes. `kodhama-0021` is a declared dependency
 - [ ] Fifth review pass — the four prior rounds bind to superseded commits
-- [ ] Decision ratified by maintainer intent act
+- [x] **Decision ratified by maintainer intent act, 2026-07-31**
+- [ ] Relocate the record to `kodhama/kodhama/decisions/0026-issue-taxonomy.md`,
+      recomputing the `depends_on` prefixes for that repo (open question 3)
 
 **Lane B — plugin home + publication**
 - [x] **Plugin home settled for now (maintainer direction, 2026-07-31): the
