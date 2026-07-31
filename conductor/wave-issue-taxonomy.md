@@ -54,12 +54,19 @@ Spore is not a target.
 ## Ledger
 
 **Lane A — decision (kodhama/kodhama)**
-- [ ] `kodhama-0026` independently reviewed before the intent act — owed, not
-      yet done; the author drafted both the taxonomy and the record
+- [x] Id confirmed free (2026-07-31): `kodhama/kodhama` holds only `0009`;
+      Stewards holds 0001–0023 + 0025. `0024` is also free and unexplained by
+      any record — minting `0026` leaves that hole unaccounted for, accepted
+      as a known cost
+- [x] `kodhama-0026` independently reviewed — `grove:decision-adversary`
+      returned **NEEDS-REVISION** (posted to stewards#64, binding `90a7bbb`).
+      Its F1 was a real conflict with approved `kodhama-0021`
+- [x] Maintainer direction on F1 (2026-07-31): **narrow the Done-when** to
+      publication plus repo-owned opt-in, rather than supersede
+      `kodhama-0021`. Applied; `kodhama-0021` is now a declared dependency
+- [ ] Fresh review pass on the revision — the prior verdicts bind to
+      `90a7bbb` and no longer apply
 - [ ] Decision ratified by maintainer intent act
-- [ ] **Check first:** id `0024` is unaccounted for in either corpus
-      (Stewards holds 0001–0023 + 0025; `kodhama/kodhama` holds 0009).
-      Confirm 0026 is free before minting
 
 **Lane B — plugin home + publication**
 - [ ] Resolve where the plugin lives. The Stewards `kodhama` plugin is scoped
