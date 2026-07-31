@@ -98,7 +98,17 @@ for is not a licence to misdescribe what is in it
 """
 
 
-def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+def run(
+    *args: str,
+    check: bool = True,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Run a command from the repository root.
+
+    `env` replaces the whole environment when given, so callers build it from
+    `os.environ` themselves. `test_the_actuator_makes_no_write_call_without_apply`
+    needs it to put a stub `gh` first on `PATH`.
+    """
     return subprocess.run(
         [*args],
         cwd=ROOT,
@@ -106,6 +116,7 @@ def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=check,
+        env=env,
     )
 
 
@@ -900,6 +911,151 @@ class IssueSkillPublicationTests(unittest.TestCase):
         self.assertEqual(len(directories), len(capabilities), capabilities)
         for directory, capability in zip(directories, capabilities):
             self.assertIn(f"skills/{directory}", capability)
+
+    # The stub records every `gh` invocation and answers the one read the
+    # script parses a value out of. It never acts, so the test is offline and
+    # credential-free by construction: nothing reaches GitHub, and no token is
+    # read because the real `gh` is never the thing that runs.
+    GH_STUB = """\
+#!/usr/bin/env bash
+printf '%s\\n' "$*" >> "$GH_STUB_LOG"
+if [ "$1" = "issue" ] && [ "$2" = "list" ]; then
+  printf '%s\\n' "$GH_STUB_BACKLOG"
+fi
+exit 0
+"""
+
+    @staticmethod
+    def _canonical_gh_call(call: str) -> str:
+        """Reduce a logged `gh` call to its verb, keeping unknowns verbatim.
+
+        An unrecognised call is returned whole rather than bucketed, so a
+        write shows up in the failure message as the command it was.
+        """
+        if call.startswith("auth status"):
+            return "auth status"
+        if re.match(r"api /orgs/[^/\s]+/issue-types(\s|$)", call):
+            return "api /orgs/<org>/issue-types"
+        if call.startswith("issue list"):
+            return "issue list"
+        if call.startswith("label list"):
+            return "label list"
+        return call
+
+    def _seed_calls(
+        self, *args: str, backlog: str = "3"
+    ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+        """Run the shipped actuator against a stub `gh`, returning its calls."""
+        with tempfile.TemporaryDirectory(prefix="kodhama-gh-stub-") as workspace:
+            work = Path(workspace)
+            binaries, log = work / "bin", work / "calls.log"
+            binaries.mkdir()
+            stub = binaries / "gh"
+            stub.write_text(self.GH_STUB, encoding="utf-8")
+            stub.chmod(0o755)
+            log.write_text("", encoding="utf-8")
+
+            # Tokens are stripped rather than merely unused, so a run that
+            # somehow reached the real CLI could not authenticate either.
+            environment = {
+                key: value
+                for key, value in os.environ.items()
+                if key not in ("GH_TOKEN", "GITHUB_TOKEN")
+            }
+            environment.update(
+                PATH=f"{binaries}{os.pathsep}{os.environ['PATH']}",
+                GH_STUB_LOG=str(log),
+                GH_STUB_BACKLOG=backlog,
+            )
+            result = run(
+                str(PLUGIN / "scripts" / "seed-issue-taxonomy.sh"),
+                *args,
+                check=False,
+                env=environment,
+            )
+            calls = [
+                line for line in log.read_text(encoding="utf-8").splitlines() if line
+            ]
+        return result, calls
+
+    def test_the_actuator_makes_no_write_call_without_apply(self) -> None:
+        """spec-0005 S17/R19: dry-run-by-default is a behaviour, not a claim.
+
+        This property was pinned **six times as prose** — literal A in three
+        files, the shipped README twice, both catalog descriptions — and
+        guarded by nothing. The one test that touched it asserted
+        `assertIn("Dry-run by default", stdout)`, which pins the help text's
+        *claim*. Mutating `APPLY=0` to `APPLY=1` in the shipped script —
+        apply-by-default against a live org holding `admin:org` — passed the
+        whole gate green.
+
+        So the script is **run**, against a stub `gh` first on `PATH`, and its
+        call log is read. A static pin on `APPLY=0` was rejected in the spec
+        and would have been wrong here: it catches two of the four measured
+        mutations and misses `if true` entirely, which is the one that turns
+        every `run()` into an execution while the default still *reads* as 0.
+
+        Offline and credential-free: the stub intercepts every `gh`
+        invocation, so nothing reaches GitHub, and the tokens are stripped
+        from the environment besides.
+        """
+        writes = ("api --method POST", "api --method PATCH", "label create")
+        reads = {
+            "auth status",
+            "api /orgs/<org>/issue-types",
+            "issue list",
+            "label list",
+        }
+
+        # Property 1 — the bare default invocation. This sweeps all nine
+        # repositories in `ALL_REPOS`, `math-quest` included, which is the
+        # repository `kodhama-0021` reserves by name and open question 3
+        # flags: proving no write reaches it matters most there.
+        result, calls = self._seed_calls()
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue(calls, "the stub recorded nothing; it was not reached")
+        for call in calls:
+            self.assertFalse(
+                call.startswith(writes),
+                f"a default invocation issued a write call: gh {call}",
+            )
+        # Equality, not containment: it proves the run reached both the type
+        # path and the label path. A subset would pass just as well if the
+        # script had exited early, which would make the absence of writes
+        # above mean nothing.
+        self.assertEqual(
+            reads, {self._canonical_gh_call(call) for call in calls}, calls
+        )
+
+        # Property 2 — `--apply` is the only argument that may set APPLY=1.
+        for flag in (
+            ("--org", "kodhama-test"),
+            ("--repo", "grove"),
+            ("--types-only",),
+            ("--labels-only",),
+            ("--force",),
+        ):
+            result, calls = self._seed_calls(*flag)
+            self.assertEqual(0, result.returncode, f"{flag}: {result.stderr}")
+            self.assertTrue(calls, f"{flag}: the stub recorded nothing")
+            observed = {self._canonical_gh_call(call) for call in calls}
+            self.assertLessEqual(observed, reads, f"{flag} issued a non-read call")
+
+        # Property 3 — the empty-backlog skip, which protects `--force` and so
+        # is reached by neither property above. Listing the mutation without
+        # a property that catches it would be a mutation obligation this
+        # criterion could not discharge.
+        _, skipped = self._seed_calls("--repo", "grove", backlog="0")
+        self.assertNotIn(
+            "label list",
+            {self._canonical_gh_call(call) for call in skipped},
+            "an empty backlog was seeded without --force",
+        )
+        # And the gate is a gate, not an absence: `--force` opens it.
+        _, forced = self._seed_calls("--repo", "grove", "--force", backlog="0")
+        self.assertIn(
+            "label list", {self._canonical_gh_call(call) for call in forced}, forced
+        )
 
     def test_seed_script_is_runnable_and_fails_closed(self) -> None:
         """spec-0005 S4: the actuator ships runnable, and refuses what it
