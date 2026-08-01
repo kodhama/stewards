@@ -6,6 +6,7 @@ on:
       - ".agents/plugins/marketplace.json"
       - ".claude-plugin/marketplace.json"
       - ".github/workflows/validate-marketplace-setup.yml"
+      - "conductor/wave-issue-taxonomy/plugin/**"
       - "plugins/kodhama/**"
       - "scripts/validate_kodhama_plugin.py"
       - "scripts/keyless_admission_check.py"

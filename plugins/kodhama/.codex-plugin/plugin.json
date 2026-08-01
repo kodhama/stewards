@@ -1,7 +1,7 @@
 {
   "name": "kodhama",
-  "version": "0.2.0",
-  "description": "Author verified Claude and Codex marketplace setup in repository-owned GitHub Actions workflows.",
+  "version": "0.3.0",
+  "description": "Two skills: verified Claude and Codex marketplace setup in repository-owned GitHub Actions workflows, and the kodhama issue convention, staged here while its home is decided.",
   "author": {
     "name": "kodhama"
   },
@@ -16,13 +16,14 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Kodhama",
-    "shortDescription": "Add verified marketplace setup to CI.",
-    "longDescription": "Inspect repository-owned GitHub Actions jobs and author immutable, host-native marketplace setup for direct Claude Code and Codex CLI invocations.",
+    "shortDescription": "Two skills: CI marketplace setup, and the issue convention.",
+    "longDescription": "Carries two skills. One authors immutable, host-native marketplace setup for direct Claude Code and Codex CLI invocations in repository-owned GitHub Actions jobs. The other teaches the kodhama issue convention — prose titles, with every machine-readable dimension in GitHub's native issue types and labels — and is staged here while its home is decided.",
     "developerName": "kodhama",
     "category": "Developer Tools",
     "capabilities": [
-      "GitHub Actions workflow authoring"
+      "GitHub issue convention (skills/issues)",
+      "GitHub Actions workflow authoring (skills/setup-ci-marketplace)"
     ],
-    "defaultPrompt": "Add verified kodhama marketplace setup to the selected GitHub Actions jobs."
+    "defaultPrompt": "Use the kodhama skill that fits: CI marketplace setup, or the issue convention."
   }
 }

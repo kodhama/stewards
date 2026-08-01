@@ -12,11 +12,15 @@ door** (the collective's canonical install repository per `kodhama-0002`,
 `kodhama-0012`, and `kodhama-0017`).
 
 <!-- distribution-scope:begin -->
-The install door includes the host-native Claude and Codex catalogs. Its
-future distribution scope is deliberately narrow: metadata that records which
-marketplace a test exercised, and a generic Stewards skill that adds
-caller-selected Claude/Codex marketplace setup to CI. It does not certify
-product releases or support and owns no universal version, tag, release-history,
+The install door includes the host-native Claude and Codex catalogs. Those
+catalogs list plugins this repository does not originate — each of those is
+sourced from the repository that owns it. The only plugin **originated here**
+is `kodhama`, which carries two skills and one provisioning script: verified
+Claude/Codex marketplace setup for CI, the kodhama issue convention (staged
+here while the issue skill's home is decided), and a dry-run-by-default
+label-and-type seeder. That is a description of present contents, not a scope:
+it moves when the contents move. The install door does not certify product
+releases or support and owns no universal version, tag, release-history,
 approval, runtime-sandbox, cross-repository-resolution, or effective-support
 machinery.
 <!-- distribution-scope:end -->
@@ -63,11 +67,14 @@ from the grove plugin as `grove:<role>` — never vendored here (`grove/adr-0026
 D1; the stale vendored copies were removed in #52). Two placeholders are
 resolved locally. The test gate is `python3 -m unittest discover -s tests`
 plus `python3 scripts/validate_kodhama_plugin.py` — run both before reporting
-done; CI enforces them on any PR touching `tests/`, `scripts/`, `plugins/`, or
-either marketplace catalog, and on nothing else, so a docs-only PR gets no
-check at all. There is no typecheck gate. Parked items ride the conductor
-briefs' Parked sections. Telemetry: wisp is not vendored here and no
-grove-status skill is installed — optional by construction.
+done; the **test gate** runs on any PR touching `tests/`, the two plugin
+scripts under `scripts/`, `plugins/kodhama/`, the issue-taxonomy staging tree
+under `conductor/`, either marketplace catalog, or the validation workflow
+itself — and on nothing else, so a docs-only PR pays none of its cost. It is
+not the only check: the Claude review and the workflow-parity job carry no
+`paths:` filter and run on every PR. There is no typecheck gate. Parked items
+ride the conductor briefs' Parked sections. Telemetry: wisp is not vendored
+here and no grove-status skill is installed — optional by construction.
 
 <!-- grove:begin (managed by grove — dials live in .grove/, not this block) -->
 Load the complete driving-session dispatcher from `${CLAUDE_PLUGIN_ROOT}/reference/charters/dispatcher.md` in this current task.

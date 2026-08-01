@@ -1,12 +1,29 @@
 # Kodhama
 
-Adds verified Claude Code or Codex marketplace setup to repository-owned GitHub
-Actions workflows. You point it at the jobs that invoke a host CLI; it writes the
-exact, host-native marketplace registration those jobs need, before they run.
+This package carries two skills and one script.
 
-It edits workflow configuration and nothing else. It is not installed into the
-resulting CI job, and it provides no shared action, runtime, container, or
-installer.
+- **`skills/setup-ci-marketplace`** — adds verified Claude Code or Codex
+  marketplace setup to repository-owned GitHub Actions workflows. You point it
+  at the jobs that invoke a host CLI; it writes the exact, host-native
+  marketplace registration those jobs need, before they run. *That skill* edits
+  workflow configuration and nothing else: it is not installed into the
+  resulting CI job, and it provides no shared action, runtime, container, or
+  installer.
+- **`skills/issues`** — teaches the kodhama issue convention: titles are prose,
+  and every machine-readable dimension lives in GitHub's native issue types and
+  labels. **It only teaches.** The convention is carried by GitHub itself, not
+  by this package, and until an org's issue types exist and are enabled it is
+  not in force — the skill's first instruction is then to stop. This skill is
+  staged here while its home is decided; see `DIRECTION.md`.
+- **`scripts/seed-issue-taxonomy.sh`** — **an actuator, not a skill.** It
+  creates org issue types and repository labels, which is why it sits outside
+  `skills/` and why no skill points at it. It is dry-run by default, deletes
+  nothing, and changes nothing without `--apply`. Running it needs `admin:org`.
+
+**What this plugin is *for* has never been decided.** `kodhama-0020` named it
+the family's overarching dual-host plugin; what that plugin is for is a
+separate question nobody has answered, and `DIRECTION.md` records it. The list
+above is the package's present contents, not a statement of purpose.
 
 ## Where this works, and what that claim rests on
 
@@ -19,7 +36,7 @@ What is actually checked, on every pull request that touches this plugin:
 
 | Host | What runs | What it establishes |
 |---|---|---|
-| **Claude Code** | `scripts/keyless_admission_check.py` | The host validates the manifest with no warnings, adds a local marketplace carrying this commit's payload, installs the plugin from it, and reports the declared skill in its component inventory. No API key, no model turn. |
+| **Claude Code** | `scripts/keyless_admission_check.py` | The host validates the manifest with no warnings, adds a local marketplace carrying this commit's payload, installs the plugin from it, and reports the declared skills in its component inventory. No API key, no model turn. |
 | **Codex** | `codex plugin marketplace add` against this repository at the tested commit | The host accepts the catalog and resolves the marketplace root to the checkout under test. |
 
 **What none of that establishes**, stated because the difference matters: that the
