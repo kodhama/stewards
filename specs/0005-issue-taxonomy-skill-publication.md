@@ -1,7 +1,7 @@
 ---
 id: kodhama-spec-0005-issue-taxonomy-skill-publication
 type: spec
-status: gated  # agent self-check passed; no maintainer intent act has been recorded and `approved` remains the maintainer's to give
+status: approved  # maintainer intent act 2026-07-31 ("approved", in session, answering a question that named this flip and the merge as separate acts) — the agent did not open the gate. Recorded at v9, the version the suite was written against and the version `tests/TEST_DEPS.md` pins; the flip is a lifecycle act and changes no testable clause, so it does not bump
 depends_on: [kodhama-0026-issue-taxonomy, kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-0021-separate-adoption-posture-from-support, kodhama-0025-retire-the-surface-matrix, kodhama-spec-0004-ci-marketplace-setup-skill@v5]
 implements: [kodhama-0026-issue-taxonomy]
 owner: agent
