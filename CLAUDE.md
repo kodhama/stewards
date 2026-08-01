@@ -49,10 +49,14 @@ Rules (the collective's):
 - **One home per kind of information** — product truths live in product
   repos; only genuinely cross-collective content lands here. When in doubt,
   it belongs to a product.
-- **Conductor practice**: each cross-repo wave gets a brief in
-  `conductor/`; the brief IS the ledger — check items off in the same
-  commits that report them; parked questions batch to the human ≤3 at a
-  time; every wave ends with a report appended to its brief.
+- **Work is tracked in GitHub issues**, typed and labelled per
+  `kodhama-0026`; a cross-repo wave is an `Epic` with dependency edges
+  (`kodhama-0027`). A conductor brief may hold narrative that has no issue
+  shape — the reasoning behind a sequence, a trace justifying a removal, a
+  closure report — but **never a work list**: 12 of 14 briefs went stale, and
+  the one reconciled twice drifted the same way both times, because a brief
+  duplicates state that issues update as a side effect of the work.
+  Parked questions still batch to the human ≤3 at a time.
 - **Model economy**: Sonnet-class for execution waves; strongest model
   only for design/judgment sittings (see the suite-lift plan §Model
   economy, until that section migrates here).
