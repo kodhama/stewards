@@ -305,10 +305,19 @@ described a Trellis that no longer existed) · #218 (`decision-0070` — adoptio
 the consent act, not installation) · #222 (four post-merge P2s) · #223
 (`decision-0071` — Trellis self-applies through the plugin, not an overlay).
 
-**Where the product ended up.** A fresh install is governed **14/14 at the
-adaptive posture** on either path with no second step: `install.sh` seeds
-`.trellis/rules.toml`, and a project-scoped plugin applies the shipped defaults
-with no file at all. `governed = false` is an opt-out honoured on **both** hosts.
+**Where the product ended up — on Claude Code.** A fresh install is governed
+**14/14 at the adaptive posture** on either path with no second step:
+`install.sh` seeds `.trellis/rules.toml`, and a project-scoped plugin applies the
+shipped defaults with no file at all.
+
+**On Codex, none of that is reachable**, and the slice must not read as if it
+were. The hook honours `governed = false` there — capability — but a Codex user
+cannot obtain a governed fresh install through any documented path, because there
+is no install channel at all (trellis#220). `decision-0068` is Claude-only by
+D7, and `decision-0071` D5 accepts that even this repo is ungoverned on Codex.
+Capability is not distribution; an earlier version of this paragraph said "either
+path" without qualifying the host and inherited exactly the over-claim this slice
+spent six rounds removing from the product.
 This repo stopped self-applying through a vendored overlay — `.trellis/internal/`
 and both managed blocks are gone.
 
