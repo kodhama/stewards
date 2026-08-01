@@ -141,9 +141,46 @@ propagates; it does not enable. Retired Spore is not a target.
 **Lane D — enablement** *(the delivery that actually reaches cloud sessions)*
 - [ ] **Each repo decides for itself; this lane records opt-ins rather than
       performing them.** A repo that opts in lists the plugin under
-      `enabledPlugins`. **Declaring the marketplace is not enough** —
-      Stewards currently carries `"enabledPlugins": {}`, and plugins enabled
-      only in user settings do not transfer to cloud sessions or routines
+      `enabledPlugins`. **Declaring the marketplace is not enough** — plugins
+      enabled only in user settings do not transfer to cloud sessions or
+      routines. *(Corrected 2026-08-01: this line said Stewards carries
+      `"enabledPlugins": {}`. It has carried `grove@kodhama` and
+      `trellis@kodhama` for some time; the claim was stale, not load-bearing.)*
+- [x] **Stewards — opted in 2026-08-01.** `"kodhama@kodhama": true` added to
+      `.claude/settings.json`. **Authority is `kodhama-0021`'s standing
+      permission, not a new decision**: *"Stewards may cross-dogfood relevant
+      family plugins during ordinary development."* Posture is `dogfood` per
+      `kodhama-0021` Decision 1 — no support claim, breakage absorbed
+- [ ] Grove, Trellis, Wisp, design-system — each may opt in on the same
+      standing permission, in its own PR. **Deliberately not done in one
+      sweep:** `kodhama-0021` §4 requires *"one bounded step plus a
+      stop-and-learn checkpoint rather than a whole-family wave"*, and Stewards
+      is that bounded step. Revisit once the skill has been observed firing
+      here on real issue work
+- [ ] math-quest — **a distinct act with a distinct posture, not part of the
+      above.** `kodhama-0021` §3: *"Math Quest is a tree and therefore a
+      preview candidate, not a steward dogfooding environment. Its
+      personal-project status does not erase the distinction."* Needs its
+      maintainer's explicit opt-in under `preview`
+- [ ] sdd-gauntlet, kodhama — **unclassified.** Neither is recorded as steward
+      or tree anywhere in this repository, and posture follows class. Classify
+      before enabling either
+- [ ] homebrew-tap — excluded while it carries no issues, on the same ground
+      the seeding actuator skipped it
+
+**Recorded 2026-08-01, so it is not rediscovered.** A draft `kodhama-0027`
+proposed discharging `kodhama-0021` AC7's collective-rollout hold to enable
+everywhere at once. **Independent review returned UNSOUND and it was deleted.**
+Its ground was `kodhama-0026` Decision 11's *"binds the whole forest, trees
+included"* — quoted four words short of *"**The plugin does not.**"*, which is
+the same clause deciding the opposite. Decision 9 also defeats the draft's
+second premise: the convention *"is operable the moment"* the types and labels
+exist, so it is already in force and readable; what the plugin adds is
+teaching. **And the instrument was inverted** — every repo it could lawfully
+reach was already permitted by `kodhama-0021`, so its only new authority ran
+over the repos that decision most protects. No decision is needed for the
+steward opt-ins; one would be needed to reach math-quest, and it would have to
+argue the teaching gap honestly rather than claim an incoherence.
 
 **Lane E — provisioning**
 - [x] `gh auth refresh -h github.com -s admin:org` — run by the maintainer
