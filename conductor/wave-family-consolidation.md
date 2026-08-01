@@ -13,11 +13,18 @@ The full working plan lives outside the repo with the maintainer; this brief is 
 ledger and the closure report. **Boundaries:** no math-quest product work, no decision is
 ratified by an agent, and nothing is removed without a trace of what governs it.
 
-## Cold start — read this first (state as of 2026-07-29)
+## Cold start — read this first (state as of 2026-08-01)
 
 If you are picking this up with no memory of it, this section is the whole
 briefing. The chronological slices below are the audit trail, not the state.
 
+> **Reconciled 2026-08-01.** Slice 6 below covers 2026-07-30→08-01 and was
+> written from live `gh` and file state, not from memory. **The brief went three
+> days without an update while ~10 PRs merged** — the practice is "check items off
+> in the same commits that report them" and that did not happen; the state lived
+> only in a session transcript that had been compacted several times. If you are
+> resuming, **Slice 6 is the current state**; everything above it is older.
+>
 > **Reconciled 2026-07-29 against live `gh` and file state.** The ledger had
 > drifted badly: twelve entries were stale in both directions — items marked open
 > that had landed, and items marked done that were only triaged — and the
@@ -82,6 +89,9 @@ enough to miss the evidence is not evidence.**
 | ~~stewards#54~~ | **STALE in substance.** Six repos now carry `claude-code-review.yml` and the secret. Only spore and kodhama remain, and neither has a `.github/` directory at all. Narrow or close it. |
 | ~~trellis#205~~ | **STALE — merged 2026-07-29T07:14.** Trellis's reviewer reported `success` while delivering nothing; the fix restored the two flags and made the failure diagnosable. It was recorded as possibly not a cure, and that caution stands — #202 showed the workflow delivers sometimes, so the flags were not the whole cause. |
 | grove#142, grove#135 | stale Codex PRs; judgment calls, not debris. Left open on purpose. |
+| **`decision-0069`, `-0070`, `-0071`** (trellis) | flips `gated` → `approved`. All three merged `gated` and are live in the product; the intent act is outstanding. Read `0071` first — it retires this repo's overlay self-application and accepts explicitly that **trellis is ungoverned on Codex until #220**. |
+| **`decision-0072`** (trellis, unpushed) | the `/trellis:setup` retirement. Drafted, skill deleted, ~40 references unswept, suite red on branch `retire2`. Resumable, not blocking. |
+| **`specs/0006`, `specs/0007`** (trellis) | still `gated`. `0006`'s AC3/AC4 describe the managed-block shape `decision-0071` now forbids; it carries a forward pointer but its normative text is untouched. |
 
 ### The dispatcher thread — status: RESTARTED AND SHIPPED
 
@@ -281,6 +291,89 @@ this file. There is no decision `0024` in stewards; the ids jump 0023 → 0025.
 - [ ] **wisp#55's open debt** — `spec-0002`'s 4,194,304-byte boundary is normative
       with **no test at any value**. The issue itself calls the fix small and
       independent. *Unblocked, trivial.*
+
+## Slice 6 — the install path · CLOSED 2026-08-01
+
+**What it started as:** a landing-page copy fix. **What it was:** the curl install
+path delivered **no rules at all** (trellis#201, measured), and fixing that
+reached five decisions deep.
+
+**Merged, trellis, `main` green:** #212 (`decision-0068` — the install path
+delivers rules through `.claude/rules/`, Claude-only, project scope only) · #215
+(ratified `0068` + `spec-0005`) · #216 (`decision-0069` — the landing page
+described a Trellis that no longer existed) · #218 (`decision-0070` — adoption is
+the consent act, not installation) · #222 (four post-merge P2s) · #223
+(`decision-0071` — Trellis self-applies through the plugin, not an overlay).
+
+**Where the product ended up — on Claude Code.** A fresh install is governed
+**14/14 at the adaptive posture** on either path with no second step:
+`install.sh` seeds `.trellis/rules.toml`, and a project-scoped plugin applies the
+shipped defaults with no file at all.
+
+**On Codex, none of that is reachable**, and the slice must not read as if it
+were. The hook honours `governed = false` there — capability — but a Codex user
+cannot obtain a governed fresh install through any documented path, because there
+is no install channel at all (trellis#220). `decision-0068` is Claude-only by
+D7, and `decision-0071` D5 accepts that even this repo is ungoverned on Codex.
+Capability is not distribution; an earlier version of this paragraph said "either
+path" without qualifying the host and inherited exactly the over-claim this slice
+spent six rounds removing from the product.
+This repo stopped self-applying through a vendored overlay — `.trellis/internal/`
+and both managed blocks are gone.
+
+**In flight, NOT pushed.** Branch `retire2` off `e7d1f31` carries `decision-0072`
+(retire `/trellis:setup`) with the skill deleted and its manifest entry removed.
+**Suite is red**; ~40 prose references across 7 files are unswept and are varied
+prose, not a `sed`. trellis#219 holds the evaluation.
+
+### What this slice cost, and the shapes behind it
+
+Six review rounds on #218 alone, and **the last two found only defects introduced
+by fixes for earlier rounds** — not the original design. All measured:
+
+- **A matcher pair drifted four times** (whitespace classes → BOM → whole-file
+  scan → locale-dependent NBSP). What held was not a fifth regex but **one
+  normalisation feeding two questions**. Two hand-matched regexes across two hosts
+  *is* the defect; each individual regex was fine.
+- **A guard's shape list was written from memory three times**, incomplete every
+  time (`.trellis/internal/` → + flat overlay → + `.trellis/version`). Now derived
+  from the hook's own early-exit branches. **Deriving it is the fix; the missing
+  entry is the symptom.**
+- **One clause was wrong in four places** — `decision-0065`'s pointer, `0070` D2,
+  `0070` Consequences, an `install.sh` comment. Three passes over the *records*
+  missed the fourth because it lived in code.
+- **A fixture silently disarmed its own assertions.** `TestStalenessHook` built a
+  plugin root with `reference/version` alone, so every path needing the payload
+  bailed before injection — "no rules were injected" passed for the wrong reason.
+  Repairing it turned one mutation from green to **33 red**.
+- **Mutation results were trusted without checking the mutation applied.** Three
+  separate passes reported green on edits that had silently not landed.
+
+### Traps added this slice
+
+- **`grep -c` exits 1 on zero matches**, so `grep -c … && python3 …` silently
+  skips the second command. Cost one lost edit that reported success.
+- **Backticks in a `gh` comment body get shell-expanded** — three review pointers
+  became empty strings. Use `--body-file`.
+- **A batch edit that writes once at the end discards every earlier edit** when a
+  later anchor fails, after printing `ok:` for each. Validate all anchors first.
+- **`install.sh` resolves its target from the working directory's git root.** A
+  reviewer subagent ran it with a relative cwd and wrote into the live
+  `~/Projects/stewards` checkout. It disclosed and cleaned up; verify after any
+  agent runs it.
+
+### Issues filed this slice
+
+trellis **#214** (block-codex is the last prose-validated delivery path) ·
+**#217** (LP accessibility, measured at five viewports) · **#219** (retire
+`/trellis:setup`) · **#220** (Codex end-to-end — capability exists, distribution
+does not) · **#221** (four post-merge P2s) · **#224** (dogfooding HEAD) ·
+stewards **#66** (the Claude reviewer fires once per PR, not per push).
+
+**All six trellis issues are UNTYPED.** The `kodhama:issues` convention was not
+known to that session until its end. Family state: stewards **13/13 typed**,
+trellis **0/24**, grove **0/46**, wisp **0/6** — the taxonomy roll-out has reached
+stewards only.
 
 ## Parked
 
