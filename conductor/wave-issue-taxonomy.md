@@ -118,8 +118,17 @@ propagates; it does not enable. Retired Spore is not a target.
       `agent-workflow-parity.yml` and `claude-code-review.yml` carry no
       `paths:` filter and run on every PR. The ruling is about cost, and stands.
       Contract: spec 0005 §Closing the CI blind spot
-- [ ] Plugin published to the `kodhama` marketplace, per spec 0005.
-      **Built and reviewed on the branch; ticks at merge, not before.** The
+- [x] Plugin published to the `kodhama` marketplace, per spec 0005.
+      **Merged 2026-08-01 as `5f3267c` (#64, squashed).** Verified on `main`
+      rather than from the merge output: the package is exactly spec 0005 S1's
+      nine paths, the actuator kept mode `100755` through the squash, only
+      `migration/` remains under the staging directory as S6 requires, and the
+      gate is green — 28 tests, validator passed. Spec 0005 merged at
+      `status: approved`, flipped on the maintainer's in-session act and left
+      at v9 so `tests/TEST_DEPS.md`'s `@v9` pin stays valid. **This tick is
+      publication, never enablement** — `kodhama-0021` still reserves adoption
+      to each repository, and Lane D remains open.
+      *Superseded planning note, kept for the record:* The
       payload sits at `plugins/kodhama/` with `VERSION` at `0.3.0`, both
       manifests and both catalog descriptions updated, and the four staged
       files relocated. Conformance returned **PASS** — `SKILL.md` and
@@ -192,10 +201,16 @@ argue the teaching gap honestly rather than claim an incoherence.
       API rather than the script's output**: `/orgs/kodhama/issue-types`
       returns six types, all `is_enabled: true` — the three new ones plus the
       pre-existing `Task`, `Bug`, `Feature`, which were left untouched
-- [ ] Labels seeded per repo (`scripts/seed-issue-taxonomy.sh --apply`).
-      Idempotent, deletes nothing, reports superseded labels only. Dry-run
-      plans **121 labels across 8 repos**; `homebrew-tap` skips on the
-      empty-backlog gate. Needs no scope beyond `repo`
+- [x] Labels seeded per repo — run 2026-08-01 with `--labels-only --apply`
+      after #64 merged, so the skill explaining the vocabulary arrived first.
+      **120 labels across 8 repos, verified against the labels API rather than
+      the script's own ✓ output: 15/15 in each of trellis, grove, wisp,
+      math-quest, design-system, kodhama, stewards and sdd-gauntlet.**
+      `homebrew-tap` skipped on the empty-backlog gate — 0/15, as intended;
+      `--force` would seed it. No label was deleted and no issue was touched.
+      The redundant stock labels (`bug`, `enhancement`, `idea`, …) are reported
+      and left in place: migrating the issues carrying them is a separate act
+      this wave does not authorise
 
 **Note on order.** The vocabulary now exists org-wide while nothing consumes
 it: the skill reaches repos only once #64 merges and the plugin is installed.
