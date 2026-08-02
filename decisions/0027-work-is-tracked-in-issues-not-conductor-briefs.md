@@ -1,7 +1,7 @@
 ---
 id: kodhama-0027
 type: decision
-status: gated  # drafted by agent; awaiting the maintainer's intent act. Raised by the maintainer 2026-08-01 after a ledger reconciliation: "I question whether this ledger approach warrants a file or an issue... we're leaning more towards having these things in issues."
+status: approved  # maintainer intent act 2026-08-02, in session: "I would say approve them" — an in-PR flip recording that act, per grove/charters/lifecycle.md's gated -> approved mover rule; the merge performs the ship. Raised by the maintainer 2026-08-01 after a ledger reconciliation: "I question whether this ledger approach warrants a file or an issue... we're leaning more towards having these things in issues."
 depends_on: [kodhama-0026-issue-taxonomy, kodhama-0009-org-topology-spirit-stewards-trees]
 owner: agent
 date: 2026-08-01

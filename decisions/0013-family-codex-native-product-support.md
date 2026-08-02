@@ -1,7 +1,7 @@
 ---
 id: kodhama-0013-family-codex-native-product-support
 type: decision
-status: gated  # author self-check recorded in the lifecycle record below; human approval remains open
+status: approved  # maintainer intent act 2026-08-02, in session: "I would say approve them" — an in-PR flip recording that act, per grove/charters/lifecycle.md's gated -> approved mover rule; the merge performs the ship. Content re-read on flip 2026-08-02 and still live: trellis#220 is executing this decision's Codex-distribution mandate.
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0008-family-inheritance-restate-nothing, kodhama-0012-codex-marketplace-channel]
 owner: agent
 updated: 2026-07-24
@@ -180,3 +180,16 @@ against approved `kodhama-0001`, `kodhama-0002`, `kodhama-0008`, and
 Its dependencies are settled, its decided/open/parked state is explicit, and
 its claims remain bounded to the named products and verified host facts.
 That self-check promotes `draft → gated`; human approval remains open.
+
+**Approved 2026-08-02.** The maintainer's in-session intent act — *"I would say
+approve them"* — ratifies this record, and this in-PR flip is the recording of
+that act per `grove/charters/lifecycle.md`'s `gated → approved` mover rule. The
+record was re-read before the flip rather than flipped on age: its Codex
+mandate is still live and currently under execution as
+[trellis#220](https://github.com/kodhama/trellis/issues/220). Nothing in the
+decided or parked state changed; only the status field caught up with the act.
+
+This record is also the clearest specimen of the defect it sat inside for nine
+days. Its own `provenance` line says *"Maintainer merge of PR #11 preserved this
+record as a draft"* — the merge happened, the record of approval did not, and
+nothing existed to write it.
