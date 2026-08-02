@@ -72,11 +72,12 @@ D1; the stale vendored copies were removed in #52). Two placeholders are
 resolved locally. The test gate is `python3 -m unittest discover -s tests`
 plus `python3 scripts/validate_kodhama_plugin.py` — run both before reporting
 done; the **test gate** runs on any PR touching `tests/`, the two plugin
-scripts under `scripts/`, `plugins/kodhama/`, the issue-taxonomy staging tree
-under `conductor/`, either marketplace catalog, or the validation workflow
-itself — and on nothing else, so a docs-only PR pays none of its cost. It is
-not the only check: the Claude review and the workflow-parity job carry no
-`paths:` filter and run on every PR. There is no typecheck gate. A parked
+scripts under `scripts/`, `plugins/kodhama/`, the plugin subtree of the
+issue-taxonomy staging tree (`conductor/wave-issue-taxonomy/plugin/`), either
+marketplace catalog, or the validation workflow itself — and on nothing else,
+so a docs-only PR pays none of its cost. It is not the only check: the Claude
+review and the workflow-parity job carry no `paths:` filter and run on every
+PR. There is no typecheck gate. A parked
 item is an issue — `kodhama-0027` D2 removed the briefs' Parked sections
 along with the rest of the ledger, and the last brief closed as archive on
 2026-08-02. Telemetry: wisp is not vendored

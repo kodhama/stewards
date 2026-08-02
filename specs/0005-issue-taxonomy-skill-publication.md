@@ -5,11 +5,39 @@ status: approved  # maintainer intent act 2026-07-31 ("approved", in session, an
 depends_on: [kodhama-0026-issue-taxonomy, kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-0021-separate-adoption-posture-from-support, kodhama-0025-retire-the-surface-matrix, kodhama-spec-0004-ci-marketplace-setup-skill@v5]
 implements: [kodhama-0026-issue-taxonomy]
 owner: agent
-updated: 2026-07-31
-version: 9
+updated: 2026-08-02
+version: 10
 ---
 
 # Publishing the issue-convention skill into the Kodhama plugin
+
+> **AMENDED 2026-08-02 — v9 → v10**
+>
+> **WHAT:** Two clauses stopped being true of the thing they describe. **R5**
+> pinned the literal SemVer `0.3.0` in a `(ubiquitous)` clause — a standing
+> invariant — so the package could not be versioned again without violating
+> this spec; it now requires one identical, valid SemVer string and pins no
+> value. **Literal F** claimed the test gate runs on *"the issue-taxonomy
+> staging tree under `conductor/`"*; the workflow's filter is
+> `conductor/wave-issue-taxonomy/plugin/**`, the plugin subtree only. S3 and
+> the R5 arbiter row follow R5; `CLAUDE.md` and the suite's
+> `CLAUDE_MD_TEST_GATE_SENTENCE` follow F.
+>
+> **WHY:** R5 was found by trying to ship one — a content change to the
+> `issues` skill wanted `0.4.0`, and the bump was reverted rather than
+> violate an approved spec (#94). F was found by observing it: #82, #86 and
+> #88 each touched that staging tree outside `plugin/` and **ran no suite**,
+> while a sentence loaded into every session said they would (#91). Both are
+> the same failure at different scales — **a spec that recorded one act's
+> particulars as a permanent property.**
+>
+> **SCOPE:** No behaviour changes. R5 and F are testable clauses, so this
+> bumps; nothing else moves. The gate's `paths:` filter is **not** touched —
+> it protects exactly what the ruling intended, and only its description was
+> wrong.
+>
+> **VALUE:** The package can be released again, and the sentence agents read
+> every session describes the gate that actually runs.
 
 > **AMENDED 2026-07-31 — v8 → v9**
 >
@@ -833,11 +861,12 @@ enforces` to `no check at all.`:
 
 ```markdown
 done; the **test gate** runs on any PR touching `tests/`, the two plugin
-scripts under `scripts/`, `plugins/kodhama/`, the issue-taxonomy staging tree
-under `conductor/`, either marketplace catalog, or the validation workflow
-itself — and on nothing else, so a docs-only PR pays none of its cost. It is
-not the only check: the Claude review and the workflow-parity job carry no
-`paths:` filter and run on every PR.
+scripts under `scripts/`, `plugins/kodhama/`, the plugin subtree of the
+issue-taxonomy staging tree (`conductor/wave-issue-taxonomy/plugin/`), either
+marketplace catalog, or the validation workflow itself — and on nothing else,
+so a docs-only PR pays none of its cost. It is not the only check: the Claude
+review and the workflow-parity job carry no `paths:` filter and run on every
+PR.
 ```
 
 **v4 correction, and it matters more than the path list.** v3's replacement
@@ -907,7 +936,7 @@ the sentence into line with `scripts/keyless_admission_check.py`, which has said
 | `CLAUDE.md` | lines 66–68 → **F** | Separate from the marked block; same file, different obligation. |
 | `conductor/wave-issue-taxonomy/plugin/DIRECTION.md` | lines 45–47 → **G** | Authorised edit 2 to staged text. |
 | `.github/workflows/validate-marketplace-setup.yml` | add `"conductor/wave-issue-taxonomy/plugin/**"` to `on.pull_request.paths` | See §Closing the CI blind spot. |
-| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v9` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
+| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v10` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
 | `tests/test_kodhama_plugin.py` | the **fourteen** distinct `new: test_*` named in §How each criterion is checked, plus the updated literal **D** in `test_kodhama_catalog_entries_disclose_no_support_claim` | The criteria table is the authority for which tests exist; this row is a summary of it. The existing tests must keep passing unchanged; the module docstring, which names specs 0003 and 0004, gains this one. |
 | `conductor/wave-issue-taxonomy/README.md` | the staging table records each moved file's published home | S10's second clause. Reviewer-checked; prose currency is not mechanically checkable. |
 
@@ -1047,8 +1076,8 @@ lands as a real skill", which asserted only that two files exist and so left
 
 - **Given** the added payload,
 - **When** `python3 scripts/validate_kodhama_plugin.py` runs,
-- **Then** it passes with `plugins/kodhama/VERSION` reading `0.3.0` and both
-  host manifests carrying the identical string.
+- **Then** it passes with `plugins/kodhama/VERSION` reading a valid SemVer
+  string and both host manifests carrying that identical string.
 
 **S4 — the actuator ships runnable and outside `skills/`**
 
@@ -1338,7 +1367,10 @@ that catches it would be a mutation obligation this criterion cannot discharge
   the plugin, and no published file shall name a relative path that resolves
   into it.
 - **R5 (ubiquitous):** `plugins/kodhama/VERSION` and both host manifest
-  `version` fields shall carry the identical SemVer string `0.3.0`.
+  `version` fields shall carry one identical, valid SemVer string. **The value
+  is not pinned here** — v9 wrote `0.3.0` into a `(ubiquitous)` clause, which
+  is a standing invariant, so the package could never be versioned again
+  without violating this spec (#94).
 - **R6 (ubiquitous):** Every relative path a published payload file names that
   ends in `.md` or `.sh` **and contains at least one `/`** shall resolve to an
   existing file relative to that file's own directory.
@@ -1393,10 +1425,14 @@ that catches it would be a mutation obligation this criterion cannot discharge
   shall not trigger on `conductor/` generally.
 - **R18 (ubiquitous):** `tests/TEST_DEPS.md` shall declare this spec among its
   `depends_on` **in the pinned `id@vN` form**, at the version the tests were
-  written against — `kodhama-spec-0005-issue-taxonomy-skill-publication@v9` as
-  of this revision. `specs/README.md` requires the pinned form for versioned
+  written against. `specs/README.md` requires the pinned form for versioned
   spec dependencies, and the file already pins its sibling `@v5`; an unpinned
-  entry would have satisfied v3's wording and matched neither.
+  entry would have satisfied v3's wording and matched neither. **No version
+  literal here** — v9 named `@v9` "as of this revision", so the v10 bump put
+  the artifact in violation of the clause while the suite stayed green, its
+  assertion having been updated independently. The version lives in the
+  arbiter, which is what moves with the tests. Same defect as R5, found by the
+  reviewer on #97.
 - **R19 (unwanted behavior):** If the shipped actuator is invoked without
   `--apply`, it shall issue no call that creates or modifies an org issue type,
   a repository label, or an issue — **established by execution against a stub
@@ -1416,7 +1452,7 @@ Every row names one arbiter. `new:` marks a test this publication must add to
 | S1, R1, R2 | `new: test_the_package_inventory_is_closed` — `sorted(p.relative_to(PLUGIN).as_posix() for p in PLUGIN.rglob("*") if p.is_file() and p.name != ".DS_Store")` equals the nine-path list, plus `name: issues` matches its directory. *(v5: the filter carries D6's rationale one criterion over. The repository has no `.gitignore`, and `CLAUDE.md` tells the executor to run the suite locally — on macOS that means a stray `.DS_Store` fails a correct package. CI is safe on a fresh clone, so this is a local-red risk only.)* |
 | S2, R10, R14 | `python3 scripts/keyless_admission_check.py`, unchanged. Its `declared_skills()` globs `skills/*/SKILL.md` and asserts host inventory equality, so it extends itself to the new skill with no edit. CI runs it in the `repository-validation` job |
 | S3 | `python3 scripts/validate_kodhama_plugin.py`, already re-run by `test_repository_package_and_carrier_parity_validate` |
-| R5, the value `0.3.0` | **Reviewer**, not the validator: `git diff origin/main...HEAD -- plugins/kodhama/VERSION`. The validator checks that the three carriers agree, never what they say |
+| R5, the value | **Reviewer**, not the validator: `git diff origin/main...HEAD -- plugins/kodhama/VERSION`. The validator checks that the three carriers agree and that the string is valid SemVer, never whether the value is the right one for the change. *(v10: this row previously read "the value `0.3.0`", which was the tell — an arbiter naming a constant for a field that moves every release.)* |
 | S4 | `new: test_seed_script_is_runnable_and_fails_closed` — `os.access(X_OK)`, `bash -n`, `--help` exit `0`, `--bogus` exit `2`. Both invocations return before any `gh` call, so the test needs no network and no credentials |
 | S5, R3 | `new: test_the_skill_never_reaches_the_actuator` — scans every `SKILL.md` and `reference/*.md` under `plugins/kodhama/skills/` for `seed-issue-taxonomy`, `gh label create`, `gh api --method POST`, **and asserts no `*.sh` exists anywhere under `plugins/kodhama/skills/`**. *(v9: the text scan alone does **not** make §Why the actuator sits outside `skills/` true — conformance measured it, and moving the actuator into `skills/issues/` left this test green. Four other tests caught the move, so the protection held; the **named arbiter** did not. The executor added the `*.sh` assertion, which conformance ruled inside the contract because it makes a sentence the spec asserts about itself true and cannot false-red. It is recorded here rather than left implicit. **Match on `path.suffix == ".sh"`, not on the exact filename** — an exact match lets `skills/issues/seed.sh` through, and the technique is the one `test_the_migration_mapping_stays_out_of_the_package` argues for forty lines away: walk the tree so a rename does not walk past.)* |
 | S17, R19 | `new: test_the_actuator_makes_no_write_call_without_apply` — writes a stub `gh` into a temp dir, prepends it to `PATH` via a new `env=` parameter on the module's `run()` helper, invokes the shipped script with no `--apply` and then with each other accepted flag, and asserts the stub's log holds only read calls. A third case stubs an empty backlog and asserts no `label list` for that repository. **Mutation obligation: all four survivors named in S17 must fail it.** Credential-free, offline, no model turn |
