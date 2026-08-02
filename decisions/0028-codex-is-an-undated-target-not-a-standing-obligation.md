@@ -1,9 +1,8 @@
 ---
 id: kodhama-0028
 type: decision
-status: gated  # drafted by agent; awaiting the maintainer's intent act. Raised by the maintainer 2026-08-02: "Codex and other harnesses are still a target, just for a future I don't want to put a date on. That was always so, but running out of tokens in Claude made it more urgent, but with the way the knot got more tangled I should have just waited a while."
+status: approved  # maintainer intent act 2026-08-02, in session: "Merge it", given after being shown the full ratification packet, which stated that the gated -> approved flip was theirs and that merging performs the ship. An in-PR flip recording that act per grove/charters/lifecycle.md:61. Author (agent) != approver (maintainer). NOTE: three review findings landed AFTER that act and are in the merged record — the amends: relation removed, a self-check added, and D4 narrowed to surfaces that state a Codex posture (the previous wording contradicted this record's own Consequences). The narrowing is the only one that moves a ruling. Raised by the maintainer 2026-08-02: "Codex and other harnesses are still a target, just for a future I don't want to put a date on. That was always so, but running out of tokens in Claude made it more urgent, but with the way the knot got more tangled I should have just waited a while."
 depends_on: [kodhama-0013-family-codex-native-product-support, kodhama-0021-separate-adoption-posture-from-support, kodhama-0023-separate-operational-availability-from-support]
-amends: [kodhama-0013-family-codex-native-product-support]
 owner: agent
 date: 2026-08-02
 ---
@@ -100,8 +99,10 @@ oblige a Codex counterpart, and a divergence between the two paths is an
 **expected consequence of the undated state, not a defect to file**. A Codex
 issue is opened when someone wants Codex to work, never because Claude moved.
 
-**4. Until a product claims Codex support, it discloses that it does not.**
-This needs no new machinery: `kodhama-0021` §2 already permits a listing when
+**4. A surface that states a Codex support posture states it as undated.**
+The trigger is a surface that *says something about Codex support*, not every
+surface that mentions Codex: product documentation, READMEs, a listing's support
+sentence. This needs no new machinery: `kodhama-0021` §2 already permits a listing when
 *"the listing or linked product documentation clearly discloses that support is
 not claimed"*, and `kodhama-0023` already separates operational availability
 from support. What this decision adds is that the disclosure is **required**
@@ -134,8 +135,13 @@ be relabelled as the latter."*
 - **Product documentation** that names Codex must satisfy D4. `trellis`'s plugin
   README is updated in `kodhama/trellis#227`; the remaining surfaces are not
   swept by this record.
-- **The Codex marketplace catalog** in this repository is unaffected — it
-  already carries the `kodhama-0021` §2 disclosure, marked dogfood.
+- **The Codex marketplace catalog** in this repository is out of D4's scope, and
+  the reason matters: its entries make *no support claim at all* rather than
+  stating a Codex posture, so there is nothing in them that could read as
+  withdrawal. An earlier draft of this record called them "already compliant",
+  which was an over-claim — they carry `kodhama-0021` §2's no-claim disclosure,
+  which is a different thing from D4's undated-target disclosure. If a catalog
+  entry ever states a Codex posture, D4 fires on it.
 
 ## What this does NOT decide
 
@@ -155,3 +161,30 @@ be relabelled as the latter."*
    divergence is caught, if at all, by a reviewer noticing. Under D3 that is
    correct — but there is no marker distinguishing *"diverges, expected"* from
    *"diverges, nobody looked"*. Worth an issue rather than a clause here.
+
+## Self-check
+
+Run before the `draft → gated` promotion, recorded honestly rather than passed
+silently.
+
+| check | verdict |
+|---|---|
+| Type and required sections | **PASS** — `type: decision`; Context, Decision, Consequences, What this does NOT decide, Open questions all present. |
+| Directional flow | **PASS** — `depends_on` names `kodhama-0013`, `-0021`, `-0023`, all `approved`. No dependency is `draft`. |
+| Author ≠ approver | **PASS** — drafted by agent, `gated`; the flip is the maintainer's act. |
+| Supersession integrity | **PASS** — `kodhama-0013` gains `superseded_in_part_by: [kodhama-0028]` in frontmatter only, naming the two amended clauses. Its body is not edited; append-only holds. |
+| Claims verified against source | **PASS for the four evidence rows** (`trellis#199`, `#214`, `#220`, `decision-0071` D5 — each read on `main` 2026-08-02) and **for both quoted `kodhama-0013` clauses**. |
+| Relation vocabulary | **FAILED, then fixed.** An earlier draft carried `amends:` in frontmatter — a relation this family does not define and no other record uses. Removed; the amendment is carried by `kodhama-0013`'s `superseded_in_part_by` pointer and by D1–D3 in prose. |
+| Internal consistency | **FAILED, then fixed.** D4 originally read as firing on any surface, and the Consequences then asserted the Codex catalog was "already compliant" — two statements that could not both hold. D4 is now scoped to surfaces that state a Codex posture, and the catalog line says why it is out of scope instead of claiming compliance. |
+| Scope discipline | **PASS** — two files. This record does not sweep Codex prose, does not name a next harness, and does not touch `kodhama-0012`'s catalog channel. |
+
+Two of the eight failed on first pass. Both were found by an independent
+reviewer on the PR, not by the author, which is the honest reading of this
+table: the self-check as run by the author alone would have recorded eight
+passes.
+
+The check passes, so the record is promoted `draft → gated`. It was then
+`approved` on the maintainer's in-session intent act — *"Merge it"* — given
+after they were shown the ratification packet. The three findings above landed
+between that act and the merge; D4's narrowing is the only one that moves a
+ruling, and it moves it toward what the Consequences already said.
