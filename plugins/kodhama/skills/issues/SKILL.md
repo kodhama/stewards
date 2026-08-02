@@ -146,6 +146,14 @@ Exactly one, set with `gh issue create --type` or `gh issue edit --type`.
 only when **both** its conditions hold — a bucket of unrelated follow-ups has
 children but no coherence deliverable, so classify it by what it delivers.
 
+**`Define X` is not a type.** Ask whether the choice has been made, not
+whether the deliverable is a document.
+
+- *"Define how malformed metadata is handled"* — nothing is decided yet →
+  `Decision`
+- *"Write up the decision we agreed last week"* — the choice is made, only the
+  record is missing → `Task`
+
 `Task` and `Research` are separated on **one axis — the deliverable.** A
 verification chore whose outcome is unknown is `Research`, because what it
 produces is a finding. **The test: if the issue closes on confirming "it
@@ -162,6 +170,15 @@ same kind of fix are fine as one issue; nine unrelated ones are not.
 *commitment level*, and commitment is what stage tracks. An unvalidated
 feature proposal is `Feature` at `stage: triage`. If you cannot yet tell what
 kind of thing it is, leave the type unset and stay at `stage: triage`.
+
+**An issue that is not work.** A few issues are machine-owned surfaces — a
+scheduled job's delivery point, an anchor another tool resolves against. They
+have no lifecycle position: `triage`/`ready`/`active`/`review` all say how far
+work has got, and these never get anywhere by design. **Leave the type unset
+and say so in the body.** Do not force a type that does not fit, and **do not
+close it** — something may be resolving against it, and closing it breaks that
+thing. If such an issue carries a label a tool matches on, that label is a
+mechanical anchor, not a taxonomy dimension: leave it alone.
 
 **Never name a type after a workflow step.** An issue needing divergent
 research is `Research`, never a type called `divergent-research`. The type
