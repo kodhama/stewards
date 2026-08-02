@@ -76,8 +76,10 @@ scripts under `scripts/`, `plugins/kodhama/`, the issue-taxonomy staging tree
 under `conductor/`, either marketplace catalog, or the validation workflow
 itself — and on nothing else, so a docs-only PR pays none of its cost. It is
 not the only check: the Claude review and the workflow-parity job carry no
-`paths:` filter and run on every PR. There is no typecheck gate. Parked items
-ride the conductor briefs' Parked sections. Telemetry: wisp is not vendored
+`paths:` filter and run on every PR. There is no typecheck gate. A parked
+item is an issue — `kodhama-0027` D2 removed the briefs' Parked sections
+along with the rest of the ledger, and the last brief closed as archive on
+2026-08-02. Telemetry: wisp is not vendored
 here and no grove-status skill is installed — optional by construction.
 
 <!-- grove:begin (managed by grove — dials live in .grove/, not this block) -->
