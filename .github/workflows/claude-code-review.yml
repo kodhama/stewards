@@ -51,10 +51,28 @@ name: Claude Code Review
 #   | 3 | output hidden; verdict unreadable         | show_full_output    |
 #   | 4 | no `--comment`; terminal-only summary     | prompt              |
 #   | 5 | Bash denied; could not post               | claude_args         |
+#   | 6 | `Skill` denied; the review never ran      | claude_args (below) |
 #
 # Cause 2 is the only one that ever went red, and only because it failed
 # loudly. Treat silence from this job as UNRESOLVED, never as a pass — if you
 # need to know what it thought, read the run log, not the check mark.
+#
+# Cause 6 was observed HERE, on stewards#82 and #86 (2026-08-02), not
+# upstream. Both runs ended `is_error: false`, `stop_reason: end_turn`,
+# `success` — and carried:
+#
+#   "permission_denials": [{ "tool_name": "Skill",
+#     "tool_input": { "skill": "code-review:code-review", "args": "…" } }]
+#
+# The prompt is a slash command; invoking it needs the `Skill` tool; `Skill`
+# was not in `--allowedTools`. So the reviewer could not invoke the reviewer.
+# It fell back to Bash, spawned background agents, ended its turn, and the job
+# went green having reviewed nothing. $1.12 across the two runs.
+#
+# `permission_denials` is the cheapest available signal that a run did nothing
+# — it is in the run's own output, needs no comment-shape coupling and no API
+# propagation race. Asserting on it is stewards#63, not done here: this change
+# is one variable at a time.
 
 on:
   pull_request:
@@ -109,13 +127,22 @@ jobs:
           #         compound `cd … && for … gh api …`.
           #   Write stages one JSON payload per comment under /tmp.
           #   Read  CLAUDE.md and the artifacts it points at.
+          #   Skill loads `/code-review:code-review`, which IS the review.
+          #         Added 2026-08-02 — cause 6. Without it the run does
+          #         everything else and reviews nothing.
+          #
+          # The three-tool list was matched to the tools a known-good run used
+          # AFTER the skill had loaded, and omitted the one that loads it.
           #
           # This is NOT a sandbox, and omitting `Edit` is not hardening —
-          # unrestricted Bash writes anywhere, and `Agent`/`ToolSearch` ran in
-          # the reference run without appearing here, so the flag grants rather
-          # than restricts. Read it as "what the job was handed". Real
-          # confinement needs a different mechanism.
+          # unrestricted Bash writes anywhere. An earlier note here reasoned
+          # that because `Agent`/`ToolSearch` ran in the reference run without
+          # appearing in this list, "the flag grants rather than restricts".
+          # **That inference is false** — the `Skill` denials on #82 and #86
+          # are the counter-example. The flag restricts. If the run now fails
+          # on `Agent` or `ToolSearch`, the denial will say so in the log and
+          # they get added the same way — one at a time, on evidence.
           claude_args: |
-            --allowedTools Bash,Read,Write
+            --allowedTools Bash,Read,Write,Skill
           # https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # https://code.claude.com/docs/en/cli-reference
