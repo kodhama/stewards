@@ -936,7 +936,7 @@ the sentence into line with `scripts/keyless_admission_check.py`, which has said
 | `CLAUDE.md` | lines 66–68 → **F** | Separate from the marked block; same file, different obligation. |
 | `conductor/wave-issue-taxonomy/plugin/DIRECTION.md` | lines 45–47 → **G** | Authorised edit 2 to staged text. |
 | `.github/workflows/validate-marketplace-setup.yml` | add `"conductor/wave-issue-taxonomy/plugin/**"` to `on.pull_request.paths` | See §Closing the CI blind spot. |
-| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v9` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
+| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v10` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
 | `tests/test_kodhama_plugin.py` | the **fourteen** distinct `new: test_*` named in §How each criterion is checked, plus the updated literal **D** in `test_kodhama_catalog_entries_disclose_no_support_claim` | The criteria table is the authority for which tests exist; this row is a summary of it. The existing tests must keep passing unchanged; the module docstring, which names specs 0003 and 0004, gains this one. |
 | `conductor/wave-issue-taxonomy/README.md` | the staging table records each moved file's published home | S10's second clause. Reviewer-checked; prose currency is not mechanically checkable. |
 
@@ -1425,10 +1425,14 @@ that catches it would be a mutation obligation this criterion cannot discharge
   shall not trigger on `conductor/` generally.
 - **R18 (ubiquitous):** `tests/TEST_DEPS.md` shall declare this spec among its
   `depends_on` **in the pinned `id@vN` form**, at the version the tests were
-  written against — `kodhama-spec-0005-issue-taxonomy-skill-publication@v9` as
-  of this revision. `specs/README.md` requires the pinned form for versioned
+  written against. `specs/README.md` requires the pinned form for versioned
   spec dependencies, and the file already pins its sibling `@v5`; an unpinned
-  entry would have satisfied v3's wording and matched neither.
+  entry would have satisfied v3's wording and matched neither. **No version
+  literal here** — v9 named `@v9` "as of this revision", so the v10 bump put
+  the artifact in violation of the clause while the suite stayed green, its
+  assertion having been updated independently. The version lives in the
+  arbiter, which is what moves with the tests. Same defect as R5, found by the
+  reviewer on #97.
 - **R19 (unwanted behavior):** If the shipped actuator is invoked without
   `--apply`, it shall issue no call that creates or modifies an org issue type,
   a repository label, or an issue — **established by execution against a stub
