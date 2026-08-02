@@ -1,5 +1,14 @@
 # Wave: family consolidation
 
+> **The ledger below is archive. The wave is not.**
+> [`kodhama-0027`](../decisions/0027-work-is-tracked-in-issues-not-conductor-briefs.md)
+> D5 names this brief specifically — *"`wave-family-consolidation.md`'s
+> 2026-08-01 reconciliation is the last one it gets"* — so nothing here is
+> updated again and nothing should be read from it as current state.
+> **Current state is [stewards#74](https://github.com/kodhama/stewards/issues/74)**,
+> `stage: active`, with 15 sub-issues. The slices below are the audit trail of
+> how the wave was reasoned, which is what D3 preserves a brief for.
+
 Opened 2026-07-26. Evidence:
 [`discovery-family-audit-2026-07`](../research/family-audit-2026-07.md).
 
