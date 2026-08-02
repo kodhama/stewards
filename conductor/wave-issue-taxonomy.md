@@ -284,14 +284,16 @@ written here.**
   because it is approved and append-only.
 - **`specs/0005` approved at v9** and the `issues` skill plus the seeding
   actuator published in the `kodhama` plugin.
-- **Provisioning**: six org issue types enabled; taxonomy labels seeded in
-  every target repository.
+- **Provisioning**: six org issue types enabled; **120 labels, 15/15 in each of
+  eight repositories.** `homebrew-tap` is the exception — 0/15, skipped by the
+  actuator's empty-backlog gate, as Lane E records.
 - **Enablement**: the plugin is enabled in six repositories — five stewards
   under `dogfood` and math-quest under `preview`.
 - **Migration**, authorised in session after this brief was written and
-  therefore outside its Boundaries: **every open issue in grove, math-quest,
-  stewards, trellis and wisp now carries a type** — 144 open, one untyped,
-  and that one is deliberate. design-system has no issues.
+  therefore outside its Boundaries: of 144 open issues across grove,
+  math-quest, stewards, trellis and wisp, **all but one carry a type.** The
+  exception is deliberate — kodhama/math-quest#270, the `[program]` shape #75
+  records. design-system has no issues.
 - **`kodhama-0027`** — written mid-wave, on evidence this wave produced: work
   is tracked in issues, and the brief stops being a ledger. It is why this
   section closes the file.
@@ -300,8 +302,10 @@ written here.**
 
 Recorded plainly, because it is the finding that justified `kodhama-0027`.
 
-**Unticked but done.** All of Lane D — Grove, Trellis, Wisp, design-system and
-math-quest opted in on 2026-08-01. Lane A's relocation, done 2026-08-02.
+**Unticked but done.** Lane D's five eligible opt-ins — Grove, Trellis, Wisp,
+design-system and math-quest, all on 2026-08-01. Lane A's relocation, done
+2026-08-02. **Not all of Lane D**: its `sdd-gauntlet`/`kodhama` and
+`homebrew-tap` rows are genuinely open, and are #77 below.
 
 **Ticked but incomplete** — none found.
 
