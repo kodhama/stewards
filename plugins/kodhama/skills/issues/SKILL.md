@@ -117,7 +117,9 @@ every type** — there are no per-type variations.
 
 Each value names **how far the issue has got**, not what anyone is doing right
 now — so an issue nobody is touching keeps the stage it reached, and a
-`deferred` issue needs no stage of its own.
+`deferred` issue needs no stage of its own. **One other kind of issue carries
+no stage** — a machine-owned surface that is not work at all; see *An issue
+that is not work* below.
 
 **Advance it on any issue you touch, not only ones you file.** Set `active`
 when you start work, `review` when you finish. A `ready` label nobody removes
@@ -174,11 +176,15 @@ kind of thing it is, leave the type unset and stay at `stage: triage`.
 **An issue that is not work.** A few issues are machine-owned surfaces — a
 scheduled job's delivery point, an anchor another tool resolves against. They
 have no lifecycle position: `triage`/`ready`/`active`/`review` all say how far
-work has got, and these never get anywhere by design. **Leave the type unset
-and say so in the body.** Do not force a type that does not fit, and **do not
-close it** — something may be resolving against it, and closing it breaks that
-thing. If such an issue carries a label a tool matches on, that label is a
-mechanical anchor, not a taxonomy dimension: leave it alone.
+work has got, and these never get anywhere by design. **Leave both the type and
+the stage unset, and say so in the body** — the same way a `deferred` issue
+needs no stage of its own. This is the one exemption from "exactly one
+`stage: *` on every open issue"; it is not a per-type variation, because these
+are not work of any type.
+
+**Do not close it** — something may be resolving against it, and closing it
+breaks that thing. If such an issue carries a label a tool matches on, that
+label is a mechanical anchor, not a taxonomy dimension: leave it alone.
 
 **Never name a type after a workflow step.** An issue needing divergent
 research is `Research`, never a type called `divergent-research`. The type
