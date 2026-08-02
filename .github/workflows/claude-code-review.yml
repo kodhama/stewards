@@ -52,6 +52,7 @@ name: Claude Code Review
 #   | 4 | no `--comment`; terminal-only summary     | prompt              |
 #   | 5 | Bash denied; could not post               | claude_args         |
 #   | 6 | `Skill` denied; the review never ran      | claude_args (below) |
+#   | 7 | `Agent` absent; delegation misfires        | claude_args (below) |
 #
 # Cause 2 is the only one that ever went red, and only because it failed
 # loudly. Treat silence from this job as UNRESOLVED, never as a pass — if you
@@ -73,6 +74,24 @@ name: Claude Code Review
 # — it is in the run's own output, needs no comment-shape coupling and no API
 # propagation race. Asserting on it is stewards#63, not done here: this change
 # is one variable at a time.
+#
+# Cause 7 was found by fixing cause 6 and watching what surfaced (stewards#90).
+# With `Skill` allowed, `permission_denials` came back EMPTY and the review
+# loaded — then failed one layer in:
+#
+#   InputValidationError: TaskCreate failed …
+#   This call used Agent-tool parameters (`prompt`/`subagent_type`).
+#   To delegate work to a subagent, use the Agent tool instead.
+#
+# The review delegates its gate check to a subagent. `Agent` was not in the
+# list, so the model reached for the nearest available tool and the client
+# rejected the call. It then reported "Waiting on the gate-check agent before
+# proceeding" and ended its turn — green again, $0.21, no verdict.
+#
+# The same error text names `ToolSearch` as the remedy for a schema that was
+# never sent, so both go in together. That is deliberately NOT one variable:
+# the error identifies both, and every edit here costs a merge plus a
+# `git merge main` into every open PR.
 
 on:
   pull_request:
@@ -130,6 +149,12 @@ jobs:
           #   Skill loads `/code-review:code-review`, which IS the review.
           #         Added 2026-08-02 — cause 6. Without it the run does
           #         everything else and reviews nothing.
+          #   Agent the review delegates its gate check and per-dimension
+          #         passes to subagents. Added 2026-08-02 — cause 7. Without
+          #         it the model reaches for `TaskCreate` instead and the
+          #         client rejects the call; see below.
+          #   ToolSearch loads deferred tool schemas. Named by the same error
+          #         text as the remedy for an unsent schema.
           #
           # The three-tool list was matched to the tools a known-good run used
           # AFTER the skill had loaded, and omitted the one that loads it.
@@ -143,6 +168,6 @@ jobs:
           # on `Agent` or `ToolSearch`, the denial will say so in the log and
           # they get added the same way — one at a time, on evidence.
           claude_args: |
-            --allowedTools Bash,Read,Write,Skill
+            --allowedTools Bash,Read,Write,Skill,Agent,ToolSearch
           # https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # https://code.claude.com/docs/en/cli-reference
