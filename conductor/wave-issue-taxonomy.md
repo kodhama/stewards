@@ -1,6 +1,15 @@
 # Wave: issue taxonomy rollout
 
-**OPEN.** Drafted 2026-07-30. **Authority: `kodhama-0026-issue-taxonomy`,
+> **CLOSED 2026-08-02 — archive. Nothing below is current state.**
+> The ledger stopped on this date under
+> [`kodhama-0027`](../decisions/0027-work-is-tracked-in-issues-not-conductor-briefs.md)
+> D5 (*"existing briefs become archive, not debt… they stop being updated"*).
+> Current state lives in
+> [stewards#79](https://github.com/kodhama/stewards/issues/79). **The lane
+> boxes below are wrong in both directions** — see §Report for what actually
+> landed and where the rest went.
+
+Drafted 2026-07-30. **Authority: `kodhama-0026-issue-taxonomy`,
 ratified by the maintainer's intent act on 2026-07-31** — *"I approve, flip
 it, just need to check the PR though"* — recorded by an in-PR status flip. The
 agent did not open the gate.
@@ -263,4 +272,66 @@ gap, recorded here rather than fixed.
 
 ## Report
 
-*(appended at closure)*
+Written 2026-08-02, from live `gh` and file state. This is the closure
+report `kodhama-0027` D3 permits a brief to hold. **It is the last thing
+written here.**
+
+### What the wave delivered
+
+- **`kodhama-0026` ratified** by maintainer intent act 2026-07-31, after four
+  independent review rounds that all returned `NEEDS-REVISION`. It now lives
+  at `kodhama/kodhama` `decisions/0026-issue-taxonomy.md` — byte-identical,
+  because it is approved and append-only.
+- **`specs/0005` approved at v9** and the `issues` skill plus the seeding
+  actuator published in the `kodhama` plugin.
+- **Provisioning**: six org issue types enabled; taxonomy labels seeded in
+  every target repository.
+- **Enablement**: the plugin is enabled in six repositories — five stewards
+  under `dogfood` and math-quest under `preview`.
+- **Migration**, authorised in session after this brief was written and
+  therefore outside its Boundaries: **every open issue in grove, math-quest,
+  stewards, trellis and wisp now carries a type** — 144 open, one untyped,
+  and that one is deliberate. design-system has no issues.
+- **`kodhama-0027`** — written mid-wave, on evidence this wave produced: work
+  is tracked in issues, and the brief stops being a ledger. It is why this
+  section closes the file.
+
+### The lane boxes are wrong in both directions
+
+Recorded plainly, because it is the finding that justified `kodhama-0027`.
+
+**Unticked but done.** All of Lane D — Grove, Trellis, Wisp, design-system and
+math-quest opted in on 2026-08-01. Lane A's relocation, done 2026-08-02.
+
+**Ticked but incomplete** — none found.
+
+**Unticked and dead.** Lane A's *"fifth review pass"*: it bound to superseded
+commits, and the maintainer ratified without it.
+
+**Unticked and genuinely open — now issues, since this file can no longer
+hold them:**
+
+| Was | Now |
+|---|---|
+| Lane C — four cross-link ADRs; Lane F — math-quest's receiving issue | **#83** (a `Decision`: enablement and migration may have overtaken them) |
+| Lane F rider — the `wave-0008-rollout` debt | **kodhama/math-quest#391** |
+| Parked 2 — priority → GitHub Issue Fields | **#85** (`deferred`) |
+| Parked 4 — `kodhama-0017`'s AC3 forward pointer | **#84** |
+| Lane B — what the `kodhama` plugin is for | **#70** |
+| Lane D — sdd-gauntlet, kodhama, homebrew-tap have no posture | **#77** |
+| Parked 1 — `roadmap` → Projects, gated on *"this wave closed"* | **kodhama/math-quest#390**; this closure discharges the gate |
+| Parked 3 — migration of legacy issues | done |
+
+Consequences the wave surfaced are also issues: **#75** (two shapes the
+vocabulary does not decide), **kodhama/grove#201** (everything landed at
+`stage: triage`), **#72** (where lessons live), **#73**, **#65**.
+
+All of the above hang off **stewards#79**.
+
+### Why it closes without every lane ticked
+
+Because the ticking is the defect. This wave produced the evidence for
+`kodhama-0027`: a brief that lists work is a brief that will be wrong, and
+this one was wrong in both directions within a day of its last edit. Closing
+it with lanes outstanding — each one an issue that updates as a side effect
+of the work — is the point, not a compromise.
