@@ -79,11 +79,12 @@ above is the package's present contents, not a statement of purpose.
 # file must not be re-wrapped inside it -- only after `run on every PR.`
 CLAUDE_MD_TEST_GATE_SENTENCE = """\
 done; the **test gate** runs on any PR touching `tests/`, the two plugin
-scripts under `scripts/`, `plugins/kodhama/`, the issue-taxonomy staging tree
-under `conductor/`, either marketplace catalog, or the validation workflow
-itself — and on nothing else, so a docs-only PR pays none of its cost. It is
-not the only check: the Claude review and the workflow-parity job carry no
-`paths:` filter and run on every PR.
+scripts under `scripts/`, `plugins/kodhama/`, the plugin subtree of the
+issue-taxonomy staging tree (`conductor/wave-issue-taxonomy/plugin/`), either
+marketplace catalog, or the validation workflow itself — and on nothing else,
+so a docs-only PR pays none of its cost. It is not the only check: the Claude
+review and the workflow-parity job carry no `paths:` filter and run on every
+PR.
 """
 
 # spec-0005 literal G: edited at the staged `DIRECTION.md`, verified at the
@@ -597,8 +598,8 @@ class IssueSkillPublicationTests(unittest.TestCase):
         it and breaks the equality below. An earlier `assertNotIn` looked
         like a second guarantee and was not one — exhaustive enumeration
         found **no input** where it could fail while the equality passed.
-        Pinned at `@v9`, the version these tests are written against: S17 and
-        R19 are v9 clauses.
+        Pinned at `@v10`, the version these tests are written against:
+        v10 rewrites literal F, which is a constant in this file.
         """
         text = (ROOT / "tests" / "TEST_DEPS.md").read_text(encoding="utf-8")
         entries = [
@@ -608,7 +609,7 @@ class IssueSkillPublicationTests(unittest.TestCase):
         ]
         spec_id = "kodhama-spec-0005-issue-taxonomy-skill-publication"
         matching = [entry for entry in entries if entry.split("@")[0] == spec_id]
-        self.assertEqual([f"{spec_id}@v9"], matching, entries)
+        self.assertEqual([f"{spec_id}@v10"], matching, entries)
 
     def test_the_ci_filter_covers_the_staging_subtree(self) -> None:
         """spec-0005 S15/R17: the anti-drift guard reaches the staging tree.
