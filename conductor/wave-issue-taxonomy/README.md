@@ -2,24 +2,24 @@
 
 **What remains here is not in its final home.** These are the wave's working
 drafts, parked under `conductor/` because that is where cross-repo wave
-material lives in this repo, and because one of them is destined for a
-repository this branch cannot place it in.
+material lives in this repo, and because one of them was destined for a
+repository this branch could not place it in.
 
 Kept here so they stop living in volatile temp. Each relocates when its lane
 resolves — see [`../wave-issue-taxonomy.md`](../wave-issue-taxonomy.md).
 
-**Four of the five have now been published**, per
-`specs/0005-issue-taxonomy-skill-publication.md`. Their rows record where
-each one landed rather than where it was going; only the mapping is still
-staged here.
+**Only the migration mapping is still staged here.** The plugin files were
+published per `specs/0005-issue-taxonomy-skill-publication.md`, and
+`kodhama-0026` landed at the org layer. Their rows record where each one
+landed rather than where it was going.
 
 | File | Final home | Blocked on |
 |------|-----------|------------|
-| `decision-0026-issue-taxonomy.md` | `kodhama/kodhama` → `decisions/0026-issue-taxonomy.md` | Lane A — a fresh review pass on this revision, then the maintainer's intent act. **Id confirmed free** 2026-07-31: `kodhama/kodhama` holds only `0009` |
+| ~~`decision-0026-issue-taxonomy.md`~~ | **landed** in `kodhama/kodhama` at `decisions/0026-issue-taxonomy.md` (kodhama/kodhama#56) — byte-identical, because the record is approved and append-only | Nothing. **Id confirmed free** 2026-07-31: `kodhama/kodhama` held only `0009` |
 | ~~`plugin/skills/issues/**`~~ | **published** to `plugins/kodhama/skills/issues/` — `SKILL.md` and `reference/taxonomy.md` | Nothing. Host skill discovery reads `<plugin>/skills/<name>/SKILL.md`, so the directory name equals the skill's `name: issues` |
 | ~~`plugin/scripts/seed-issue-taxonomy.sh`~~ | **published** to `plugins/kodhama/scripts/seed-issue-taxonomy.sh` — same plugin, **outside** `skills/` | Nothing. Deliberately not inside the skill: bundling an actuator into reference content is what forced guardrails into the first draft, and everything under `skills/` is agent-reachable by construction |
 | ~~`plugin/DIRECTION.md`~~ | **published** to `plugins/kodhama/DIRECTION.md`, the plugin root | Nothing — direction, not a decision. It travels with the plugin, and `reference/taxonomy.md` §6.5 points at `../../../DIRECTION.md`, which resolves there and nowhere else |
-| `plugin/migration/legacy-mapping.md` | rides the ratified decision, not the plugin | Lane A. **Deliberately not published**: out of standing agent context — a mapping table plus counts reads as a backlog-sweep plan — and it authorises nothing, since `kodhama-0026` open question 5 leaves migration unauthorised |
+| `plugin/migration/legacy-mapping.md` | rides the ratified decision, not the plugin | Nothing — Lane A is resolved; it stays here. **Deliberately not published**: out of standing agent context — a mapping table plus counts reads as a backlog-sweep plan — and it authorises nothing, since `kodhama-0026` open question 5 leaves migration unauthorised |
 
 ## Status
 
