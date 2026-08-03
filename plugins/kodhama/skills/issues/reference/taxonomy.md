@@ -52,8 +52,12 @@ Field, because Fields is still public preview. When Fields reaches GA,
 `priority: *` migrates into it and **`kodhama-0026` is superseded, not
 edited** — the obligation is the record's, per its Decision 8.
 
-**Provisioning is a precondition, not an edge case.** Three of the six types
-must be created *and enabled* before the convention is in force.
+**Provisioning is a precondition, not an edge case**, and it has two halves at
+two levels: three of the six types must be created *and enabled* in the org,
+and the labels must be seeded **per repository**. A repository can have the
+types and none of the labels — which is where any repository newly added to the
+org begins. `SKILL.md`'s opening gate states what to do in that state; it is
+not the same failure as missing types and does not have the same remedy.
 
 ## 3. Type vs. stage — the distinction that matters
 

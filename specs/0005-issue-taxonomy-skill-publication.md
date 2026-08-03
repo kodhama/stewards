@@ -6,10 +6,45 @@ depends_on: [kodhama-0026-issue-taxonomy, kodhama-0017-retire-family-release-cer
 implements: [kodhama-0026-issue-taxonomy]
 owner: agent
 updated: 2026-08-03
-version: 11
+version: 12
 ---
 
 # Publishing the issue-convention skill into the Kodhama plugin
+
+> **AMENDED 2026-08-03 — v11 → v12**
+>
+> **WHAT:** **S8 gains a second criterion and R9 a sibling, R9a.** The in-force
+> gate checked the org's six issue types and nothing else, while
+> `kodhama-0026` D9 makes the convention operable only once the types **and**
+> the labels exist. Types are org-level, labels per-repository — so a
+> repository can pass the gate carrying no taxonomy labels, and one newly added
+> to the org begins exactly there. The shipped skill now runs both checks, and
+> the second failure is *partial* in force rather than a stop.
+>
+> **WHY:** stewards#107. `homebrew-tap` sits in that state today — six types
+> enabled, 0 of 15 labels — and the gate would call the convention in force
+> there while six of seven dimensions were unusable. Stopping outright was
+> rejected: it would forfeit the one dimension that still works, and it
+> contradicts the skill's own standing rule, *"never stop at an unknown: leave
+> that field unset and continue."*
+>
+> **SCOPE:** S8 and R9a are testable, so this bumps. `VERSION` and both host
+> manifests move `0.3.0` → `0.4.0` — additive payload, minor bump, which R5
+> permits and v9 did not.
+>
+> **POINTER:** the remedy branch deliberately names **no** provisioning
+> command. A first draft did, and `test_the_skill_never_reaches_the_actuator`
+> caught it — S5/R3 exists so an agent-reachable skill never hands out a path
+> to an org-mutating actuator, and a helpful remedy line is exactly how that
+> boundary would erode.
+>
+> **CONFIDENCE:** the gate is prose, so the arbiter checks that the shipped
+> text carries both branches — it cannot check that an agent obeys them. Stated
+> because S8 has always had that limit and it is wider now that the gate
+> branches.
+>
+> **VALUE:** a repository new to the org gets a usable type and an accurate
+> report of what is missing, instead of a false "in force".
 
 > **AMENDED 2026-08-03 — v10 → v11**
 >
@@ -1186,7 +1221,12 @@ passes in both states is what v1 shipped.
 - **Then** it retains the `gh api /orgs/<org>/issue-types` probe, selection on
   `is_enabled`, all six type names (`Bug`, `Feature`, `Task`, `Research`,
   `Decision`, `Epic`), and an instruction to stop when any is absent or
-  disabled.
+  disabled,
+- **And** it carries a **second** check on the repository's own labels, with a
+  distinct outcome: types present and labels absent is *partially in force —
+  type only*, where the skill sets the type, reports the dimensions it cannot
+  set, and **continues**.
+- **And** it names no provisioning command in either branch (R3).
 
 **S9 — the actuator's entire `gh` surface is pinned**
 
@@ -1427,6 +1467,14 @@ that catches it would be a mutation obligation this criterion cannot discharge
 - **R9 (state-driven):** While any of `Bug`, `Feature`, `Task`, `Research`,
   `Decision` or `Epic` is absent or disabled in the org under inspection, the
   shipped skill shall instruct the agent to say so and stop.
+- **R9a (state-driven):** While those six types are present and enabled but the
+  repository under inspection carries no `stage: *` labels, the shipped skill
+  shall instruct the agent to set the type, report the dimensions it cannot
+  set, and continue — **not** to stop. *(v12, stewards#107: types are org-level
+  and labels per-repository, so a repository newly added to the org begins in
+  exactly this state. v11's gate read the type check alone as the whole
+  condition, which meant it reported "in force" there and left six of seven
+  dimensions unusable.)*
 - **R10 (event-driven):** When the payload under `plugins/kodhama/` changes,
   `scripts/keyless_admission_check.py` shall report the Claude host exposing
   exactly the plugin's declared skill directories.

@@ -27,7 +27,11 @@ It is never an instruction to sweep the backlog.
 
 ## Before you start: is this convention in force here?
 
-It requires six issue types. Three ship with every org; three must be created:
+**Two things carry it, they live at different levels, and they fail
+differently.** Check both.
+
+**1. The org's six issue types.** Three ship with every org; three must be
+created.
 
 ```bash
 gh api /orgs/<org>/issue-types --jq '.[] | select(.is_enabled) | .name'
@@ -35,11 +39,34 @@ gh api /orgs/<org>/issue-types --jq '.[] | select(.is_enabled) | .name'
 
 **Select on `is_enabled`** — a disabled type still appears in the list and
 still cannot be set. **If any of the six is absent or disabled** — `Bug`,
-`Feature`, `Task`, `Research`, `Decision`, `Epic` — **this convention is not
-yet in force in that org.** Say so and stop.
+`Feature`, `Task`, `Research`, `Decision`, `Epic` — **the convention is not in
+force in that org. Say so and stop.** Nothing here works without types, and
+fixing it takes `admin:org` and one org-level act.
 
-If the command itself fails, you cannot establish whether it is in force. Say
-that and stop too — do not assume either way.
+**2. This repository's labels.**
+
+```bash
+gh label list --repo <owner>/<repo> --limit 100 | grep '^stage: '
+```
+
+**Types are org-level; labels are per-repository.** So a repository can pass
+check 1 and fail check 2 — and a repository newly added to the org starts
+exactly there, inheriting the six types and carrying no taxonomy labels.
+
+**If the types exist but the labels do not, the convention is *partially* in
+force — type only. Do not stop.** Set the type, say plainly which dimensions
+you cannot set and why, and carry on. This follows the same rule as any other
+unknown: *leave the field unset and continue*. Six of the seven dimensions live
+in labels, so an issue filed here is **not** conforming — and stopping would
+forfeit the one dimension that does work, which is worse.
+
+**Say what is missing; do not fix it.** Seeding a repository's labels is a
+separate, separately-authorised act with its own actuator, and this skill does
+not reach it — the same reason it names no provisioning command anywhere else.
+Report the gap and let whoever owns the repository close it.
+
+If either command fails, you cannot establish whether the convention is in
+force. Say that and stop — do not assume either way.
 
 ## The rule that does the most work
 
