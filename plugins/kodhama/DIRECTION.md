@@ -39,9 +39,12 @@ deepen a coupling grove has mostly avoided.
    **The destination is settled; only the timing is open** (2026-08-03), so
    the trigger is no longer "whenever the plugin's purpose gets decided" — no
    such purpose is coming. A concrete trigger, proposed rather than ruled:
-   **the third GitHub-shaped thing wanting a home.** Two is a coincidence;
-   three is a set worth packaging, and the cost of a second dual-host package
-   — two manifests, a catalog entry, its own version counter and its own
+   **a third GitHub-shaped capability.** Count capabilities, not files — the
+   plugin holds **two** today: CI marketplace setup, and the issue convention,
+   whose actuator is part of that one capability rather than a second, since it
+   provisions exactly what the skill teaches. Two is a coincidence; a third
+   makes a set worth packaging, and the cost of a second dual-host package —
+   two manifests, a catalog entry, its own version counter and its own
    admission check — starts paying for itself. Skippable if step 3's trigger
    arrives first.
 3. **Later still — its own repository**, on the `git-subdir` pattern grove,
