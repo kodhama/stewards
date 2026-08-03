@@ -15,7 +15,12 @@ version: 13
 >
 > **WHAT:** §What does not ship named a home for `legacy-mapping.md` that
 > expired, and S6's Given named a path that no longer exists. The mapping and
-> its sibling `stewards-backlog-plan.md` now live at `research/issue-migration/`.
+> its sibling `stewards-backlog-plan.md` now live at
+> `conductor/wave-issue-taxonomy/migration/` — out of the plugin staging
+> subtree, still inside `conductor/`. **The mapping's own three
+> plugin-root-relative pointers are repointed** at the same time; this spec's
+> open question 2 predicted they would break on relocation and said Lane A
+> should not inherit it unnoticed.
 >
 > **WHY:** stewards#87. The clause said the mapping *"rides the ratified
 > decision"* and *"until that lane resolves, stays at
@@ -33,7 +38,9 @@ version: 13
 > docs-only PR pays none of its cost."* And the tree they sat in is the staging
 > area of a wave closed as archive on 2026-08-02; `research/` already holds
 > `family-audit-2026-07.md`, the same kind of thing — a completed one-off
-> analysis kept as a record.
+> analysis kept as a record. A first draft of this move used `research/`,
+> which this repository's `CLAUDE.md` does not admit — *"THREE things live here
+> and nothing else"*, and `research/` is none of them. `conductor/` is.
 >
 > **SCOPE:** S6's Given moves, so this bumps. No package change: `VERSION` and
 > both manifests stay at `0.4.0`, and R4 is untouched — it forbids the mapping
@@ -536,15 +543,15 @@ R3 protects. v2 shipped an actuator that no consumer-facing text mentioned:
 ## What does not ship
 
 `legacy-mapping.md` is **not published in the plugin.** It lives at
-`research/issue-migration/legacy-mapping.md`, beside its sibling
-`stewards-backlog-plan.md` and the family audit.
+`conductor/wave-issue-taxonomy/migration/legacy-mapping.md`, beside its sibling
+`stewards-backlog-plan.md` — out of the plugin staging subtree, still inside
+the wave's own tree.
 
 *(v13, stewards#87: an earlier form said its final home "rides the ratified
 decision", which relocated to `kodhama/kodhama` under Lane A. Lane A resolved
 2026-08-02 and that reading sends a one-off migration reference into a
 repository whose `CLAUDE.md` admits only the front door and org-level
-decisions. `research/` is where this repository already keeps completed
-one-off analysis.)*
+decisions.)*
 
 Two independent reasons, both already written down:
 
@@ -1229,7 +1236,8 @@ design — see §Why the actuator sits outside `skills/` — and S16 requires it
 
 **S6 — the migration mapping stays out of the package**
 
-- **Given** the mapping at `research/issue-migration/legacy-mapping.md`,
+- **Given** the mapping at
+  `conductor/wave-issue-taxonomy/migration/legacy-mapping.md`,
 - **When** publication lands,
 - **Then** no file under `plugins/kodhama/` is named `legacy-mapping.md`, no
   `migration/` directory exists under `plugins/kodhama/`, and no published file

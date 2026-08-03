@@ -19,7 +19,7 @@ landed rather than where it was going.
 | ~~`plugin/skills/issues/**`~~ | **published** to `plugins/kodhama/skills/issues/` — `SKILL.md` and `reference/taxonomy.md` | Nothing. Host skill discovery reads `<plugin>/skills/<name>/SKILL.md`, so the directory name equals the skill's `name: issues` |
 | ~~`plugin/scripts/seed-issue-taxonomy.sh`~~ | **published** to `plugins/kodhama/scripts/seed-issue-taxonomy.sh` — same plugin, **outside** `skills/` | Nothing. Deliberately not inside the skill: bundling an actuator into reference content is what forced guardrails into the first draft, and everything under `skills/` is agent-reachable by construction |
 | ~~`plugin/DIRECTION.md`~~ | **published** to `plugins/kodhama/DIRECTION.md`, the plugin root | Nothing — direction, not a decision. It travels with the plugin, and `reference/taxonomy.md` §6.5 points at `../../../DIRECTION.md`, which resolves there and nowhere else |
-| ~~`plugin/migration/legacy-mapping.md`~~ | **moved** to `research/issue-migration/`, with `stewards-backlog-plan.md` — completed one-off analysis, kept beside the family audit (#87) | Nothing. `kodhama/kodhama` was the literal reading of *"rides the ratified decision"*, and that repository's `CLAUDE.md` admits only the front door and org-level decisions |
+| ~~`plugin/migration/legacy-mapping.md`~~ | **moved** to `../wave-issue-taxonomy/migration/`, with `stewards-backlog-plan.md` — out of the plugin staging subtree and its CI filter, still inside `conductor/` (#87) | Nothing. `kodhama/kodhama` was the literal reading of *"rides the ratified decision"*, and that repository's `CLAUDE.md` admits only the front door and org-level decisions |
 
 ## Status
 
