@@ -46,7 +46,8 @@ fixing it takes `admin:org` and one org-level act.
 **2. This repository's labels.**
 
 ```bash
-gh label list --repo <owner>/<repo> --limit 100 | grep '^stage: '
+gh label list --repo <owner>/<repo> --limit 100 --json name \
+  --jq '.[].name | select(startswith("stage: "))'
 ```
 
 **Types are org-level; labels are per-repository.** So a repository can pass
@@ -65,8 +66,14 @@ separate, separately-authorised act with its own actuator, and this skill does
 not reach it — the same reason it names no provisioning command anywhere else.
 Report the gap and let whoever owns the repository close it.
 
-If either command fails, you cannot establish whether the convention is in
-force. Say that and stop — do not assume either way.
+**Empty output from check 2 is a result, not a failure** — it is the
+labels-absent state above. Use `--json`/`--jq` rather than piping to `grep`,
+which exits non-zero on no match and would report the very state this branch
+exists to handle as a broken command.
+
+If a command **errors** — auth, network, a 404 on the org or repository — you
+cannot establish whether the convention is in force. Say that and stop; do not
+assume either way.
 
 ## The rule that does the most work
 
