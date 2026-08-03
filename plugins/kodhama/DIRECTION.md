@@ -27,14 +27,26 @@ deepen a coupling grove has mostly avoided.
    remains undecided**, and putting this skill there defers that question
    rather than answering it. The alternative was minting a name and a home for
    something whose shape is still moving, which costs more than it buys today.
-   *(An observation, not a ruling: that plugin currently carries a GitHub
-   Actions skill and would now carry a GitHub issues skill. If the question
-   ever gets taken up, "how the family operates on GitHub" is one available
-   reading of it. Nobody has decided that.)*
-2. **Later — its own plugin**, potentially still hosted in Stewards. The
-   trigger is whenever the `kodhama` plugin's own purpose gets decided: this
-   skill either fits that purpose and stays, or does not and moves. Skippable
-   if step 3's trigger arrives first.
+   *(Updated 2026-08-03, maintainer position. The staging is opportunity cost,
+   not a choice, and is not to be made permanent. What the plugin is de-facto
+   holding is GitHub-related functionality — a GitHub Actions skill, a GitHub
+   issues skill, a GitHub API actuator — and that set should eventually be its
+   own plugin. So `kodhama` is explicitly **not** "the family's GitHub
+   adapter": it is holding one until the split is worth paying for. The
+   plugin's own purpose stays undecided, and no decision is pending on it.)*
+2. **Later — its own plugin**, potentially still hosted in Stewards, carrying
+   the GitHub-related functionality as a set rather than this skill alone.
+   **The destination is settled; only the timing is open** (2026-08-03), so
+   the trigger is no longer "whenever the plugin's purpose gets decided" — no
+   such purpose is coming. A concrete trigger, proposed rather than ruled:
+   **a third GitHub-shaped capability.** Count capabilities, not files — the
+   plugin holds **two** today: CI marketplace setup, and the issue convention,
+   whose actuator is part of that one capability rather than a second, since it
+   provisions exactly what the skill teaches. Two is a coincidence; a third
+   makes a set worth packaging, and the cost of a second dual-host package —
+   two manifests, a catalog entry, its own version counter and its own
+   admission check — starts paying for itself. Skippable if step 3's trigger
+   arrives first.
 3. **Later still — its own repository**, on the `git-subdir` pattern grove,
    trellis and wisp use. The trigger is non-kodhama consumers or a release
    cadence of its own.
