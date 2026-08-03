@@ -30,7 +30,8 @@ deepen a coupling grove has mostly avoided.
    *(Updated 2026-08-03, maintainer position. The staging is opportunity cost,
    not a choice, and is not to be made permanent. What the plugin is de-facto
    holding is GitHub-related functionality — a GitHub Actions skill, a GitHub
-   issues skill, a GitHub API actuator — and that set should eventually be its
+   issues skill, a GitHub API actuator: three artifacts, two capabilities, since
+   the actuator provisions what the issues skill teaches — and that set should eventually be its
    own plugin. So `kodhama` is explicitly **not** "the family's GitHub
    adapter": it is holding one until the split is worth paying for. The
    plugin's own purpose stays undecided, and no decision is pending on it.)*
@@ -44,7 +45,7 @@ deepen a coupling grove has mostly avoided.
    whose actuator is part of that one capability rather than a second, since it
    provisions exactly what the skill teaches. Two is a coincidence; a third
    makes a set worth packaging, and the cost of a second dual-host package —
-   two manifests, a catalog entry, its own version counter and its own
+   two manifests, an entry in each of the two catalogs, its own version counter and its own
    admission check — starts paying for itself. Skippable if step 3's trigger
    arrives first.
 3. **Later still — its own repository**, on the `git-subdir` pattern grove,
