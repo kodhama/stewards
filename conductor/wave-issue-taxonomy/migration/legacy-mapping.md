@@ -86,7 +86,7 @@ occurrences across those repos.
 Flagged so they can be overturned rather than inherited silently.
 
 - **`[consider]` and `[idea]` both become `stage: triage`, not a type.**
-  Settled against the corpus — see `reference/taxonomy.md` §5. In short: they
+  Settled against the corpus — see `plugins/kodhama/skills/issues/reference/taxonomy.md` §5. In short: they
   are repo dialect for the same thing (grove says one, math-quest the other,
   with indistinguishable outcomes), they span every kind of work, and 10 of
   the 38 closed as COMPLETED. A label that dissolves when work finishes is a
@@ -115,8 +115,9 @@ Flagged so they can be overturned rather than inherited silently.
 ## Sequencing, if migration is approved
 
 1. Confirm the `stage: triage` reading holds for your own issues — the
-   settled analysis is in `reference/taxonomy.md` §5.
-2. Seed types and labels (`scripts/seed-issue-taxonomy.sh --apply`).
+   settled analysis is in
+   `plugins/kodhama/skills/issues/reference/taxonomy.md` §5.
+2. Seed types and labels (`plugins/kodhama/scripts/seed-issue-taxonomy.sh --apply`).
 3. Migrate issues repo by repo, largest first (`math-quest`, then `grove`).
 4. Only once a superseded label reaches zero uses, delete it.
 5. `roadmap` last, and only after the taxonomy is ratified.

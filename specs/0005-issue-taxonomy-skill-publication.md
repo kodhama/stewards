@@ -6,10 +6,64 @@ depends_on: [kodhama-0026-issue-taxonomy, kodhama-0017-retire-family-release-cer
 implements: [kodhama-0026-issue-taxonomy]
 owner: agent
 updated: 2026-08-03
-version: 12
+version: 13
 ---
 
 # Publishing the issue-convention skill into the Kodhama plugin
+
+> **AMENDED 2026-08-03 — v12 → v13**
+>
+> **WHAT:** §What does not ship named a home for `legacy-mapping.md` that
+> expired, and S6's Given named a path that no longer exists. The mapping and
+> its sibling `stewards-backlog-plan.md` now live at
+> `conductor/wave-issue-taxonomy/migration/` — out of the plugin staging
+> subtree, still inside `conductor/`. **The mapping's own three
+> plugin-root-relative pointers are repointed** at the same time; this spec's
+> open question 2 predicted they would break on relocation and said Lane A
+> should not inherit it unnoticed.
+>
+> **WHY:** stewards#87. The clause said the mapping *"rides the ratified
+> decision"* and *"until that lane resolves, stays at
+> `conductor/wave-issue-taxonomy/plugin/migration/`"*. **Lane A resolved on
+> 2026-08-02**, so the interim clause expired and the literal reading sends a
+> one-off migration reference to `kodhama/kodhama` — whose own `CLAUDE.md`
+> closes its contents: *"What lives here, and nothing else: the front door
+> (README) and org/spirit-level decisions."* A migration mapping is neither, so
+> following the clause would have violated the destination's stated scope.
+>
+> Two further reasons for `research/`, both concrete. The files sat inside
+> `conductor/wave-issue-taxonomy/plugin/**`, **which is the CI gate's `paths:`
+> filter** — so editing a retired migration note ran the suite, the validator,
+> two `npm install`s and the admission check, against the very ruling that *"a
+> docs-only PR pays none of its cost."* And the tree they sat in is the staging
+> area of a wave closed as archive on 2026-08-02; `research/` already holds
+> `family-audit-2026-07.md`, the same kind of thing — a completed one-off
+> analysis kept as a record. A first draft of this move used `research/`,
+> which this repository's `CLAUDE.md` does not admit — *"THREE things live here
+> and nothing else"*, and `research/` is none of them. `conductor/` is.
+>
+> **SCOPE:** S6's Given moves, so this bumps. No package change: `VERSION` and
+> both manifests stay at `0.4.0`, and R4 is untouched — it forbids the mapping
+> *in the plugin* and in any published path, which is true wherever it lives.
+> The two files keep their names, so their cross-reference still resolves, and
+> they gain no artifact frontmatter — they are working notes, not corpus
+> artifacts, and typing them would put them under lifecycle rules they were
+> never written to satisfy.
+>
+> **POINTER:** `test_the_staging_copies_are_gone` anticipated this exactly —
+> *"an earlier form also asserted that `migration/legacy-mapping.md` is still
+> staged, which Lane A will make false… a test that must be deleted the day it
+> matters is worse than no test."* It needed no change.
+>
+> **CONFIDENCE:** the shipped actuator still prints *"the legacy-issue mapping
+> that rides `kodhama-0026`"*. Read as provenance — which mapping this is —
+> that stays true; read as location it does not, since the record is at the org
+> layer and the mapping is here. **Left as written and flagged rather than
+> quietly reinterpreted**: it names no path, R4 is satisfied, and changing a
+> shipped literal to sharpen a preposition is not worth a release.
+>
+> **VALUE:** the spec describes where the files are, and a docs-only edit to
+> them stops paying for the test gate.
 
 > **AMENDED 2026-08-03 — v11 → v12**
 >
@@ -488,11 +542,16 @@ R3 protects. v2 shipped an actuator that no consumer-facing text mentioned:
 
 ## What does not ship
 
-`migration/legacy-mapping.md` is **not published in the plugin.** Its final home
-is recorded in the staging table as *"rides the ratified decision, not the
-plugin"*, and the decision relocates to `kodhama/kodhama` under Lane A. Until
-that lane resolves, the mapping stays at
-`conductor/wave-issue-taxonomy/plugin/migration/legacy-mapping.md`.
+`legacy-mapping.md` is **not published in the plugin.** It lives at
+`conductor/wave-issue-taxonomy/migration/legacy-mapping.md`, beside its sibling
+`stewards-backlog-plan.md` — out of the plugin staging subtree, still inside
+the wave's own tree.
+
+*(v13, stewards#87: an earlier form said its final home "rides the ratified
+decision", which relocated to `kodhama/kodhama` under Lane A. Lane A resolved
+2026-08-02 and that reading sends a one-off migration reference into a
+repository whose `CLAUDE.md` admits only the front door and org-level
+decisions.)*
 
 Two independent reasons, both already written down:
 
@@ -1178,7 +1237,7 @@ design — see §Why the actuator sits outside `skills/` — and S16 requires it
 **S6 — the migration mapping stays out of the package**
 
 - **Given** the mapping at
-  `conductor/wave-issue-taxonomy/plugin/migration/legacy-mapping.md`,
+  `conductor/wave-issue-taxonomy/migration/legacy-mapping.md`,
 - **When** publication lands,
 - **Then** no file under `plugins/kodhama/` is named `legacy-mapping.md`, no
   `migration/` directory exists under `plugins/kodhama/`, and no published file
@@ -1599,13 +1658,19 @@ no amendment there. A reviewer who reads the list as the package's closed
 inventory would require a 0004 amendment and a version bump. **Not blocking:**
 on either reading the acceptance criteria above are unchanged.
 
-**2. The mapping's own pointers break on relocation.**
-`migration/legacy-mapping.md` names `reference/taxonomy.md` (twice) and
-`scripts/seed-issue-taxonomy.sh` as plugin-root-relative paths. Once it rides
-the decision to `kodhama/kodhama` and the payload lives here, none of the three
-resolves. **Not this spec's to fix** — the mapping is not published by it — but
-it is a consequence this split makes visible, and Lane A should not inherit it
-silently.
+**2. The mapping's own pointers break on relocation. — CLOSED at v13.**
+`legacy-mapping.md` named `reference/taxonomy.md` (twice) and
+`scripts/seed-issue-taxonomy.sh` as plugin-root-relative paths, which resolve
+from nowhere but the plugin root. The question deferred the repair to Lane A,
+on the reasoning that the mapping is not published by this spec.
+
+**v13 is where that came due**, and it went differently than the question
+assumed: the mapping did not ride the decision to `kodhama/kodhama` — that
+repository's `CLAUDE.md` admits only the front door and org-level decisions —
+so it moved to `conductor/wave-issue-taxonomy/migration/` instead. All three
+pointers were repointed at their published locations in the same change and
+each was verified to exist. Nothing is deferred any more, and there is no Lane
+A left to defer to.
 
 **3. The seed script's defaults aim inside the family, at a repository
 `kodhama-0021` names.** `ORG` defaults to `kodhama` and `ALL_REPOS` hardcodes

@@ -1,17 +1,17 @@
 # Staging — issue taxonomy wave
 
-**What remains here is not in its final home.** These are the wave's working
-drafts, parked under `conductor/` because that is where cross-repo wave
-material lives in this repo, and because one of them was destined for a
-repository this branch could not place it in.
+**Nothing is staged here any more.** These were the wave's working drafts,
+parked under `conductor/` because that is where cross-repo wave material lives
+in this repo, and because one of them was destined for a repository the branch
+could not place it in. They are all gone: `wave-issue-taxonomy/plugin/` no
+longer exists.
 
-Kept here so they stop living in volatile temp. Each relocates when its lane
-resolves — see [`../wave-issue-taxonomy.md`](../wave-issue-taxonomy.md).
-
-**Only the migration mapping is still staged here.** The plugin files were
-published per `specs/0005-issue-taxonomy-skill-publication.md`, and
-`kodhama-0026` landed at the org layer. Their rows record where each one
-landed rather than where it was going.
+**Every row below records where a file landed**, not where it was going. The
+plugin files were published per `specs/0005-issue-taxonomy-skill-publication.md`,
+`kodhama-0026` went to the org layer, and the migration notes moved one
+directory over — out of the plugin subtree and its CI filter, still inside
+`conductor/`. The table is kept as the record of that; see
+[`../wave-issue-taxonomy.md`](../wave-issue-taxonomy.md).
 
 | File | Final home | Blocked on |
 |------|-----------|------------|
@@ -19,7 +19,7 @@ landed rather than where it was going.
 | ~~`plugin/skills/issues/**`~~ | **published** to `plugins/kodhama/skills/issues/` — `SKILL.md` and `reference/taxonomy.md` | Nothing. Host skill discovery reads `<plugin>/skills/<name>/SKILL.md`, so the directory name equals the skill's `name: issues` |
 | ~~`plugin/scripts/seed-issue-taxonomy.sh`~~ | **published** to `plugins/kodhama/scripts/seed-issue-taxonomy.sh` — same plugin, **outside** `skills/` | Nothing. Deliberately not inside the skill: bundling an actuator into reference content is what forced guardrails into the first draft, and everything under `skills/` is agent-reachable by construction |
 | ~~`plugin/DIRECTION.md`~~ | **published** to `plugins/kodhama/DIRECTION.md`, the plugin root | Nothing — direction, not a decision. It travels with the plugin, and `reference/taxonomy.md` §6.5 points at `../../../DIRECTION.md`, which resolves there and nowhere else |
-| `plugin/migration/legacy-mapping.md` | rides the ratified decision, not the plugin — so `kodhama/kodhama`, per `specs/0005` §What does not ship | **#87 — the move is owed, and asks whether the contract is right.** Lane A resolved 2026-08-02, so the spec's *"until that lane resolves"* no longer holds it here. **Deliberately not published**: out of standing agent context — a mapping table plus counts reads as a backlog-sweep plan — and it authorises nothing, since `kodhama-0026` open question 5 leaves migration unauthorised |
+| ~~`plugin/migration/legacy-mapping.md`~~ | **moved** to `../wave-issue-taxonomy/migration/`, with `stewards-backlog-plan.md` — out of the plugin staging subtree and its CI filter, still inside `conductor/` (#87) | Nothing. `kodhama/kodhama` was the literal reading of *"rides the ratified decision"*, and that repository's `CLAUDE.md` admits only the front door and org-level decisions |
 
 ## Status
 
