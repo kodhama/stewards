@@ -2,6 +2,7 @@
 id: kodhama-0022-propagate-collective-strategy
 type: decision
 status: approved
+superseded_in_part_by: [kodhama-0028-retire-propagation-receipts]  # 2026-08-03 — §2, §3, §5 and the §4 return path. §1 (a strategic decision names its affected repositories, inside itself) stands
 depends_on: [kodhama-0008-family-inheritance-restate-nothing, kodhama/kodhama-0009-org-topology-spirit-stewards-trees, trellis/decision-0044]
 informed_by: [kodhama-0021-separate-adoption-posture-from-support]
 owner: agent
@@ -10,6 +11,19 @@ provenance: "maintainer shaping, 2026-07-25: establish durable top-down communic
 ---
 
 # Decision: propagate collective strategy through local cross-link ADRs
+
+> **Forward pointer.** [`kodhama-0028`](0028-retire-propagation-receipts.md)
+> (2026-08-03) retires the receipt artifact: **§2, §3 and §5 no longer apply,
+> and §4's conductor return path is replaced by a cross-repo `Epic` with one
+> sub-issue per affected repository.** §4 had in fact been unsatisfiable since
+> `kodhama-0027` D2 forbade a brief from carrying per-item status, two days
+> before this pointer was written.
+>
+> **§1 stands unchanged** — a strategic decision still names the repositories
+> it affects, inside itself.
+>
+> Receipts already landed under this record (grove `adr-0040`/`adr-0042`,
+> trellis `0062`/`0064`, wisp `adr-0012`/`adr-0013`) are not retracted.
 
 ## Decision state
 
