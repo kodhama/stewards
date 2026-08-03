@@ -27,7 +27,7 @@ materializes; it is not a substitute for `depends_on`.
 | [`kodhama-spec-0002-bounded-pre-agent-provisioner`](0002-bounded-pre-agent-provisioner.md) | 3 | superseded | Historical universal provisioner contract; retired by `kodhama-0017` |
 | [`kodhama-spec-0003-marketplace-test-observation`](0003-marketplace-test-observation.md) | 1 | superseded | Historical observation record; retired by `kodhama-0025` |
 | [`kodhama-spec-0004-ci-marketplace-setup-skill`](0004-ci-marketplace-setup-skill.md) | 5 | approved | Host-independent authoring of caller-selected Claude/Codex marketplace setup in GitHub Actions |
-| [`kodhama-spec-0005-issue-taxonomy-skill-publication`](0005-issue-taxonomy-skill-publication.md) | 10 | approved | Publishing the issue-convention skill and its provisioning actuator into the Kodhama plugin |
+| [`kodhama-spec-0005-issue-taxonomy-skill-publication`](0005-issue-taxonomy-skill-publication.md) | 11 | approved | Publishing the issue-convention skill and its provisioning actuator into the Kodhama plugin |
 
 Specs 0001, 0002 and 0003 are historical records, not implementation inputs.
 Spec 0004 implements the CI marketplace-setup skill retained by

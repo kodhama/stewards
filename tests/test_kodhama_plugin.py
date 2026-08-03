@@ -598,8 +598,9 @@ class IssueSkillPublicationTests(unittest.TestCase):
         it and breaks the equality below. An earlier `assertNotIn` looked
         like a second guarantee and was not one — exhaustive enumeration
         found **no input** where it could fail while the equality passed.
-        Pinned at `@v10`, the version these tests are written against:
-        v10 rewrites literal F, which is a constant in this file.
+        The expected version is read from the spec's own frontmatter, so a
+        pin that disagrees with the spec goes red. v10 asserted a literal
+        here instead, which made the arbiter self-referential.
         """
         text = (ROOT / "tests" / "TEST_DEPS.md").read_text(encoding="utf-8")
         entries = [
@@ -609,7 +610,23 @@ class IssueSkillPublicationTests(unittest.TestCase):
         ]
         spec_id = "kodhama-spec-0005-issue-taxonomy-skill-publication"
         matching = [entry for entry in entries if entry.split("@")[0] == spec_id]
-        self.assertEqual([f"{spec_id}@v10"], matching, entries)
+
+        # v11: the expected version is READ FROM THE SPEC, never written here.
+        # v10 asserted a literal, so setting the literal and TEST_DEPS.md to the
+        # same wrong value left the suite green while R18 was violated — the
+        # arbiter tested itself. The spec's own frontmatter is the anchor that
+        # cannot be satisfied by editing this file.
+        spec_text = (ROOT / "specs" / "0005-issue-taxonomy-skill-publication.md").read_text(
+            encoding="utf-8"
+        )
+        # Only the opening frontmatter block. A whole-document scan would let a
+        # body line or a fenced example carrying `version: N` satisfy this test
+        # while the frontmatter marker R18 requires had been removed.
+        self.assertTrue(spec_text.startswith("---\n"), "spec 0005 has no frontmatter")
+        frontmatter = spec_text.split("\n---\n", 1)[0]
+        declared = re.search(r"^version: (\d+)$", frontmatter, re.M)
+        self.assertIsNotNone(declared, "spec 0005 declares no version in frontmatter")
+        self.assertEqual([f"{spec_id}@v{declared.group(1)}"], matching, entries)
 
     def test_the_ci_filter_covers_the_staging_subtree(self) -> None:
         """spec-0005 S15/R17: the anti-drift guard reaches the staging tree.
