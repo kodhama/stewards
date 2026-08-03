@@ -53,6 +53,7 @@ name: Claude Code Review
 #   | 5 | Bash denied; could not post               | claude_args         |
 #   | 6 | `Skill` denied; the review never ran      | claude_args (below) |
 #   | 7 | `Agent` absent; delegation misfires        | claude_args (below) |
+#   | 8 | one review per PR; later pushes skipped   | prompt (below)      |
 #
 # Cause 2 is the only one that ever went red, and only because it failed
 # loudly. Treat silence from this job as UNRESOLVED, never as a pass — if you
@@ -129,7 +130,45 @@ jobs:
           plugins: 'code-review@claude-code-plugins'
           # `--comment` — cause 4. Without it the command only prints a
           # terminal summary and posts nothing.
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment'
+          #
+          # The trailing override answers cause 8 (stewards#66). The upstream
+          # skill's step 1 says to stop when the PR "already has a code review
+          # from you from earlier", and step 7 re-checks it before commenting.
+          # That check asks whether Claude has COMMENTED, never whether it has
+          # reviewed THIS COMMIT — so once a PR has one review, every later push
+          # ships unreviewed behind a green tick. Measured twice on 2026-08-02:
+          # stewards#93 and #95 each stopped at 5 and 20 turns, $0.14 and $0.47,
+          # `permission_denials: []`, check success, nothing read. Both times the
+          # skipped commit was one written to FIX a review finding — structurally
+          # the commit most in need of a second look.
+          #
+          # The skill is upstream (`code-review@claude-code-plugins`) and cannot
+          # be edited here, so the override rides the prompt, which outranks it.
+          #
+          # On `synchronize` the event carries the exact new range, so the review
+          # is scoped rather than repeated: `github.event.before` is the previous
+          # head. On the other three trigger types there is no prior review to
+          # skip and no range to scope to, so the prompt stays as it was.
+          prompt: |
+            /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment
+
+            Override, and it applies to step 1 and to the step 7 re-check:
+            criterion (d) — "already has a code review from you from earlier" —
+            does NOT disqualify this run. This workflow fires once per push, and
+            a commit pushed after an earlier review is the commit most worth
+            reviewing. Proceed even though you have commented here before.
+
+            Scope. If this run was triggered by a push to an existing pull
+            request, review only the commits pushed in this event:
+            ${{ github.event.before }}..${{ github.event.pull_request.head.sha }}
+            Confine yourself to what changed in that range. On any other trigger
+            — the pull request being opened, reopened, or marked ready — the
+            range above is not meaningful; review the pull request as a whole.
+
+            Either way: do not restate a finding your earlier comments already
+            make. If an earlier finding is now fixed, say so in one line rather
+            than repeating it, and if nothing in scope warrants a comment, do
+            not comment.
           # Cause 3. Keeps the review's own verdict readable in the run log,
           # which is the only place a skipped or undelivered finding survives.
           show_full_output: true
