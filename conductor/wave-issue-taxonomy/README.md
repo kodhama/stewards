@@ -45,10 +45,13 @@ status flip. Round 5 added the first conformance review (**fidelity PASS both
 directions**) and a practitioner review (**"ship it"**); their four blockers
 were cleared in `191b7c5`.
 
-**In force since 2026-07-31.** By the skill's own gate the convention was
-inert until `Research`, `Decision` and `Epic` existed and were enabled in the
-org. They were seeded that day and verified against `/orgs/kodhama/issue-types`
-rather than the actuator's own output; the label pass followed on 2026-08-01.
+**In force since 2026-08-01**, on the stricter of two criteria that disagree.
+`kodhama-0026` Decision 9 makes the convention operable *"the moment"* the org
+issue types **and** the labels exist: types were seeded 2026-07-31, labels
+2026-08-01, so 08-01 is the date. `SKILL.md`'s own gate checks **only** the six
+issue types — a repository can pass it with no taxonomy labels seeded, declare
+the convention in force, and then be unable to set a stage or a severity. The
+gate is weaker than the record it implements; recorded here rather than fixed.
 
 **Four factual errors in the author's own evidence, all caught by review:**
 
