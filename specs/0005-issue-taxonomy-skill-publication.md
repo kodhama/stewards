@@ -1658,13 +1658,19 @@ no amendment there. A reviewer who reads the list as the package's closed
 inventory would require a 0004 amendment and a version bump. **Not blocking:**
 on either reading the acceptance criteria above are unchanged.
 
-**2. The mapping's own pointers break on relocation.**
-`migration/legacy-mapping.md` names `reference/taxonomy.md` (twice) and
-`scripts/seed-issue-taxonomy.sh` as plugin-root-relative paths. Once it rides
-the decision to `kodhama/kodhama` and the payload lives here, none of the three
-resolves. **Not this spec's to fix** — the mapping is not published by it — but
-it is a consequence this split makes visible, and Lane A should not inherit it
-silently.
+**2. The mapping's own pointers break on relocation. — CLOSED at v13.**
+`legacy-mapping.md` named `reference/taxonomy.md` (twice) and
+`scripts/seed-issue-taxonomy.sh` as plugin-root-relative paths, which resolve
+from nowhere but the plugin root. The question deferred the repair to Lane A,
+on the reasoning that the mapping is not published by this spec.
+
+**v13 is where that came due**, and it went differently than the question
+assumed: the mapping did not ride the decision to `kodhama/kodhama` — that
+repository's `CLAUDE.md` admits only the front door and org-level decisions —
+so it moved to `conductor/wave-issue-taxonomy/migration/` instead. All three
+pointers were repointed at their published locations in the same change and
+each was verified to exist. Nothing is deferred any more, and there is no Lane
+A left to defer to.
 
 **3. The seed script's defaults aim inside the family, at a repository
 `kodhama-0021` names.** `ORG` defaults to `kodhama` and `ALL_REPOS` hardcodes

@@ -1,17 +1,17 @@
 # Staging — issue taxonomy wave
 
-**What remains here is not in its final home.** These are the wave's working
-drafts, parked under `conductor/` because that is where cross-repo wave
-material lives in this repo, and because one of them was destined for a
-repository this branch could not place it in.
+**Nothing is staged here any more.** These were the wave's working drafts,
+parked under `conductor/` because that is where cross-repo wave material lives
+in this repo, and because one of them was destined for a repository the branch
+could not place it in. They are all gone: `wave-issue-taxonomy/plugin/` no
+longer exists.
 
-Kept here so they stop living in volatile temp. Each relocates when its lane
-resolves — see [`../wave-issue-taxonomy.md`](../wave-issue-taxonomy.md).
-
-**Only the migration mapping is still staged here.** The plugin files were
-published per `specs/0005-issue-taxonomy-skill-publication.md`, and
-`kodhama-0026` landed at the org layer. Their rows record where each one
-landed rather than where it was going.
+**Every row below records where a file landed**, not where it was going. The
+plugin files were published per `specs/0005-issue-taxonomy-skill-publication.md`,
+`kodhama-0026` went to the org layer, and the migration notes moved one
+directory over — out of the plugin subtree and its CI filter, still inside
+`conductor/`. The table is kept as the record of that; see
+[`../wave-issue-taxonomy.md`](../wave-issue-taxonomy.md).
 
 | File | Final home | Blocked on |
 |------|-----------|------------|
