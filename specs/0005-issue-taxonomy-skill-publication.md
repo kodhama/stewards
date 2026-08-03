@@ -1,15 +1,57 @@
 ---
 id: kodhama-spec-0005-issue-taxonomy-skill-publication
 type: spec
-status: approved  # maintainer intent act 2026-07-31 ("approved", in session, answering a question that named this flip and the merge as separate acts) — the agent did not open the gate. Recorded at v9, the version the suite was written against and the version `tests/TEST_DEPS.md` pins; the flip is a lifecycle act and changes no testable clause, so it does not bump
+status: approved  # maintainer intent act 2026-07-31 ("approved", in session, answering a question that named this flip and the merge as separate acts) — the agent did not open the gate. Recorded at v9, the version the suite was then written against; the suite and `tests/TEST_DEPS.md` have since moved with the counter (v11 anchors the pin to this frontmatter); the flip is a lifecycle act and changes no testable clause, so it does not bump
 depends_on: [kodhama-0026-issue-taxonomy, kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-0021-separate-adoption-posture-from-support, kodhama-0025-retire-the-surface-matrix, kodhama-spec-0004-ci-marketplace-setup-skill@v5]
 implements: [kodhama-0026-issue-taxonomy]
 owner: agent
-updated: 2026-08-02
-version: 10
+updated: 2026-08-03
+version: 11
 ---
 
 # Publishing the issue-convention skill into the Kodhama plugin
+
+> **AMENDED 2026-08-03 — v10 → v11**
+>
+> **WHAT:** Repairs from the `spec-adversary` pass in run
+> `20260803-140655-retro-review`, which returned **NEEDS-REVISION** on v10.
+> Three load-bearing items. **R18's arbiter could not fail**: v10 removed its
+> literal from the clause and left the expected version as a literal in the
+> test body, so the test asserted itself — setting `tests/TEST_DEPS.md` and
+> that literal both to `@v3` left the suite green while R18 was violated,
+> reproduced and confirmed. The arbiter now reads the expected version from
+> **this file's own `version:` frontmatter**, and the same mutation goes red.
+> **`§Package changes`' `TEST_DEPS.md` row** was rewritten by v10 from `@v9`
+> to `@v10`; that row records what the publication act did, and the act
+> pinned `@v9` — restored, matching how rows `0.2.0 → 0.3.0` were correctly
+> left alone in the same table. **v10's own SCOPE was false**: it says *"R5
+> and F are testable clauses, so this bumps; nothing else moves"*, and R18
+> moved too, in a fixup that never reached the delta note. Corrected below
+> rather than by editing v10's block, which is history.
+>
+> **WHY:** All three are the pattern v10 named and then repeated — *"a spec
+> that recorded one act's particulars as a permanent property"*. The R18 one
+> is worse than the defect it fixed: v9's stale anchor was at least visible
+> to a reader, and v10 traded it for no anchor at all. This repository's own
+> discipline is that **a guard you can revert without turning a test red is
+> not a guard**.
+>
+> **SCOPE:** R18's arbiter changes, so this bumps. Also corrected, none
+> testable: the frontmatter status note, the R5 arbiter row's missing pass
+> condition, three rubric statements v10 falsified, and two line-number
+> citations replaced by string anchors — v8 already ruled that class
+> (*"Anchored by string, never by line number"*) and v10 reintroduced it.
+>
+> **POINTER:** run `20260803-140655-retro-review`; the artifact was merged
+> before any adversary pass, which is what the run exists to correct.
+>
+> **CONFIDENCE:** The R18 repair is mutation-verified in both directions.
+> The prose corrections are checked against the text they describe. What is
+> **not** established: whether an `approved` spec's testable-clause
+> amendment needs a fresh human intent act — the reviewer surfaced it and I
+> do not hold that ruling.
+>
+> **VALUE:** R18 is now enforced by something a wrong value cannot satisfy.
 
 > **AMENDED 2026-08-02 — v9 → v10**
 >
@@ -616,7 +658,7 @@ them:**
 
 | Hit | Why it is not a carrier |
 |---|---|
-| `plugins/kodhama/DIRECTION.md:58` | *"This skill then becomes **thin**: the mapping from concept to surface, and nothing else."* Describes a **future** shape of the issue skill under a hypothesised abstract/concrete split — not what the package contains today. *(v9: cited as `conductor/wave-issue-taxonomy/plugin/DIRECTION.md:55`, **a path R12 deletes**. Same displacement class as literal **H**: the file moves in the change that names it.)* |
+| `plugins/kodhama/DIRECTION.md`, §The split that is coming | *"This skill then becomes **thin**: the mapping from concept to surface, and nothing else."* Describes a **future** shape of the issue skill under a hypothesised abstract/concrete split — not what the package contains today. *(v9: cited as `conductor/wave-issue-taxonomy/plugin/DIRECTION.md:55`, **a path R12 deletes**. Same displacement class as literal **H**: the file moves in the change that names it.)* |
 | `decisions/0018-stewards-dual-host-plugin-package.md:130` | *"`plugins/stewards/surfaces.json` describes only the Stewards plugin's own host…"* — an enumeration about an artifact `kodhama-0025` retired. Under `decisions/` and therefore excluded regardless. |
 | `decisions/0017…:228` | *"draws a positive boundary around the only retained goals"* — the record's own self-check describing its reasoning, not the repository's contents. |
 | `decisions/0017:16` | The forward pointer `kodhama-0025` wrote. It is the corpus **doing** the disclosure this rule cares about, so a hit here is a worked example, not a defect. |
@@ -856,7 +898,7 @@ remembered list. `defaultPrompt` keeps its key and becomes enumerative: a single
 default prompt naming one skill would elect that skill the package's purpose,
 which R8 forbids.
 
-**F. `CLAUDE.md` lines 66–68** — the CI-gate sentence, replacing from `done; CI
+**F. `CLAUDE.md`, the CI-gate sentence** — anchored by string, not line number, per v8's ruling on literal H; replacing from `done; CI
 enforces` to `no check at all.`:
 
 ```markdown
@@ -936,7 +978,7 @@ the sentence into line with `scripts/keyless_admission_check.py`, which has said
 | `CLAUDE.md` | lines 66–68 → **F** | Separate from the marked block; same file, different obligation. |
 | `conductor/wave-issue-taxonomy/plugin/DIRECTION.md` | lines 45–47 → **G** | Authorised edit 2 to staged text. |
 | `.github/workflows/validate-marketplace-setup.yml` | add `"conductor/wave-issue-taxonomy/plugin/**"` to `on.pull_request.paths` | See §Closing the CI blind spot. |
-| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v10` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
+| `tests/TEST_DEPS.md` | `depends_on` gains this spec, pinned `@v9` | R18. Its own text says the tests *"derive from the dependencies above"*; the new tests derive from this spec. |
 | `tests/test_kodhama_plugin.py` | the **fourteen** distinct `new: test_*` named in §How each criterion is checked, plus the updated literal **D** in `test_kodhama_catalog_entries_disclose_no_support_claim` | The criteria table is the authority for which tests exist; this row is a summary of it. The existing tests must keep passing unchanged; the module docstring, which names specs 0003 and 0004, gains this one. |
 | `conductor/wave-issue-taxonomy/README.md` | the staging table records each moved file's published home | S10's second clause. Reviewer-checked; prose currency is not mechanically checkable. |
 
@@ -1452,7 +1494,7 @@ Every row names one arbiter. `new:` marks a test this publication must add to
 | S1, R1, R2 | `new: test_the_package_inventory_is_closed` — `sorted(p.relative_to(PLUGIN).as_posix() for p in PLUGIN.rglob("*") if p.is_file() and p.name != ".DS_Store")` equals the nine-path list, plus `name: issues` matches its directory. *(v5: the filter carries D6's rationale one criterion over. The repository has no `.gitignore`, and `CLAUDE.md` tells the executor to run the suite locally — on macOS that means a stray `.DS_Store` fails a correct package. CI is safe on a fresh clone, so this is a local-red risk only.)* |
 | S2, R10, R14 | `python3 scripts/keyless_admission_check.py`, unchanged. Its `declared_skills()` globs `skills/*/SKILL.md` and asserts host inventory equality, so it extends itself to the new skill with no edit. CI runs it in the `repository-validation` job |
 | S3 | `python3 scripts/validate_kodhama_plugin.py`, already re-run by `test_repository_package_and_carrier_parity_validate` |
-| R5, the value | **Reviewer**, not the validator: `git diff origin/main...HEAD -- plugins/kodhama/VERSION`. The validator checks that the three carriers agree and that the string is valid SemVer, never whether the value is the right one for the change. *(v10: this row previously read "the value `0.3.0`", which was the tell — an arbiter naming a constant for a field that moves every release.)* |
+| R5, the value | **Reviewer**, not the validator: `git diff origin/main...HEAD -- plugins/kodhama/VERSION`. The validator checks that the three carriers agree and that the string is valid SemVer, never whether the value is the right one for the change. **Pass condition:** the new value is valid SemVer, differs from the old, and moves in the direction the payload implies — additive payload, minor bump. *(v10: this row previously read "the value `0.3.0`", the tell — an arbiter naming a constant for a field that moves every release. v11: it had no pass condition at all, so it was a third unmechanizable item and the rubric's count of two was short.)* |
 | S4 | `new: test_seed_script_is_runnable_and_fails_closed` — `os.access(X_OK)`, `bash -n`, `--help` exit `0`, `--bogus` exit `2`. Both invocations return before any `gh` call, so the test needs no network and no credentials |
 | S5, R3 | `new: test_the_skill_never_reaches_the_actuator` — scans every `SKILL.md` and `reference/*.md` under `plugins/kodhama/skills/` for `seed-issue-taxonomy`, `gh label create`, `gh api --method POST`, **and asserts no `*.sh` exists anywhere under `plugins/kodhama/skills/`**. *(v9: the text scan alone does **not** make §Why the actuator sits outside `skills/` true — conformance measured it, and moving the actuator into `skills/issues/` left this test green. Four other tests caught the move, so the protection held; the **named arbiter** did not. The executor added the `*.sh` assertion, which conformance ruled inside the contract because it makes a sentence the spec asserts about itself true and cannot false-red. It is recorded here rather than left implicit. **Match on `path.suffix == ".sh"`, not on the exact filename** — an exact match lets `skills/issues/seed.sh` through, and the technique is the one `test_the_migration_mapping_stays_out_of_the_package` argues for forty lines away: walk the tree so a rename does not walk past.)* |
 | S17, R19 | `new: test_the_actuator_makes_no_write_call_without_apply` — writes a stub `gh` into a temp dir, prepends it to `PATH` via a new `env=` parameter on the module's `run()` helper, invokes the shipped script with no `--apply` and then with each other accepted flag, and asserts the stub's log holds only read calls. A third case stubs an empty backlog and asserts no `label list` for that repository. **Mutation obligation: all four survivors named in S17 must fail it.** Credential-free, offline, no model turn |
@@ -1467,7 +1509,7 @@ Every row names one arbiter. `new:` marks a test this publication must add to
 | S15, R17 | `new: test_the_ci_filter_covers_the_staging_subtree` — the regex extraction in S15, asserting the eight entries in order. No new dependency. Editing the workflow triggers the workflow, since it lists itself |
 | S16 | `new: test_shipped_readme_enumerates_the_package_contents`, alongside the existing `test_shipped_readme_discloses_hosts_and_makes_no_support_claim`, which must still pass unchanged |
 | R16 | `new: test_capabilities_enumerates_the_skill_directories` — compares the array against `sorted(d.name for d in (PLUGIN/"skills").iterdir() if d.is_dir())`, so it is derived from the package rather than remembered. *(v4: the `is_dir()` guard was missing; a stray `.DS_Store` or `README.md` beside the skill directories would have made the expected array wrong and failed a correct package.)* |
-| R18 | `new: test_test_deps_declares_this_spec` — asserts `tests/TEST_DEPS.md`'s `depends_on` contains the spec id **with an `@vN` pin**, not the bare id |
+| R18 | `new: test_test_deps_declares_this_spec` — asserts `tests/TEST_DEPS.md`'s `depends_on` contains the spec id **with an `@vN` pin**, not the bare id, **and that N equals this file's own `version:` frontmatter**. *(v11: the version half had no arbiter. v10 left the expected value as a literal in the test body, so the test asserted itself and a wrong pin in both places passed. Reading it from the spec is the anchor a test edit cannot satisfy.)* |
 | The staging README's updated pointer (S10) | **Reviewer**, reading the diff of `conductor/wave-issue-taxonomy/README.md`. Prose currency is not mechanically checkable |
 | S12, R7 | **Reviewer**: `git diff --name-only origin/main...HEAD` against S12's allowlist. Deliberately **not** a permanent test — Lane D expects this repository to opt in eventually, and a test forbidding that would have to be deleted the day it mattered |
 | R8, "no purpose is minted" | **Not mechanically checkable.** Pinning literals **A**–**H** moves the judgment to one human read at the spec gate and freezes the result; drift from the frozen strings is then caught by S11, S13, S14 and R16. Whether the frozen strings themselves imply a purpose is the reviewer's call, and this spec claims no check for it |
@@ -1607,7 +1649,7 @@ and the installed `.grove/versioning.md` and `.grove/relations.md`.
 - **Version pin** — spec 0004 pinned `@v5`; the **six** decisions
   (`kodhama-0017`, `-0018`, `-0020`, `-0021`, `-0025`, `-0026`) are append-only
   and correctly unpinned.
-- **Counter** — bumped `8 → 9`. **Required, and the clearest case since v6:**
+- **Counter** — bumped `10 → 11` at v11 (R18's arbiter), `9 → 10` at v10 (R5, F, R18). The v9 entry below is kept as written. **Required, and the clearest case since v6:**
   S17 and R19 are new testable clauses, so `.grove/versioning.md:59-61` binds
   directly. They are also the only part of v9 that changes behaviour.
 - *(Prior counters, retained.)* **v6's bump was required**, per
@@ -1618,7 +1660,7 @@ and the installed `.grove/versioning.md` and `.grove/relations.md`.
   to act on; v8 withdraws a false completeness claim and changes how literal
   **H** is located, which is a correctness-of-application change an executor
   reads as binding. A reader pinning `@v7` would be pinning both defects.
-  `tests/TEST_DEPS.md` does not yet name this spec, so no pin goes stale, and
+  `tests/TEST_DEPS.md` did not yet name this spec at v9, so no pin went stale then — **it names it now, and the pin going stale is exactly what R18's v11 arbiter catches** — and
   R18's `@vN` is written by the executor at whatever version lands. The section-level delta note carries the five
   fields plus VALUE and CONFIDENCE; S9, S10, S13, S15 and S16 carry
   scenario-level inline tags.
@@ -1778,8 +1820,11 @@ decision rather than inferred here. It was not cited when the ruling was made.
 | **m3 — the ledger is the ledger and no implementation commit touched it** | Lane B's publication item now records the build, the conformance PASS, the HIGH and its closure, and states it **ticks at merge, not before** — nothing is published until #64 lands, and the tick is publication, never enablement. Lane B's pointer at the staging `DIRECTION.md` now names both the staged and published paths |
 | Accounting, corrected rather than repeated | Against a fully pre-change tree, **four** criteria were vacuous (S7, S14, S6, S5/R3), and this spec carried **two** explicit mutation obligations (S7, S9 — S9 was never vacuous; it errors on the missing file). v9 adds a third, on S17. All are mutation-proven guarded |
 
-Result: **PASS**, holding at `gated`. `approved` is the maintainer's to give;
-no intent act has been recorded for this spec.
+Result at v9: **PASS**, holding at `gated`. *(Superseded by events: the
+maintainer's intent act of 2026-07-31 flipped this spec to `approved`, and the
+frontmatter records it. Left as the v9 rubric's own finding rather than
+rewritten — but it is not current state, and v10 flipped the `specs/README.md`
+index row while leaving this sentence asserting the opposite.)*
 
 This is a change-scoped self-check only. It does not claim the malformed legacy
 decision metadata tracked by [issue #20](https://github.com/kodhama/stewards/issues/20)
