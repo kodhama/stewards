@@ -56,20 +56,47 @@ only exception to *"repos restate nothing"*; with the receipt gone the carve-out
 goes too. No repository hand-authors a record of collective strategy in any
 form.
 
-**3. A strategic decision still names the repositories it affects, inside
-itself.** This is `kodhama-0022` §1 and it survives unchanged — it costs a
-section in a record that is being written anyway, and it is what makes the
-affected set reviewable.
+**3. Traceability rides the carrier.** **Anything that carries a collective
+decision's effect names the deciding record by id** — in `implements:`,
+`depends_on:`, or a `Provenance:` line, whichever the artifact type already
+uses. This is the requirement the receipt was a poor substitute for: standing
+in front of a rule, you can reach the record that made it.
 
-**4. Propagation is tracked as a cross-repo `Epic` with one sub-issue per
+It is not new. It is already the practice everywhere it matters, unmandated:
+
+- `plugins/kodhama/skills/issues/SKILL.md` — `implements: kodhama-0026-issue-taxonomy`
+- `.grove/lifecycle.md` — *"Provenance: created per `adr-0008-lifecycle-enum-companion`"*
+- `.grove/versioning.md` — *"Provenance: created per `adr-0010-versioning-is-operational`"*
+
+**An id is a locator.** `kodhama-NNNN` is unique across the spirit and steward
+repositories (`kodhama-0009`), and cross-repo referents are qualified
+(`grove/adr-0026`, `trellis/decision-0044`). So the id alone resolves to one
+record without any repository holding a map.
+
+**This is a forward lookup and that is deliberate** — from the artifact you are
+holding to the decision behind it, which is where the question actually gets
+asked. A carrier that names no record is the defect to look for.
+
+**4. A strategic decision still names the repositories it affects, inside
+itself.** `kodhama-0022` §1, kept — it costs a section in a record being written
+anyway.
+
+**Recorded honestly: §1 has been complied with once in four.** `kodhama-0021`,
+`kodhama-0023` and `kodhama-0025` carry no propagation section; only
+`kodhama-0026` does, and only because a wave brief made it a lane. So the
+reverse lookup — *"which decisions bind this repository?"* — is **not** reliably
+answerable from the corpus today, and this record does not pretend otherwise.
+Fixing that is writing one section in future decisions, not a new artifact.
+
+**5. Propagation is tracked as a cross-repo `Epic` with one sub-issue per
 affected repository**, per `kodhama-0027` and `kodhama-0026`. The Epic closes
 when its children do. This replaces §4's conductor ledger.
 
-**5. Work is the receipt.** A sub-issue exists only where the decision creates
+**6. Work is the receipt.** A sub-issue exists only where the decision creates
 local work. **Where a decision creates none, nothing is filed** — that is the
 whole saving. Silence means nothing was owed, not that nothing was received.
 
-**6. The two completed propagations stand.** `kodhama-0021` and `kodhama-0023`
+**7. The two completed propagations stand.** `kodhama-0021` and `kodhama-0023`
 were received under the old model; grove `adr-0040`/`adr-0042`, trellis
 `0062`/`0064` and wisp `adr-0012`/`adr-0013` are not retracted, retrospectively
 amended, or held against this record. `kodhama-0022` §1 already says superseded
@@ -77,16 +104,24 @@ strategy needs no retrospective receipt; the same applies to its own retirement.
 
 ## Cost, stated
 
-**A local decision graph no longer shows collective strategy.** That was
-`kodhama-0022`'s real contribution and this record gives it up. What replaces it
-is weaker in kind: the upstream decision names the repository, and any local
-work is an issue in it.
+**A local decision graph no longer shows collective strategy.** Decision 3
+recovers the part that was load-bearing — from any carrier you reach the
+deciding record — but it does not recover the *inventory*: opening a
+repository's `decisions/` and seeing which collective strategies bind it.
+
+What is left in its place is weaker in kind. Forward lookup is guaranteed by
+Decision 3 and already works. Reverse lookup depends on Decision 4, which is
+complied with once in four.
 
 The bet is that a strategy producing no local work did not need a local record,
-and a strategy producing local work is already visible as that work. **If a
-strategy is ever adopted family-wide and leaves no trace in an affected
-repository, this decision is the reason** — supersede it rather than
-reintroducing the receipt by habit.
+and a strategy producing local work is already visible as that work — plus a
+carrier that names its record wherever a rule is actually carried.
+
+**The failure to watch for is a rule with no traceable origin**: a constraint
+in a repository that no artifact attributes to any decision. That is the
+symptom this record can produce, and Decision 3 is the thing to enforce when it
+appears. **If it happens anyway, this decision is the reason** — supersede it
+rather than reintroducing the receipt by habit.
 
 ## Consequences
 
