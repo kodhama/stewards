@@ -45,9 +45,10 @@ status flip. Round 5 added the first conformance review (**fidelity PASS both
 directions**) and a practitioner review (**"ship it"**); their four blockers
 were cleared in `191b7c5`.
 
-**Not yet in force.** By the skill's own gate the convention is inert until
-`Research`, `Decision` and `Epic` exist and are enabled in the org — that is
-Lane E, and it needs `admin:org`.
+**In force since 2026-07-31.** By the skill's own gate the convention was
+inert until `Research`, `Decision` and `Epic` existed and were enabled in the
+org. They were seeded that day and verified against `/orgs/kodhama/issue-types`
+rather than the actuator's own output; the label pass followed on 2026-08-01.
 
 **Four factual errors in the author's own evidence, all caught by review:**
 
@@ -60,6 +61,9 @@ Lane E, and it needs `admin:org`.
 - an edit deleted a sentence's predicate and left the subject, shipping an
   unreadable clause.
 
-**Nothing here authorises a change to any repository**: no label creation, no
-issue migration, no plugin enablement. Those are the wave's lanes, and the
-wave is not open.
+**Nothing here authorised a change to any repository**: no label creation, no
+issue migration, no plugin enablement. Those were the wave's lanes, and all
+three were later authorised separately — provisioning on 2026-07-31, migration
+and enablement in session on 2026-08-01. The wave closed as archive on
+2026-08-02; this sentence describes what this staging directory conferred, not
+the state of the family.
