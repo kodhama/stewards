@@ -14,8 +14,9 @@ provenance: "maintainer shaping, 2026-07-25: establish durable top-down communic
 
 > **Forward pointer.** [`kodhama-0029`](0029-retire-propagation-receipts.md)
 > (2026-08-03) retires the receipt artifact: **§2, §3 and §5 no longer apply,
-> and §4's conductor return path is replaced by a cross-repo `Epic` with one
-> sub-issue per affected repository.** §4 had in fact been unsatisfiable since
+> and §4's conductor return path is replaced by a cross-repo `Epic` carrying a
+> sub-issue only where the decision creates local work.** §4 had in fact been
+> unsatisfiable since
 > `kodhama-0027` D2 forbade a brief from carrying per-item status, two days
 > before this pointer was written.
 >
