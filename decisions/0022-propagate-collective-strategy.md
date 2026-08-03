@@ -26,6 +26,24 @@ provenance: "maintainer shaping, 2026-07-25: establish durable top-down communic
 > Receipts already landed under this record (grove `adr-0040`/`adr-0042`,
 > trellis `0062`/`0064`, wisp `adr-0012`/`adr-0013`) are not retracted.
 
+> **Correction to the block above, 2026-08-03.** *"§1 stands unchanged"* is too
+> broad, and the sentence is left as written rather than edited. §1 is four
+> paragraphs and **three of them stand**:
+>
+> - **¶1 stands** — a strategic decision names its affected repositories.
+> - **¶2 stands in its first sentence** (what makes a repository an immediate
+>   target). Its second sentence — *"Non-plugin steward repositories receive no
+>   cross-link ADR merely because…"* — presupposes the receipt and goes with it.
+> - **¶3 is superseded.** It was the catch-up mechanism for a repository
+>   entering plugin scope, and `kodhama-0029` supplies no replacement, so **an
+>   entrant now inherits silence.**
+> - **¶4 stands** — merge-once-sound, and *"downstream copies are never needed
+>   to make the upstream decision authoritative"*, which is receipt-independent
+>   and is the clause `kodhama-0029` most relies on.
+>
+> The supersession also reaches five **Decided** bullets and **AC2, AC3, AC6** —
+> annotated at each, below. `kodhama-0029`'s own §Corrections carries the rest.
+
 ## Decision state
 
 **Decided** (maintainer shaping, 2026-07-25):
@@ -43,6 +61,19 @@ provenance: "maintainer shaping, 2026-07-25: establish durable top-down communic
 - Immediate propagation targets current affected plugin repositories and
   repositories explicitly entering the affected plugin scope; later plugin
   entrants catch up on every still-current Stewards plugin strategy.
+
+> **Superseded in part by [`kodhama-0029`](0029-retire-propagation-receipts.md)**
+> (2026-08-03). The bullets are left as ratified; this names which no longer
+> hold. **Five are reached:** *"Each target receives a thin… cross-link ADR"*;
+> *"The local ADR points to the Stewards authority…"* (restates §2); *"A
+> conductor brief owns the target list…"*; *"Receipt is distinct from product
+> adoption…"* (restates §3 — the principle was sound, but with receipts retired
+> it has no referent); and the **catch-up half** of the last bullet. The first
+> bullet — *"must be propagated to every applicable plugin repository"* — stands
+> only as to propagation; `kodhama-0029` Decision 6 files nothing where a
+> decision creates no local work, so "every applicable repository" no longer
+> implies an artifact in each. *"Decision `kodhama-0021` is the first
+> application"* is historical and stands.
 
 **Open** (0):
 
@@ -77,6 +108,8 @@ only the local consequence of receiving it.
 
 ### 1. Collective-wide plugin strategy declares its targets
 
+> **Superseded in part by [`kodhama-0029`](0029-retire-propagation-receipts.md)** (2026-08-03) — ¶2's second sentence and ¶3 only; ¶1, ¶2's first sentence and ¶4 stand.
+
 Every new Stewards decision whose strategy explicitly affects all Kodhama
 plugins includes a short propagation section naming its applicable plugin
 repositories from the canonical topology.
@@ -97,6 +130,8 @@ to make the upstream decision authoritative.
 
 ### 2. The downstream artifact is deliberately thin
 
+> **Superseded by [`kodhama-0029`](0029-retire-propagation-receipts.md)** (2026-08-03).
+
 Each target repository receives one local cross-link ADR containing only:
 
 - frontmatter with a qualified dependency on the approved Stewards decision;
@@ -111,6 +146,8 @@ they should remain minimal.
 
 ### 3. Receipt does not make a product decision
 
+> **Superseded by [`kodhama-0029`](0029-retire-propagation-receipts.md)** (2026-08-03).
+
 A cross-link ADR does not by itself adopt or configure a plugin, authorize
 implementation, resolve a local conflict, change a package or release, make a
 support claim, select an adoption posture, or certify compliance.
@@ -120,6 +157,8 @@ The cross-link and product decision may share a PR if their distinct purposes
 stay explicit.
 
 ### 4. The conductor provides the return path
+
+> **Superseded by [`kodhama-0029`](0029-retire-propagation-receipts.md)** (2026-08-03).
 
 One Stewards conductor brief lists the targets and links each local PR and
 landed ADR. This produces bidirectional navigation without repeatedly editing
@@ -132,6 +171,8 @@ The conductor closes only after every target is linked or explicitly recorded
 as not applicable. It owns progress, not policy.
 
 ### 5. Narrow exception to “restate nothing”
+
+> **Superseded by [`kodhama-0029`](0029-retire-propagation-receipts.md)** (2026-08-03).
 
 This partially supersedes only decision `kodhama-0008`'s implication that no
 hand-authored per-repository record may acknowledge collective operating
@@ -177,6 +218,15 @@ Those continue to arrive from their authoritative home.
   report.
 - **AC7:** No propagation schema, bot, CI gate, or certification machinery is
   introduced.
+> **AC2, AC3 and AC6 are superseded by
+> [`kodhama-0029`](0029-retire-propagation-receipts.md)** (2026-08-03),
+> annotated here rather than edited: **AC2** required the thin local ADR;
+> **AC3** required an entrant to inventory and add missing cross-link ADRs, and
+> **has no replacement** — see `kodhama-0029` §Corrections C2a; **AC6** required
+> a conductor link ledger, which `kodhama-0027` D2 had already forbidden, and
+> whose closure-report half `kodhama-0027` D3 preserves. AC1, AC4, AC5, AC7 and
+> AC8 stand.
+
 - **AC8:** Decision 0021 is the first application; Grove's planner dogfood ADR
   remains a separate product decision.
 
