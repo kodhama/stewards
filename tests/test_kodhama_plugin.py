@@ -1249,8 +1249,17 @@ exit 0
             self.assertIn(f"`{issue_type}`", text)
         self.assertIn(
             "**If any of the six is absent or disabled** — `Bug`, `Feature`, "
-            "`Task`, `Research`, `Decision`, `Epic` — **this convention is not "
-            "yet in force in that org.** Say so and stop.",
+            "`Task`, `Research`, `Decision`, `Epic` — **the convention is not in "
+            "force in that org. Say so and stop.**",
+            text,
+        )
+        # v12 / R9a: the second check, and its distinct outcome. Types are
+        # org-level and labels per-repository, so passing the first check
+        # establishes nothing about the second.
+        self.assertIn("gh label list --repo <owner>/<repo>", text)
+        self.assertIn(
+            "**If the types exist but the labels do not, the convention is "
+            "*partially* in force — type only. Do not stop.**",
             text,
         )
 
