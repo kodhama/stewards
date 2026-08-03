@@ -1,15 +1,14 @@
 ---
-id: kodhama-0028-retire-propagation-receipts
+id: kodhama-0029-retire-propagation-receipts
 type: decision
-status: gated
+status: approved  # maintainer intent act 2026-08-03, in session: "approved" — an in-PR flip recording that act, per .grove/lifecycle.md's gated -> approved mover rule; the merge performs the ship. The agent did not open the gate. Raised by the maintainer the same day: "This is turning into a lot of bureaucracy", then "I still want to be able to track decisions to where they were made. Just not in a bureaucratic way" — which is Decision 3
 depends_on: [kodhama-0008-family-inheritance-restate-nothing, kodhama-0022-propagate-collective-strategy, kodhama-0027]
-supersedes: [kodhama-0022-propagate-collective-strategy]
 owner: agent
 updated: 2026-08-03
 provenance: "maintainer direction, 2026-08-03, on being shown the cost: nine receipt artifacts drafted for one convention, each restating nothing and authorising nothing. The four cross-link ADRs and five product-ownership issues were closed unmerged rather than landed. kodhama-0022 §4's return path had already been retired by kodhama-0027 D2 two days earlier, unnoticed."
 ---
 
-# 0028 — retire the propagation receipt
+# 0029 — retire the propagation receipt
 
 ## Why
 
@@ -88,13 +87,17 @@ reverse lookup — *"which decisions bind this repository?"* — is **not** reli
 answerable from the corpus today, and this record does not pretend otherwise.
 Fixing that is writing one section in future decisions, not a new artifact.
 
-**5. Propagation is tracked as a cross-repo `Epic` with one sub-issue per
-affected repository**, per `kodhama-0027` and `kodhama-0026`. The Epic closes
-when its children do. This replaces §4's conductor ledger.
+**5. Where a decision creates local work, that work is tracked as a cross-repo
+`Epic` with one sub-issue per repository it creates work in** — per
+`kodhama-0027` and `kodhama-0026`. The Epic closes when its children do. This
+replaces §4's conductor ledger.
 
-**6. Work is the receipt.** A sub-issue exists only where the decision creates
-local work. **Where a decision creates none, nothing is filed** — that is the
-whole saving. Silence means nothing was owed, not that nothing was received.
+**6. Where a decision creates no local work in a repository, nothing is filed
+there.** That is the whole saving, and it is why Decision 5 is scoped to
+repositories with work rather than to every affected repository: a sub-issue
+that exists only to be closed is the empty artifact this record retires, wearing
+a different shape. **Silence means nothing was owed, not that nothing was
+received** — Decision 3 carries the receiving.
 
 **7. The two completed propagations stand.** `kodhama-0021` and `kodhama-0023`
 were received under the old model; grove `adr-0040`/`adr-0042`, trellis
