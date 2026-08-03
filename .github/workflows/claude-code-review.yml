@@ -54,6 +54,7 @@ name: Claude Code Review
 #   | 6 | `Skill` denied; the review never ran      | claude_args (below) |
 #   | 7 | `Agent` absent; delegation misfires        | claude_args (below) |
 #   | 8 | one review per PR; later pushes skipped   | prompt (below)      |
+#   | 9 | ends its turn awaiting background agents  | prompt (below)      |
 #
 # Cause 2 is the only one that ever went red, and only because it failed
 # loudly. Treat silence from this job as UNRESOLVED, never as a pass — if you
@@ -169,6 +170,14 @@ jobs:
             make. If an earlier finding is now fixed, say so in one line rather
             than repeating it, and if nothing in scope warrants a comment, do
             not comment.
+
+            You are running headless in CI. Nothing will notify you when a
+            delegated agent finishes, and this process exits when your turn
+            ends. So do not end your turn waiting for anything: dispatch a
+            subagent only where you will read its result in this same turn, and
+            carry every step through to the comment yourself. "I'll continue
+            once they complete" is a failed run — it reports success and
+            delivers nothing.
           # Cause 3. Keeps the review's own verdict readable in the run log,
           # which is the only place a skipped or undelivered finding survives.
           show_full_output: true
