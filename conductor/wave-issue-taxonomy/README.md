@@ -61,6 +61,9 @@ rather than the actuator's own output; the label pass followed on 2026-08-01.
 - an edit deleted a sentence's predicate and left the subject, shipping an
   unreadable clause.
 
-**Nothing here authorises a change to any repository**: no label creation, no
-issue migration, no plugin enablement. Those are the wave's lanes, and the
-wave is not open.
+**Nothing here authorised a change to any repository**: no label creation, no
+issue migration, no plugin enablement. Those were the wave's lanes, and all
+three were later authorised separately — provisioning on 2026-07-31, migration
+and enablement in session on 2026-08-01. The wave closed as archive on
+2026-08-02; this sentence describes what this staging directory conferred, not
+the state of the family.
