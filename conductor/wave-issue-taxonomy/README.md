@@ -45,9 +45,10 @@ status flip. Round 5 added the first conformance review (**fidelity PASS both
 directions**) and a practitioner review (**"ship it"**); their four blockers
 were cleared in `191b7c5`.
 
-**Not yet in force.** By the skill's own gate the convention is inert until
-`Research`, `Decision` and `Epic` exist and are enabled in the org — that is
-Lane E, and it needs `admin:org`.
+**In force since 2026-07-31.** By the skill's own gate the convention was
+inert until `Research`, `Decision` and `Epic` existed and were enabled in the
+org. They were seeded that day and verified against `/orgs/kodhama/issue-types`
+rather than the actuator's own output; the label pass followed on 2026-08-01.
 
 **Four factual errors in the author's own evidence, all caught by review:**
 
