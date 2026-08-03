@@ -616,11 +616,16 @@ class IssueSkillPublicationTests(unittest.TestCase):
         # same wrong value left the suite green while R18 was violated — the
         # arbiter tested itself. The spec's own frontmatter is the anchor that
         # cannot be satisfied by editing this file.
-        spec_text = (ROOT / "specs" / f"0005-issue-taxonomy-skill-publication.md").read_text(
+        spec_text = (ROOT / "specs" / "0005-issue-taxonomy-skill-publication.md").read_text(
             encoding="utf-8"
         )
-        declared = re.search(r"^version: (\d+)$", spec_text, re.M)
-        self.assertIsNotNone(declared, "spec 0005 declares no version")
+        # Only the opening frontmatter block. A whole-document scan would let a
+        # body line or a fenced example carrying `version: N` satisfy this test
+        # while the frontmatter marker R18 requires had been removed.
+        self.assertTrue(spec_text.startswith("---\n"), "spec 0005 has no frontmatter")
+        frontmatter = spec_text.split("\n---\n", 1)[0]
+        declared = re.search(r"^version: (\d+)$", frontmatter, re.M)
+        self.assertIsNotNone(declared, "spec 0005 declares no version in frontmatter")
         self.assertEqual([f"{spec_id}@v{declared.group(1)}"], matching, entries)
 
     def test_the_ci_filter_covers_the_staging_subtree(self) -> None:

@@ -1472,9 +1472,13 @@ that catches it would be a mutation obligation this criterion cannot discharge
   entry would have satisfied v3's wording and matched neither. **No version
   literal here** — v9 named `@v9` "as of this revision", so the v10 bump put
   the artifact in violation of the clause while the suite stayed green, its
-  assertion having been updated independently. The version lives in the
-  arbiter, which is what moves with the tests. Same defect as R5, found by the
-  reviewer on #97.
+  assertion having been updated independently. **The version the pin must carry
+  is this record's own `version:` frontmatter**, and the arbiter reads it from
+  there — so the anchor moves with the spec, and no edit to the suite can
+  satisfy a wrong pin. *(v11: v10 said "the version lives in the arbiter, which
+  is what moves with the tests." That was the defect, not the repair — it left
+  the expected value as a literal in the test body, where the test asserted
+  itself.)* Same defect as R5, found by the reviewer on #97.
 - **R19 (unwanted behavior):** If the shipped actuator is invoked without
   `--apply`, it shall issue no call that creates or modifies an org issue type,
   a repository label, or an issue — **established by execution against a stub
