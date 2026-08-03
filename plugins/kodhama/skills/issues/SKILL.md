@@ -92,8 +92,8 @@ noise; a halted *procedure* loses the fields you did know.
 
 | # | Dimension | Where it lives | Required |
 |---|-----------|----------------|----------|
-| 1 | **Stage** | `stage: *` label | on every open issue you file |
-| 2 | **Type** | native GitHub issue type | once out of `triage` |
+| 1 | **Stage** | `stage: *` label | on every open issue you file — one exemption, below |
+| 2 | **Type** | native GitHub issue type | once out of `triage`; same exemption |
 | 3 | **Facing** | `facing: *` label | on `Bug` `Feature` `Task` |
 | 4 | **Severity** | `severity: *` label | on `Bug` |
 | 5 | **Area** | `area: *` label | if the repo defines any |
@@ -154,7 +154,9 @@ whether the deliverable is a document.
 - *"Define how malformed metadata is handled"* — nothing is decided yet →
   `Decision`
 - *"Write up the decision we agreed last week"* — the choice is made, only the
-  record is missing → `Task`
+  record is missing → `Task`. It is a `Bug` instead only if the thing to be
+  written was **already stated somewhere** and never carried out; an unrecorded
+  agreement was never stated, so nothing contradicts anything
 
 `Task` and `Research` are separated on **one axis — the deliverable.** A
 verification chore whose outcome is unknown is `Research`, because what it
@@ -178,8 +180,8 @@ scheduled job's delivery point, an anchor another tool resolves against. They
 have no lifecycle position: `triage`/`ready`/`active`/`review` all say how far
 work has got, and these never get anywhere by design. **Leave both the type and
 the stage unset, and say so in the body.** This is the only exemption from
-"exactly one `stage: *` on every open issue" — and it is not a per-type
-variation, because these are not work of any type.
+dimensions 1 and 2 of the table above — and it is not a per-type variation,
+because these are not work of any type.
 
 **Do not close it** — something may be resolving against it, and closing it
 breaks that thing. If such an issue carries a label a tool matches on, that
