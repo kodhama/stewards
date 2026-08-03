@@ -154,9 +154,11 @@ whether the deliverable is a document.
 - *"Define how malformed metadata is handled"* — nothing is decided yet →
   `Decision`
 - *"Write up the decision we agreed last week"* — the choice is made, only the
-  record is missing → `Task`. It is a `Bug` instead only if the thing to be
-  written was **already stated somewhere** and never carried out; an unrecorded
-  agreement was never stated, so nothing contradicts anything
+  record is missing → `Task` when the agreement lives only in someone's head or
+  a conversation. **If it was stated somewhere durable** — a decision, a spec, a
+  README — **and the record never followed, that is `Bug`**: something stated
+  and never implemented, and `Bug` outranks `Task`. The test is whether an
+  artifact already asserts it, not whether a person remembers agreeing
 
 `Task` and `Research` are separated on **one axis — the deliverable.** A
 verification chore whose outcome is unknown is `Research`, because what it
