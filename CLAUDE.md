@@ -4,12 +4,11 @@ The **stewards** are [kodhama](https://github.com/kodhama/kodhama)'s worker
 collective — the scaffolding that tends the forest's trees (the products)
 and tends itself. This repo is their coordination hub: it continues the
 operational role formerly held by `kodhama/kodhama`, relocated here per
-`kodhama-0009` so the kodhama repo can be the forest-spirit front door.
-THREE things live here and nothing else: **cross-collective decisions**
-(`decisions/`), the **conductor seat** (`conductor/` — wave briefs and
-ledgers for work that spans the collective's repos), and the **install
-door** (the collective's canonical install repository per `kodhama-0002`,
-`kodhama-0012`, and `kodhama-0017`).
+`kodhama-0009` so the kodhama repo can be the forest-spirit front door. Its
+three long-standing jobs are cross-collective **decisions**, the **conductor
+seat**, and the **install door** (the collective's canonical install
+repository per `kodhama-0002`, `kodhama-0012`, and `kodhama-0017`) — but what
+belongs here is settled by the rule below, not by that list.
 
 <!-- distribution-scope:begin -->
 The install door includes the host-native Claude and Codex catalogs. Those
