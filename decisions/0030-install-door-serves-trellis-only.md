@@ -10,6 +10,29 @@ provenance: "maintainer direction, 2026-08-29, given directly and reaffirmed in 
 
 # 0030 — the install door serves trellis only
 
+> **Maintainer direction (2026-08-29, post-ratification annotation; text below
+> preserved as written).** Given the same day, after ratification: *"I might
+> bring back more plugins in the future, I have some ideas to re-think grove in
+> a different light (as a workflow supervisor on top of existing workflows), but
+> it will probably ne a project restart, so for now stewards will serve only
+> trellis as a marketplace, and all the other plugins, including kodhama as a
+> plugin, are to be retired."*
+>
+> This **reframes §Cost 1 and closes the follow-up in §What was considered and
+> not done.** That section calls opening doors in `kodhama/grove` and
+> `kodhama/wisp` *"the follow-up this decision most obviously owes,"* written
+> on the assumption that the three plugins were delisted but live. They are
+> **retired**. No install door is owed to a retired plugin, so **no issue is
+> filed for it** — not because `kodhama-0027` D1 is waived, but because there
+> is no outstanding work for it to track.
+>
+> §Cost 1 stands as a factual record of what the delisting did — grove and wisp
+> resolve in no catalog — and stops being a debt. **Grove's return, if it
+> comes, is a project restart** under a different premise (a supervisor over
+> existing workflows), which would arrive as its own decision and would not
+> restore this one's listings. D6 below is unaffected: re-listing anything here
+> still supersedes this record.
+
 ## Decision
 
 **1. Both catalogs list `trellis` and nothing else.** `grove`, `kodhama` and
@@ -141,3 +164,61 @@ that a ratified decision is never edited. `kodhama-0002` is annotated the
 same way. `kodhama-0018` and `kodhama-0020` described a package that no longer
 exists; neither is retracted, and neither is satisfiable — they are historical
 from this date.
+
+## Corrections
+
+Appended 2026-08-29, the same day, after the automated reviews on #114 returned
+two findings that were verified against the source and accepted. The fixes were
+pushed while the maintainer was merging, so they missed the merge; append-only
+binds from delivery, so the body above is left as written and both are corrected
+here.
+
+**C1 — D3's guard count is wrong.** It says *"four new guards asserting this
+record's D1–D3 hold"*. There are **three**, one per decision:
+`test_the_door_serves_only_what_kodhama_0030_left_standing` (D1),
+`test_no_carrier_still_offers_the_delisted_plugins` (D2), and
+`test_the_retired_package_left_no_carriers_behind` (D3). The file holds six
+tests in total — those three plus the trellis entry, the `distribution-scope`
+mirror, and the retired-surface guard, all three carried over rather than new.
+**§Cost 6 was right and D3 contradicted it** ninety lines apart in one file,
+which is the same defect `kodhama-0029` C6 records against itself. The
+mutation evidence offered for D3 was loose in the same direction: four
+mutations were run, but one of them drifted the `distribution-scope` block,
+exercising a carried-over test rather than a new guard. Three new guards, three
+discriminating mutations.
+
+**C2 — the D3 guard was written broader than D3.** `plugins/kodhama/` is what
+this record deletes; the test asserted the whole `plugins/` container was
+absent. Any unrelated plugin added there later would have failed a test named
+for the retired package's absence — and the scope block this record rewrote
+says present contents are *"not a scope: it moves when the contents move"*.
+Narrowed to `plugins/kodhama` in the same change as this correction, and
+mutation-tested both directions: the package returning fires it, an unrelated
+`plugins/unrelated/` does not. **The record needed no change for this one** —
+the test was wrong about the decision, not the decision about itself.
+
+**C3 — a third correction, to this corrections section itself.** Its first
+draft claimed the grove/wisp install-door gap *"needs no separate issue"*,
+arguing only that §Cost 1 and §What was considered and not done already
+carried it. **Wrong**, and caught by review before this section merged: §What
+was considered and not done says, in this record's own ratified text, *"This
+is the follow-up this decision most obviously owes, and it is an issue, not a
+decision"* — so the draft contradicted the body it was appended to — and
+`kodhama-0027` D1 requires every *"task, a bug, a parked question, a
+follow-up"* to be an issue in the repository that owns the work.
+
+**The `kodhama-0029` D6 defence was mine, and it was not in this file.** It
+was offered in #116's description and to the maintainer directly — *"D6 is
+explicit that an artifact existing only to be closed is the thing to stop
+producing"* — and the review rebutted it there: D6 exempts only an artifact
+*"that exists only to be closed"*, while opening two install doors is
+substantive outstanding work, the opposite case. An earlier version of this
+paragraph attributed that citation to the record's draft, which never made it.
+The motive is worth naming: the draft was written to reduce a follow-up pile,
+not because the corpus supported it.
+
+**The draft reached the right answer for the wrong reason, and the reason is
+what was wrong.** Maintainer direction the same day retired the three plugins
+outright, which removes the work an issue would have tracked — see the
+annotation under the title. So no issue is filed, on grounds the corpus
+actually supports. Had the plugins stayed live, one would be owed.

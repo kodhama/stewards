@@ -70,8 +70,11 @@ that plugin no longer arrives through this repository's catalog, and
 **`kodhama/grove` publishes no catalog of its own** — its package is still at
 `plugins/grove/` with both host manifests, but nothing lists it, so
 `grove@kodhama` no longer resolves anywhere. Grove reaches this repo by an
-already-installed copy or a direct source install until a door is chosen for
-it (`kodhama-0030` §Cost). Two placeholders are resolved locally. The test
+already-installed copy or a direct source install, and **no door is planned**:
+the plugin is retired, and grove's own direction is being re-thought as a
+supervisor over existing workflows, which would be a project restart rather
+than a re-listing (`kodhama-0030`, maintainer-direction annotation).
+Two placeholders are resolved locally. The test
 gate is `python3 -m unittest discover -s tests` — run it before reporting
 done; the **test gate** runs on any PR touching `tests/`, either marketplace
 catalog, `.claude/settings.json`, or the validation workflow itself — and on

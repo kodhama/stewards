@@ -110,7 +110,12 @@ class CatalogTests(unittest.TestCase):
         otherwise sit green.
         """
         for relative in (
-            "plugins",
+            # `plugins/kodhama`, not `plugins/` — D3 deletes the package, and
+            # the scope block calls present contents "not a scope: it moves
+            # when the contents move". Forbidding the whole container would
+            # fail on an unrelated future plugin while the retired package
+            # stayed correctly absent.
+            "plugins/kodhama",
             "scripts/validate_kodhama_plugin.py",
             "scripts/keyless_admission_check.py",
             "tests/fixtures",
