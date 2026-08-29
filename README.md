@@ -5,17 +5,15 @@ The **stewards** are [kodhama](https://github.com/kodhama/kodhama)'s worker coll
 Its three long-standing jobs are cross-collective **decisions** (`decisions/`), the **conductor seat** (`conductor/`), and the **install door** (the collective's canonical install repository per `kodhama-0002`, `kodhama-0012`, and `kodhama-0017`). That is what the repo is for, not a closed list of what it contains: **product truths live in product repos, and only genuinely cross-collective content lands here.**
 
 <!-- distribution-scope:begin -->
-The install door includes the host-native Claude and Codex catalogs. Those
-catalogs list plugins this repository does not originate — each of those is
-sourced from the repository that owns it. The only plugin **originated here**
-is `kodhama`, which carries two skills and one provisioning script: verified
-Claude/Codex marketplace setup for CI, the kodhama issue convention (staged
-here while the issue skill's home is decided), and a dry-run-by-default
-label-and-type seeder. That is a description of present contents, not a scope:
-it moves when the contents move. The install door does not certify product
-releases or support and owns no universal version, tag, release-history,
-approval, runtime-sandbox, cross-repository-resolution, or effective-support
-machinery.
+The install door includes the host-native Claude and Codex catalogs. Both
+catalogs list `trellis` and nothing else, sourced from the repository that
+owns it. This repository **originates no plugin**: the `kodhama` package it
+used to carry was deleted along with its listing (`kodhama-0030`), and grove
+and wisp were delisted in the same act. That is a description of present
+contents, not a scope: it moves when the contents move. The install door does
+not certify product releases or support and owns no universal version, tag,
+release-history, approval, runtime-sandbox, cross-repository-resolution, or
+effective-support machinery.
 <!-- distribution-scope:end -->
 
 The stewards: [trellis](https://github.com/kodhama/trellis) (governance) · [grove](https://github.com/kodhama/grove) (agent swarm) · [wisp](https://github.com/kodhama/wisp) (runtime observability) · [design-system](https://github.com/kodhama/design-system) (brand) · [homebrew-tap](https://github.com/kodhama/homebrew-tap) (delivery).

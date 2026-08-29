@@ -5,11 +5,8 @@ on:
     paths:
       - ".agents/plugins/marketplace.json"
       - ".claude-plugin/marketplace.json"
+      - ".claude/settings.json"
       - ".github/workflows/validate-marketplace-setup.yml"
-      - "conductor/wave-issue-taxonomy/plugin/**"
-      - "plugins/kodhama/**"
-      - "scripts/validate_kodhama_plugin.py"
-      - "scripts/keyless_admission_check.py"
       - "tests/**"
   workflow_dispatch:
 
@@ -24,15 +21,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - name: Validate package and contract tests
+      - name: Catalog and carrier tests
         run: |
           set -euo pipefail
-          python3 scripts/validate_kodhama_plugin.py
           python3 -m unittest discover -s tests -v
-      - name: Install Claude Code for keyless admission evidence
-        run: npm install --global @anthropic-ai/claude-code@2.1.199
-      - name: Keyless catalog-admission evidence
-        run: python3 scripts/keyless_admission_check.py
 
   claude-marketplace:
     runs-on: ubuntu-latest
@@ -81,12 +73,6 @@ jobs:
             throw new Error("Claude marketplace root mismatch");
           }
           NODE
-      - name: Validate package carriers
-        env:
-          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
-        run: |
-          set -euo pipefail
-          python3 scripts/validate_kodhama_plugin.py
 
   codex-marketplace:
     runs-on: ubuntu-latest
@@ -138,12 +124,6 @@ jobs:
             throw new Error("Codex marketplace root mismatch");
           }
           NODE
-      - name: Validate package carriers
-        env:
-          CODEX_HOME: ${{ runner.temp }}/codex
-        run: |
-          set -euo pipefail
-          python3 scripts/validate_kodhama_plugin.py
 
   mixed-marketplace:
     runs-on: ubuntu-latest
@@ -227,11 +207,8 @@ jobs:
             throw new Error("Codex marketplace root mismatch");
           }
           NODE
-      - name: Validate isolation and package carriers
+      - name: Validate host state isolation
         env:
           CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
           CODEX_HOME: ${{ runner.temp }}/codex
-        run: |
-          set -euo pipefail
-          test "$CLAUDE_CONFIG_DIR" != "$CODEX_HOME"
-          python3 scripts/validate_kodhama_plugin.py
+        run: test "$CLAUDE_CONFIG_DIR" != "$CODEX_HOME"

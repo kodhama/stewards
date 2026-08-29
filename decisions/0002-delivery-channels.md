@@ -61,6 +61,17 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 > The marketplace name `kodhama`, thin-catalog principle, and product-owned
 > release cadence stand unchanged.
 
+> **Forward pointer (2026-08-29, post-ratification annotation).**
+> `kodhama-0030-install-door-serves-trellis-only` empties that door of
+> everything but trellis. The **one-door principle and the marketplace name
+> are unchanged**, and `trellis@kodhama` still resolves — but the plugin
+> delivery string **`grove@kodhama`** named above no longer resolves in any
+> catalog, and neither does `wisp@kodhama`. Read the 2026-07-10 pointer above
+> with that in mind: it deprecated trellis's in-repo marketplace *because* the
+> org marketplace was "now the only door", and 0030 closes that door for
+> grove and wisp without opening a replacement. `kodhama-0030` §Cost 1 records
+> the gap.
+
 **Context (maintainer, 2026-07-07).** Espalier's current delivery
 ("vendor the charters by hand", espalier README §Adopting) reads as
 inconsistent with trellis (brew + curl + Claude plugin). The maintainer

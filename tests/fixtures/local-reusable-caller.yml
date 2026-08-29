@@ -1,8 +1,0 @@
-name: Local reusable caller fixture
-on: workflow_dispatch
-
-jobs:
-  agent:
-    uses: ./.github/workflows/local-reusable.yml
-    with:
-      host: claude

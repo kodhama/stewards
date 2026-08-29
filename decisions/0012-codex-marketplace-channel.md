@@ -10,6 +10,17 @@ provenance: maintainer approval on 2026-07-23 to implement Grove distribution fo
 
 # Decision: the install door gains a native Codex catalog
 
+> **Superseded in part by `kodhama-0030-install-door-serves-trellis-only`**
+> (2026-08-29 annotation; text below preserved as written). The Grove-specific
+> criteria are retired: Grove is delisted from both catalogs, so AC1 —
+> "discover `grove@kodhama`, and resolve its `plugins/grove` source" — is
+> unsatisfiable by construction, and §Decision's "The Codex catalog initially
+> lists only Grove" now describes a catalog listing only Trellis. **The
+> substance stands**: one canonical install repository, the marketplace name
+> `kodhama`, one host-native manifest per supported host, and catalogs holding
+> only discovery metadata and source pointers. AC4 (a product without a
+> validated Codex package is absent) is untouched.
+
 ## Decision
 
 `kodhama/stewards` remains the one canonical install repository and the

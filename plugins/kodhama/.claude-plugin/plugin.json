@@ -1,8 +1,0 @@
-{
-  "name": "kodhama",
-  "version": "0.4.0",
-  "description": "Two skills: verified Claude and Codex marketplace setup in repository-owned GitHub Actions workflows, and the kodhama issue convention, staged here while its home is decided.",
-  "author": {
-    "name": "kodhama"
-  }
-}

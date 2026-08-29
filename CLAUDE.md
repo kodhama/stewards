@@ -11,17 +11,15 @@ repository per `kodhama-0002`, `kodhama-0012`, and `kodhama-0017`) — but what
 belongs here is settled by the rule below, not by that list.
 
 <!-- distribution-scope:begin -->
-The install door includes the host-native Claude and Codex catalogs. Those
-catalogs list plugins this repository does not originate — each of those is
-sourced from the repository that owns it. The only plugin **originated here**
-is `kodhama`, which carries two skills and one provisioning script: verified
-Claude/Codex marketplace setup for CI, the kodhama issue convention (staged
-here while the issue skill's home is decided), and a dry-run-by-default
-label-and-type seeder. That is a description of present contents, not a scope:
-it moves when the contents move. The install door does not certify product
-releases or support and owns no universal version, tag, release-history,
-approval, runtime-sandbox, cross-repository-resolution, or effective-support
-machinery.
+The install door includes the host-native Claude and Codex catalogs. Both
+catalogs list `trellis` and nothing else, sourced from the repository that
+owns it. This repository **originates no plugin**: the `kodhama` package it
+used to carry was deleted along with its listing (`kodhama-0030`), and grove
+and wisp were delisted in the same act. That is a description of present
+contents, not a scope: it moves when the contents move. The install door does
+not certify product releases or support and owns no universal version, tag,
+release-history, approval, runtime-sandbox, cross-repository-resolution, or
+effective-support machinery.
 <!-- distribution-scope:end -->
 
 Decisions made here keep the `kodhama-NNNN` id namespace — they are kodhama
@@ -67,14 +65,16 @@ Rules (the collective's):
 This repo is **grove-managed**: conductor work items run as
 [grove](https://github.com/kodhama/grove) runs, and the agent roles arrive
 from the grove plugin as `grove:<role>` — never vendored here (`grove/adr-0026`
-D1; the stale vendored copies were removed in #52). Two placeholders are
-resolved locally. The test gate is `python3 -m unittest discover -s tests`
-plus `python3 scripts/validate_kodhama_plugin.py` — run both before reporting
-done; the **test gate** runs on any PR touching `tests/`, the two plugin
-scripts under `scripts/`, `plugins/kodhama/`, the plugin subtree of the
-issue-taxonomy staging tree (`conductor/wave-issue-taxonomy/plugin/`), either
-marketplace catalog, or the validation workflow itself — and on nothing else,
-so a docs-only PR pays none of its cost. It is not the only check: the Claude
+D1; the stale vendored copies were removed in #52). Since `kodhama-0030`
+that plugin no longer arrives through this repository's catalog, and
+**`kodhama/grove` publishes no catalog of its own** — its package is still at
+`plugins/grove/` with both host manifests, but nothing lists it, so
+`grove@kodhama` no longer resolves anywhere. Grove reaches this repo by an
+already-installed copy or a direct source install until a door is chosen for
+it (`kodhama-0030` §Cost). Two placeholders are resolved locally. The test gate is `python3 -m unittest discover -s tests` —
+run it before reporting done; the **test gate** runs on any PR touching
+`tests/`, either marketplace catalog, or the validation workflow itself — and
+on nothing else, so a docs-only PR pays none of its cost. It is not the only check: the Claude
 review and the workflow-parity job carry no `paths:` filter and run on every
 PR. There is no typecheck gate. A parked
 item is an issue — `kodhama-0027` D2 removed the briefs' Parked sections

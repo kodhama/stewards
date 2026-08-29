@@ -1,7 +1,8 @@
 ---
 id: kodhama-spec-0004-ci-marketplace-setup-skill
 type: spec
-status: approved  # maintainer approved v2 on 2026-07-25 after independent spec, conformance, and corpus review; v3-v5 are agent-drafted amendments awaiting the maintainer's intent act
+status: superseded  # by kodhama-0030, 2026-08-29 — the skill this spec contracts was deleted with plugins/kodhama/
+superseded_by: [kodhama-0030-install-door-serves-trellis-only]  # maintainer intent act 2026-08-29, in session
 depends_on: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 implements: [kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama]
 owner: agent
@@ -10,6 +11,13 @@ version: 5
 ---
 
 # GitHub Actions marketplace-setup skill
+
+> **Superseded by `kodhama-0030-install-door-serves-trellis-only`**
+> (2026-08-29). `plugins/kodhama/skills/setup-ci-marketplace/` is deleted,
+> along with the fixture corpus and authoring tests that made this contract
+> checkable. The workflow it authored,
+> `.github/workflows/validate-marketplace-setup.yml`, survives as a
+> hand-maintained file. Nothing implements this spec.
 
 > **AMENDED 2026-07-27 — v4 → v5 (`kodhama-0025`)**
 >

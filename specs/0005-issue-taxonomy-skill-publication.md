@@ -1,7 +1,8 @@
 ---
 id: kodhama-spec-0005-issue-taxonomy-skill-publication
 type: spec
-status: approved  # maintainer intent act 2026-07-31 ("approved", in session, answering a question that named this flip and the merge as separate acts) — the agent did not open the gate. Recorded at v9, the version the suite was then written against; the suite and `tests/TEST_DEPS.md` have since moved with the counter (v11 anchors the pin to this frontmatter); the flip is a lifecycle act and changes no testable clause, so it does not bump
+status: superseded  # by kodhama-0030, 2026-08-29 — the package this spec publishes into was deleted. Prior: approved by maintainer intent act 2026-07-31 ("approved", in session), recorded at v9
+superseded_by: [kodhama-0030-install-door-serves-trellis-only]  # maintainer intent act 2026-08-29, in session
 depends_on: [kodhama-0026-issue-taxonomy, kodhama-0017-retire-family-release-certification, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-0021-separate-adoption-posture-from-support, kodhama-0025-retire-the-surface-matrix, kodhama-spec-0004-ci-marketplace-setup-skill@v5]
 implements: [kodhama-0026-issue-taxonomy]
 owner: agent
@@ -10,6 +11,15 @@ version: 13
 ---
 
 # Publishing the issue-convention skill into the Kodhama plugin
+
+> **Superseded by `kodhama-0030-install-door-serves-trellis-only`**
+> (2026-08-29). The package this spec publishes into no longer exists:
+> `plugins/kodhama/` is deleted, taking `skills/issues/` and the
+> `seed-issue-taxonomy.sh` actuator with it. **The convention itself is
+> untouched** — `kodhama-0026` and `kodhama-0027` still govern how work is
+> tracked; what is gone is the skill that taught it and the actuator that
+> seeded the labels (`kodhama-0030` §Cost 4). Only S14, the
+> `distribution-scope` three-way mirror, still has a live carrier.
 
 > **AMENDED 2026-08-03 — v12 → v13**
 >
