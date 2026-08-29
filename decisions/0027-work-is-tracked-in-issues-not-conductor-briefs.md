@@ -10,6 +10,14 @@ date: 2026-08-01
 
 # 0027 — work is tracked in issues; the conductor brief stops being a ledger
 
+> **Forward pointer.** `kodhama-0032-the-hub-keeps-only-decisions` supersedes
+> **D5's second sentence only** — *"They are not migrated or deleted"*. The
+> briefs are deleted; `conductor/` no longer exists. **D2, D3 and D4 stand and
+> are vacuous**: they say what a brief may hold, and there are no briefs. They
+> are not retracted, so if the seat is re-occupied they still govern. D5's
+> first sentence — briefs are archive, not debt — was never in dispute; it is
+> why deleting them costs nothing to read.
+
 > **Forward pointer.** `kodhama-0031-work-leaves-github-issues` supersedes
 > **D1 only** — work is no longer tracked in GitHub issues, and the
 > `kodhama-0026` taxonomy it required is retired with them. **D2, D3, D4 and

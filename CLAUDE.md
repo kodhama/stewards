@@ -2,9 +2,9 @@
 
 The **stewards** are [kodhama](https://github.com/kodhama/kodhama)'s worker
 collective. This repo is their coordination hub, holding the operational role
-formerly in `kodhama/kodhama` (`kodhama-0009`): cross-collective **decisions**,
-the **conductor seat**, and the **install door**. What belongs here is settled
-by the rules below, not by that list.
+formerly in `kodhama/kodhama` (`kodhama-0009`): cross-collective **decisions**
+and the **install door**. What belongs here is settled by the rules below, not
+by that list.
 
 <!-- distribution-scope:begin -->
 The install door includes the host-native Claude and Codex catalogs. Both
@@ -34,14 +34,17 @@ explaining *why* a rule exists here, the explanation belongs in its decision.
 Rules (the collective's):
 - **Decisions are append-only** — frontmatter `id/type/status/depends_on/owner`;
   supersede with a forward pointer, never edit a ratified decision.
+- **Lifecycle**: `draft → gated → approved → superseded`. **`approved` requires
+  a recorded human intent act** — an agent never flips it, and no author
+  approves their own work; the `status:` line quotes the act. This is what
+  survives of `.grove/lifecycle.md` (`kodhama-0032` D3).
 - **One home per kind of information.** Product truths live in product repos.
   When in doubt, it belongs to a product.
 - **Work is not tracked here.** `kodhama-0031` retired the GitHub-issues
   mandate and the `kodhama-0026` taxonomy with it; work moves to Linear, and
-  which remaining backlogs port is open by choice. Briefs in `conductor/` are
-  archive — not updated, never read as current state, and never deleted
-  (`kodhama-0027` D5, which outlives the tracker). A parked item is a tracker
-  item, not a file here.
+  which remaining backlogs port is open by choice. A parked item is a tracker
+  item, not a file here. `conductor/` and `specs/` are deleted
+  (`kodhama-0032`); git history is their archive.
 - **Model economy**: Sonnet-class for execution; strongest model only for
   design/judgment sittings.
 - The trellis overlay is what this repo installs on itself — run
