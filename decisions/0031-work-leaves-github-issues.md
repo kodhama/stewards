@@ -3,9 +3,10 @@ id: kodhama-0031-work-leaves-github-issues
 type: decision
 status: approved  # maintainer intent act 2026-08-29, in session: "I also want to retire the issues skill … I will likely not use gh issues for anything else" — an in-PR flip recording that act, per .grove/lifecycle.md's gated -> approved mover rule; the merge performs the ship. The agent did not open the gate
 depends_on: [kodhama-0026-issue-taxonomy, kodhama-0027, kodhama-0030-install-door-serves-trellis-only]
+informed_by: [trellis/decision-0075]  # the product-layer migration whose open question this answers
 owner: agent
 updated: 2026-08-29
-provenance: "maintainer direction, 2026-08-29, given while retiring the kodhama plugin: the issue convention is to be retired, work is moving to Linear, and which remaining backlogs get ported is explicitly left open. The taxonomy's retirement — rather than its survival as a tool-independent vocabulary — was the maintainer's choice between those two options, put to them directly."
+provenance: "maintainer direction, 2026-08-29, given while retiring the kodhama plugin: the issue convention is to be retired, work is moving to Linear, and which remaining backlogs get ported is explicitly left open. The taxonomy's retirement — rather than its survival as a tool-independent vocabulary — was the maintainer's choice between those two options, put to them directly. Drafted first without reading the product repositories, which made the move look like it began here; corrected pre-merge against math-quest (2026-08-20) and trellis/decision-0075 (2026-08-23)."
 ---
 
 # 0031 — work leaves GitHub issues; the taxonomy retires with it
@@ -45,7 +46,8 @@ churn against a surface being abandoned.
 
 ## Why
 
-The maintainer's direction is the reason. Two things are worth recording beside
+The maintainer's direction is the reason. **This record does not start the move
+— it lands it at the family layer**, and three things are worth recording beside
 it.
 
 **The convention had already lost its carrier.** `kodhama-0030` D3 deleted
@@ -56,7 +58,23 @@ is gone."* That was true when written and is the state this record ends. A
 convention with no tooling, no skill and a maintainer who has stopped using its
 surface is a rule that only exists to be restated.
 
-**Adoption had already begun reversing.** Measured 2026-08-29:
+**The migration is progressive and already two repositories in.**
+`kodhama/math-quest` moved on 2026-08-20 — 106 open issues to 0.
+`trellis/decision-0075` followed on 2026-08-23, recording *"the maintainer's
+stated intent is to move the family to Linear progressively, trellis first"*
+and porting 27 issues to 19, closing 8. Neither could amend `kodhama-0026`,
+which is a kodhama-level act, so trellis has been running as **a declared
+exception rather than a silent one** since that date. `decision-0075` closes
+with the open question this record answers:
+
+> *"What happens to `kodhama-0026-issue-taxonomy` when the last repo leaves
+> GitHub issues? Retired, or rewritten against Linear. **Not this record's to
+> decide.**"*
+
+It is retired. **D2 above is the answer to that question**, and trellis's
+exception becomes the rule.
+
+**Adoption had already reversed where it was measured.** Counted 2026-08-29:
 
 | repo | open issues |
 |---|---:|
@@ -68,10 +86,10 @@ surface is a rule that only exists to be restated.
 | math-quest | **0** |
 | design-system, homebrew-tap | 0 (never had a backlog) |
 
-`math-quest` is fully moved to Linear and `trellis` is partway, per the
-maintainer 2026-08-29. On 2026-08-01 `kodhama/stewards#79` recorded trellis at
-24 open and unmigrated; it is now empty. **The direction of travel is already
-off GitHub**, and 0026 was being enforced against repositories leaving.
+Both zeroes are ported repositories, not empty ones. On 2026-08-01
+`kodhama/stewards#79` recorded trellis at 24 open and unmigrated; `decision-0075`
+emptied it three weeks later. **The direction of travel was already off GitHub**,
+and 0026 was being enforced against repositories that had left.
 
 ## Cost, stated
 
@@ -96,14 +114,23 @@ recorded that deletion leaving the argument resting on two `.grove/` files.
 Retiring the taxonomy removes the `implements:`-carrying issue metadata too.
 The rule stands; its evidence base keeps shrinking.
 
-**4. The vocabulary work is discarded, not banked.** `kodhama-0026` settled two
-questions against the corpus — that there is no `Idea` type, and that
-commitment is a stage rather than a kind — with a discriminating test:
-*"a category which dissolves the moment work finishes is a lifecycle position,
-not a kind."* That reasoning is tool-independent and would have transferred.
-Option 2 in the sitting that produced this record was to keep it as a portable
-vocabulary; the maintainer chose the clean cut. Recorded so the choice is
-visible as a choice.
+**4. The vocabulary is retired as a *record*, having already transferred as a
+*practice*.** An earlier draft of this record claimed the work was "discarded,
+not banked." That was wrong, and reading the product repositories corrected it:
+`trellis/decision-0075` D2 maps every dimension rather than dropping it — type
+becomes Linear's `Bug`/`Feature`/`Improvement`, stage becomes workflow states,
+and the severity descriptions were **adopted verbatim from math-quest**, which
+had made the same mapping three days earlier. `facing:` was dropped as unused in
+practice, and `stage:` was deliberately not ported because it recorded filing
+date rather than progress.
+
+So what retires here is the **GitHub encoding and the record that mandated it**,
+not the thinking. What genuinely does not carry forward is 0026's reasoning
+*as a written artifact* — that there is no `Idea` type, and the discriminating
+test that *"a category which dissolves the moment work finishes is a lifecycle
+position, not a kind."* Two repositories re-derived the mapping by hand; a third
+will have no record to read. Keeping 0026 as a tool-independent vocabulary was
+the alternative put to the maintainer and declined.
 
 ## What was considered and not done
 
@@ -131,6 +158,12 @@ in `kodhama/kodhama`.
 `CLAUDE.md`'s **Work is tracked in GitHub issues** rule is rewritten in the same
 change that ratifies this. The conductor-brief half of that clause is
 `kodhama-0027` D2–D5 and survives.
+
+`trellis` stops being a declared exception to `kodhama-0026` and becomes an
+ordinary case of the rule. `trellis/AGENTS.md:116` says the convention does not
+apply there *"until the family move lands"* — this is that landing, and the
+sentence is now stale in trellis's favour. Correcting it is trellis's call, not
+this record's, and no issue is filed for it (D4).
 
 The twelve issues closed in this repository on 2026-08-29 under `kodhama-0030`
 are unaffected; they were closed as moot, not as part of this move.
