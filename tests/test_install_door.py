@@ -152,7 +152,10 @@ class RepositoryShapeTests(unittest.TestCase):
         self.assertEqual([], offenders, "the retired surface/observation shape came back")
 
     def test_the_distribution_scope_block_is_mirrored_exactly(self) -> None:
-        """spec-0005 S14: three hand-mirrored copies, byte for byte.
+        """Three hand-mirrored copies, byte for byte.
+
+        Originally spec-0005 S14; that spec was deleted by `kodhama-0032` and
+        this test is now the whole of the rule.
 
         `distribution/repository-scope.md` is canonical and `CLAUDE.md` and
         `README.md` copy it by hand, which is exactly the arrangement that

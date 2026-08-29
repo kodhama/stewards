@@ -2,9 +2,9 @@
 
 The **stewards** are [kodhama](https://github.com/kodhama/kodhama)'s worker
 collective. This repo is their coordination hub, holding the operational role
-formerly in `kodhama/kodhama` (`kodhama-0009`): cross-collective **decisions**,
-the **conductor seat**, and the **install door**. What belongs here is settled
-by the rules below, not by that list.
+formerly in `kodhama/kodhama` (`kodhama-0009`): cross-collective **decisions**
+and the **install door**. What belongs here is settled by the rules below, not
+by that list.
 
 <!-- distribution-scope:begin -->
 The install door includes the host-native Claude and Codex catalogs. Both
@@ -34,14 +34,20 @@ explaining *why* a rule exists here, the explanation belongs in its decision.
 Rules (the collective's):
 - **Decisions are append-only** — frontmatter `id/type/status/depends_on/owner`;
   supersede with a forward pointer, never edit a ratified decision.
+- **Lifecycle**: `draft → gated → approved → superseded` — `kodhama-0004`'s
+  uniform enum, which stands (`kodhama-0008` D1). **How the approval act is
+  performed and recorded is deliberately not stated here**: `kodhama-0008` D2
+  bars any kodhama-meta artifact from defining it and D4 bars hand-authoring
+  the operating model per repo. It arrives by installing grove, retired from
+  this catalog by `kodhama-0030`; `kodhama-0032` D3 deleted the local charter
+  copy.
 - **One home per kind of information.** Product truths live in product repos.
   When in doubt, it belongs to a product.
 - **Work is not tracked here.** `kodhama-0031` retired the GitHub-issues
   mandate and the `kodhama-0026` taxonomy with it; work moves to Linear, and
-  which remaining backlogs port is open by choice. Briefs in `conductor/` are
-  archive — not updated, never read as current state, and never deleted
-  (`kodhama-0027` D5, which outlives the tracker). A parked item is a tracker
-  item, not a file here.
+  which remaining backlogs port is open by choice. A parked item is a tracker
+  item, not a file here. `conductor/` and `specs/` are deleted
+  (`kodhama-0032`); git history is their archive.
 - **Model economy**: Sonnet-class for execution; strongest model only for
   design/judgment sittings.
 - The trellis overlay is what this repo installs on itself — run

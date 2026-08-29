@@ -19,6 +19,36 @@ date: 2026-08-01
 > diagnosis indicts duplication, not a tracker, and holds identically against
 > Linear. The parked-questions rule is likewise unaffected.
 
+> **Forward pointer.** `kodhama-0032-the-hub-keeps-only-decisions` supersedes
+> **one sentence of D5** — *"They are not migrated or deleted."* The briefs are
+> deleted; `conductor/` no longer exists. **D5's other three sentences stand**:
+> briefs are archive not debt (never in dispute — it is why deleting them costs
+> nothing to read); they stop being updated and are not read as current state;
+> and `wave-family-consolidation.md`'s 2026-08-01 reconciliation was its last.
+>
+> **D2, D3 and D4 stand.** D2 and D3 are now vacuous — they say what a brief
+> may hold, and there are no briefs — but **D4 is not**: its prohibition is
+> vacuous, while the question it raises (where lessons and traps *do* live, its
+> Open question 1) was never answered and does not go away with the directory.
+> None is retracted, so if the seat is re-occupied they still govern.
+>
+> **This narrows the pointer above it.** `kodhama-0031`'s annotation says
+> *"D2, D3, D4 and D5 stand"* — true when written, and its point was that D1's
+> move to Linear left the brief rules alone. It is left exactly as ratified.
+> Read them in order: 0031 kept D5 whole, and this supersedes one sentence of
+> it.
+>
+> **The frontmatter is narrowed too, and not edited.** Line 6 reads
+> `superseded_in_part_by: [kodhama-0031-work-leaves-github-issues]  # D1's
+> destination only; D2-D5 stand` — that comment is no longer exact, since one
+> sentence of D5 does not stand. It is left byte-identical: adding
+> `kodhama-0032` to that array would rewrite a ratified line, which
+> `kodhama-0004` forbids and which `kodhama-0029` C3 settled the same way
+> (*"every ratified line … is left byte-identical and the markers sit beside
+> it"*). **This annotation is the marker.** A reader taking the frontmatter as
+> exhaustive would miss `kodhama-0032`; the body is authoritative over the
+> relation comment.
+
 ## Context
 
 `CLAUDE.md` mandates the practice: *"each cross-repo wave gets a brief in

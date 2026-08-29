@@ -8,6 +8,12 @@ updated: 2026-07-27
 provenance: "maintainer-commissioned audit of stewards, trellis, grove, wisp, spore and design-system, 2026-07-26/27, with math-quest read as the consumer; every figure below verified against fresh clones of `main` at the dates given"
 ---
 
+> **Dated snapshot, 2026-07. Paths below may no longer exist.** `conductor/`
+> and `specs/` were deleted by `kodhama-0032` (2026-08-29); links into them
+> resolve through git history, not the working tree. The text is left exactly
+> as audited — including its own prediction that *"Deletion needs a rule
+> change, not a cleanup"*, which is what `kodhama-0032` is.
+
 # Discovery: the family audit of July 2026
 
 A record of what was measured, what earns its keep, and what the audit got wrong.
