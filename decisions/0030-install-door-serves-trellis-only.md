@@ -10,6 +10,29 @@ provenance: "maintainer direction, 2026-08-29, given directly and reaffirmed in 
 
 # 0030 — the install door serves trellis only
 
+> **Maintainer direction (2026-08-29, post-ratification annotation; text below
+> preserved as written).** Given the same day, after ratification: *"I might
+> bring back more plugins in the future, I have some ideas to re-think grove in
+> a different light (as a workflow supervisor on top of existing workflows), but
+> it will probably ne a project restart, so for now stewards will serve only
+> trellis as a marketplace, and all the other plugins, including kodhama as a
+> plugin, are to be retired."*
+>
+> This **reframes §Cost 1 and closes the follow-up in §What was considered and
+> not done.** That section calls opening doors in `kodhama/grove` and
+> `kodhama/wisp` *"the follow-up this decision most obviously owes,"* written
+> on the assumption that the three plugins were delisted but live. They are
+> **retired**. No install door is owed to a retired plugin, so **no issue is
+> filed for it** — not because `kodhama-0027` D1 is waived, but because there
+> is no outstanding work for it to track.
+>
+> §Cost 1 stands as a factual record of what the delisting did — grove and wisp
+> resolve in no catalog — and stops being a debt. **Grove's return, if it
+> comes, is a project restart** under a different premise (a supervisor over
+> existing workflows), which would arrive as its own decision and would not
+> restore this one's listings. D6 above is unaffected: re-listing anything here
+> still supersedes this record.
+
 ## Decision
 
 **1. Both catalogs list `trellis` and nothing else.** `grove`, `kodhama` and
@@ -174,7 +197,21 @@ mutation-tested both directions: the package returning fires it, an unrelated
 `plugins/unrelated/` does not. **The record needed no change for this one** —
 the test was wrong about the decision, not the decision about itself.
 
-**Not a defect, recorded to stop it being re-opened.** The grove/wisp
-install-door gap is carried by §Cost 1 and §What was considered and not done.
-It needs no separate issue: nothing reads one that this record does not already
-say, and filing it would duplicate state this record updates by supersession.
+**C3 — a third correction, to this corrections section itself.** Its first
+draft claimed the grove/wisp install-door gap *"needs no separate issue"*,
+citing `kodhama-0029` D6. **Wrong on three counts**, and caught by review
+before this section merged. §What was considered and not done says, in this
+record's own ratified text, *"This is the follow-up this decision most
+obviously owes, and it is an issue, not a decision"* — so the draft
+contradicted the body it was appended to. `kodhama-0027` D1 requires every
+*"task, a bug, a parked question, a follow-up"* to be an issue in the
+repository that owns the work. And D6 exempts only an artifact *"that exists
+only to be closed"*; opening two install doors is substantive outstanding
+work, which is the opposite case. The motive for the draft is worth naming:
+it was written to reduce a follow-up pile, not because the corpus supported it.
+
+**The draft reached the right answer for the wrong reason, and the reason is
+what was wrong.** Maintainer direction the same day retired the three plugins
+outright, which removes the work an issue would have tracked — see the
+annotation under the title. So no issue is filed, on grounds the corpus
+actually supports. Had the plugins stayed live, one would be owed.
