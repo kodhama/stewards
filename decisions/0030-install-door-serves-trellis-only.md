@@ -141,3 +141,40 @@ that a ratified decision is never edited. `kodhama-0002` is annotated the
 same way. `kodhama-0018` and `kodhama-0020` described a package that no longer
 exists; neither is retracted, and neither is satisfiable — they are historical
 from this date.
+
+## Corrections
+
+Appended 2026-08-29, the same day, after the automated reviews on #114 returned
+two findings that were verified against the source and accepted. The fixes were
+pushed while the maintainer was merging, so they missed the merge; append-only
+binds from delivery, so the body above is left as written and both are corrected
+here.
+
+**C1 — D3's guard count is wrong.** It says *"four new guards asserting this
+record's D1–D3 hold"*. There are **three**, one per decision:
+`test_the_door_serves_only_what_kodhama_0030_left_standing` (D1),
+`test_no_carrier_still_offers_the_delisted_plugins` (D2), and
+`test_the_retired_package_left_no_carriers_behind` (D3). The file holds six
+tests in total — those three plus the trellis entry, the `distribution-scope`
+mirror, and the retired-surface guard, all three carried over rather than new.
+**§Cost 6 was right and D3 contradicted it** ninety lines apart in one file,
+which is the same defect `kodhama-0029` C6 records against itself. The
+mutation evidence offered for D3 was loose in the same direction: four
+mutations were run, but one of them drifted the `distribution-scope` block,
+exercising a carried-over test rather than a new guard. Three new guards, three
+discriminating mutations.
+
+**C2 — the D3 guard was written broader than D3.** `plugins/kodhama/` is what
+this record deletes; the test asserted the whole `plugins/` container was
+absent. Any unrelated plugin added there later would have failed a test named
+for the retired package's absence — and the scope block this record rewrote
+says present contents are *"not a scope: it moves when the contents move"*.
+Narrowed to `plugins/kodhama` in the same change as this correction, and
+mutation-tested both directions: the package returning fires it, an unrelated
+`plugins/unrelated/` does not. **The record needed no change for this one** —
+the test was wrong about the decision, not the decision about itself.
+
+**Not a defect, recorded to stop it being re-opened.** The grove/wisp
+install-door gap is carried by §Cost 1 and §What was considered and not done.
+It needs no separate issue: nothing reads one that this record does not already
+say, and filing it would duplicate state this record updates by supersession.
