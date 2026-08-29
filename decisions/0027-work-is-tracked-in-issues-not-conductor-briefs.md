@@ -3,11 +3,21 @@ id: kodhama-0027
 type: decision
 status: approved  # maintainer intent act 2026-08-02, in session: "I would say approve them" — an in-PR flip recording that act, per grove/charters/lifecycle.md's gated -> approved mover rule; the merge performs the ship. Raised by the maintainer 2026-08-01 after a ledger reconciliation: "I question whether this ledger approach warrants a file or an issue... we're leaning more towards having these things in issues."
 depends_on: [kodhama-0026-issue-taxonomy, kodhama-0009-org-topology-spirit-stewards-trees]
+superseded_in_part_by: [kodhama-0031-work-leaves-github-issues]  # D1's destination only; D2-D5 stand
 owner: agent
 date: 2026-08-01
 ---
 
 # 0027 — work is tracked in issues; the conductor brief stops being a ledger
+
+> **Forward pointer.** `kodhama-0031-work-leaves-github-issues` supersedes
+> **D1 only** — work is no longer tracked in GitHub issues, and the
+> `kodhama-0026` taxonomy it required is retired with them. **D2, D3, D4 and
+> D5 stand**: the conductor brief still stops being a ledger, briefs are still
+> archive, a brief may still hold narrative with no issue shape, and lessons
+> still do not go in one. That reasoning was never about GitHub — D1's
+> diagnosis indicts duplication, not a tracker, and holds identically against
+> Linear. The parked-questions rule is likewise unaffected.
 
 ## Context
 

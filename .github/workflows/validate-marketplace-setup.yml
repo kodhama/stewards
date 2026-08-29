@@ -26,7 +26,16 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -v
 
-  claude-marketplace:
+  marketplace-registration:
+    # One job, both hosts. This used to be three — `claude-marketplace`,
+    # `codex-marketplace`, and a `mixed-marketplace` that did both then
+    # asserted the two config roots stay distinct. The mixed job ran every
+    # step the other two ran, so they proved nothing it did not, while costing
+    # two extra runners and two extra host installs on every PR that touches a
+    # gated path. Collapsed to the superset.
+    #
+    # What that trades away: a red here does not say which host broke. The step
+    # names do, and the catalog has one entry.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout validation code
@@ -34,10 +43,14 @@ jobs:
         with:
           persist-credentials: false
       - name: Install Claude Code
-        id: install-claude
         run: npm install --global @anthropic-ai/claude-code@2.1.199
+      - name: Install Codex
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex
+        run: |
+          mkdir -p "$CODEX_HOME"
+          npm install --global @openai/codex@0.145.0
       - name: "Kodhama marketplace: checkout kodhama"
-        id: kodhama_marketplace_kodhama_checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: kodhama/stewards
@@ -45,113 +58,6 @@ jobs:
           path: .kodhama/marketplaces/kodhama
           persist-credentials: false
       - name: "Kodhama marketplace: register kodhama for Claude"
-        id: kodhama_marketplace_kodhama_claude
-        working-directory: ${{ github.workspace }}
-        env:
-          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
-        run: |
-          set -euo pipefail
-          checkout_root=".kodhama/marketplaces/kodhama"
-          origin="$(git -C "$checkout_root" remote get-url origin)"
-          origin="${origin%.git}"
-          test "$origin" = "https://github.com/kodhama/stewards"
-          revision="$(git -C "$checkout_root" rev-parse HEAD)"
-          test "$revision" = "$GITHUB_SHA"
-          listing="$(mktemp)"
-          trap 'rm -f "$listing"' EXIT
-          claude plugin marketplace add ./.kodhama/marketplaces/kodhama --scope local
-          claude plugin marketplace list --json > "$listing"
-          node - "$listing" "$checkout_root" <<'NODE'
-          const fs = require("node:fs");
-          const [listing, checkout] = process.argv.slice(2);
-          const rows = JSON.parse(fs.readFileSync(listing, "utf8"));
-          const expected = fs.realpathSync(checkout);
-          const row = rows.find((item) => item.name === "kodhama");
-          if (!row) throw new Error("Claude marketplace missing");
-          const root = Object.hasOwn(row, "path") ? row.path : row.installLocation;
-          if (typeof root !== "string" || fs.realpathSync(root) !== expected) {
-            throw new Error("Claude marketplace root mismatch");
-          }
-          NODE
-
-  codex-marketplace:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout validation code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-      - name: Install Codex
-        id: install-codex
-        env:
-          CODEX_HOME: ${{ runner.temp }}/codex
-        run: |
-          mkdir -p "$CODEX_HOME"
-          npm install --global @openai/codex@0.145.0
-      - name: "Kodhama marketplace: checkout kodhama"
-        id: kodhama_marketplace_kodhama_checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          repository: kodhama/stewards
-          ref: ${{ github.sha }}
-          path: .kodhama/marketplaces/kodhama
-          persist-credentials: false
-      - name: "Kodhama marketplace: register kodhama for Codex"
-        id: kodhama_marketplace_kodhama_codex
-        working-directory: ${{ github.workspace }}
-        env:
-          CODEX_HOME: ${{ runner.temp }}/codex
-        run: |
-          set -euo pipefail
-          checkout_root=".kodhama/marketplaces/kodhama"
-          origin="$(git -C "$checkout_root" remote get-url origin)"
-          origin="${origin%.git}"
-          test "$origin" = "https://github.com/kodhama/stewards"
-          revision="$(git -C "$checkout_root" rev-parse HEAD)"
-          test "$revision" = "$GITHUB_SHA"
-          listing="$(mktemp)"
-          trap 'rm -f "$listing"' EXIT
-          codex plugin marketplace add ./.kodhama/marketplaces/kodhama --json
-          codex plugin marketplace list --json > "$listing"
-          node - "$listing" "$checkout_root" <<'NODE'
-          const fs = require("node:fs");
-          const [listing, checkout] = process.argv.slice(2);
-          const payload = JSON.parse(fs.readFileSync(listing, "utf8"));
-          const expected = fs.realpathSync(checkout);
-          const row = payload.marketplaces.find((item) => item.name === "kodhama");
-          if (!row || typeof row.root !== "string" ||
-              fs.realpathSync(row.root) !== expected) {
-            throw new Error("Codex marketplace root mismatch");
-          }
-          NODE
-
-  mixed-marketplace:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout validation code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-      - name: Install Claude Code
-        id: install-claude
-        run: npm install --global @anthropic-ai/claude-code@2.1.199
-      - name: Install Codex
-        id: install-codex
-        env:
-          CODEX_HOME: ${{ runner.temp }}/codex
-        run: |
-          mkdir -p "$CODEX_HOME"
-          npm install --global @openai/codex@0.145.0
-      - name: "Kodhama marketplace: checkout kodhama"
-        id: kodhama_marketplace_kodhama_checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          repository: kodhama/stewards
-          ref: ${{ github.sha }}
-          path: .kodhama/marketplaces/kodhama
-          persist-credentials: false
-      - name: "Kodhama marketplace: register kodhama for Claude"
-        id: kodhama_marketplace_kodhama_claude
         working-directory: ${{ github.workspace }}
         env:
           CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
@@ -180,7 +86,6 @@ jobs:
           }
           NODE
       - name: "Kodhama marketplace: register kodhama for Codex"
-        id: kodhama_marketplace_kodhama_codex
         working-directory: ${{ github.workspace }}
         env:
           CODEX_HOME: ${{ runner.temp }}/codex
