@@ -30,7 +30,7 @@ provenance: "maintainer direction, 2026-08-29, given directly and reaffirmed in 
 > resolve in no catalog — and stops being a debt. **Grove's return, if it
 > comes, is a project restart** under a different premise (a supervisor over
 > existing workflows), which would arrive as its own decision and would not
-> restore this one's listings. D6 above is unaffected: re-listing anything here
+> restore this one's listings. D6 below is unaffected: re-listing anything here
 > still supersedes this record.
 
 ## Decision
@@ -199,16 +199,23 @@ the test was wrong about the decision, not the decision about itself.
 
 **C3 — a third correction, to this corrections section itself.** Its first
 draft claimed the grove/wisp install-door gap *"needs no separate issue"*,
-citing `kodhama-0029` D6. **Wrong on three counts**, and caught by review
-before this section merged. §What was considered and not done says, in this
-record's own ratified text, *"This is the follow-up this decision most
-obviously owes, and it is an issue, not a decision"* — so the draft
-contradicted the body it was appended to. `kodhama-0027` D1 requires every
-*"task, a bug, a parked question, a follow-up"* to be an issue in the
-repository that owns the work. And D6 exempts only an artifact *"that exists
-only to be closed"*; opening two install doors is substantive outstanding
-work, which is the opposite case. The motive for the draft is worth naming:
-it was written to reduce a follow-up pile, not because the corpus supported it.
+arguing only that §Cost 1 and §What was considered and not done already
+carried it. **Wrong**, and caught by review before this section merged: §What
+was considered and not done says, in this record's own ratified text, *"This
+is the follow-up this decision most obviously owes, and it is an issue, not a
+decision"* — so the draft contradicted the body it was appended to — and
+`kodhama-0027` D1 requires every *"task, a bug, a parked question, a
+follow-up"* to be an issue in the repository that owns the work.
+
+**The `kodhama-0029` D6 defence was mine, and it was not in this file.** It
+was offered in #116's description and to the maintainer directly — *"D6 is
+explicit that an artifact existing only to be closed is the thing to stop
+producing"* — and the review rebutted it there: D6 exempts only an artifact
+*"that exists only to be closed"*, while opening two install doors is
+substantive outstanding work, the opposite case. An earlier version of this
+paragraph attributed that citation to the record's draft, which never made it.
+The motive is worth naming: the draft was written to reduce a follow-up pile,
+not because the corpus supported it.
 
 **The draft reached the right answer for the wrong reason, and the reason is
 what was wrong.** Maintainer direction the same day retired the three plugins
