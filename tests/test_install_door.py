@@ -51,7 +51,7 @@ class CatalogTests(unittest.TestCase):
                 "source": {
                     "path": "plugins/trellis",
                     "source": "git-subdir",
-                    "url": "kodhama/trellis",
+                    "url": "https://github.com/kodhama/trellis",
                 },
             },
             codex_trellis[0],
@@ -69,6 +69,14 @@ class CatalogTests(unittest.TestCase):
                 "the invariants, expressed at your strength."
             ),
             claude_trellis[0]["description"],
+        )
+        # Full URL required, not the `owner/repo` shorthand: hosts that pass
+        # the source URL straight to `git clone` (Droid) cannot expand the
+        # shorthand, so the catalog must carry a cloneable URL.
+        self.assertEqual(
+            {"path": "plugins/trellis", "source": "git-subdir",
+             "url": "https://github.com/kodhama/trellis"},
+            claude_trellis[0]["source"],
         )
 
     def test_the_door_serves_only_what_kodhama_0030_left_standing(self) -> None:
