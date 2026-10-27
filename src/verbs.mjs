@@ -89,12 +89,15 @@ const isPlaced = (live, fetched, skill) => {
  * Effect: copies every fetched skill into each harness, marked, through the
  * stage; old copies go to prev/. A folder an interrupted run already swapped
  * is left as it is, so the prev/ copy it made, hand edits and all, is not
- * replaced by the new copy. Returns the lock's record of the skills.
+ * replaced by the new copy. Each harness and skill swapped is added to
+ * `swapped` as it is done, so a caller can tell how far a failed run got.
+ * Returns the lock's record of the skills.
  * @param {Places} where
  * @param {Fetched} fetched
  * @param {readonly Harness[]} harnesses
+ * @param {Set<string>} [swapped] `<harness>/<skill>` keys
  */
-const placeSkills = (where, fetched, harnesses) => {
+const placeSkills = (where, fetched, harnesses, swapped = new Set()) => {
   for (const harness of harnesses) {
     for (const skill of fetched.skills) {
       if (isPlaced(join(where.skills(harness), skill.name), fetched, skill.name)) continue;
@@ -108,6 +111,7 @@ const placeSkills = (where, fetched, harnesses) => {
         },
         where.prev(harness, skill.name),
       );
+      swapped.add(`${harness}/${skill.name}`);
     }
   }
   return Object.fromEntries(fetched.skills.map((skill) => [skill.name, hashTree(skill.dir)]));
@@ -134,6 +138,43 @@ const problems = (where, tool, entry) =>
       ];
     }),
   );
+
+/**
+ * Effect: each skill folder of the tool, in the harnesses given, whose
+ * marker names another tag or commit than the lock: what an update that
+ * failed partway leaves. The copy it replaced, hand edits and all, is then
+ * only in prev/, so moving anything else into that slot would lose it.
+ * @param {Places} where
+ * @param {string} tool
+ * @param {Entry} entry
+ * @param {readonly Harness[]} harnesses
+ * @returns {readonly { readonly live: string, readonly prev: string, readonly tag: string, readonly commit: string }[]}
+ */
+const interrupted = (where, tool, entry, harnesses) =>
+  harnesses.flatMap((harness) =>
+    Object.keys(entry.skills).flatMap((skill) => {
+      const live = join(where.skills(harness), skill);
+      if (ownerOf(live, tool).state !== "ours") return [];
+      const marker = readMarker(live);
+      return marker?.tag === entry.tag && marker.commit === entry.commit
+        ? []
+        : [{ live, prev: where.prev(harness, skill), tag: String(marker?.tag), commit: String(marker?.commit) }];
+    }),
+  );
+
+/**
+ * Lines naming each folder an interrupted update left, where the copy it
+ * replaced is, and the update that finishes it.
+ * @param {string} tool
+ * @param {ReturnType<typeof interrupted>} found
+ */
+const finishFirst = (tool, found) => [
+  ...found.map(
+    ({ live, prev, tag }) =>
+      `${live} is at ${tag}, left by an update that stopped partway; the copy it replaced, with any hand edits, is in ${prev}.`,
+  ),
+  `Finish that update first: ${[...new Set(found.map(({ tag }) => `kodhama update ${tool}#${tag}`))].join(", or ")}.`,
+];
 
 /**
  * Effect: takes the tool's enables and marketplace out of the user-level
@@ -203,11 +244,14 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
         return refuse([...recovered, ...occupied, `kodhama installs only into empty paths or folders marked as ${tool}'s, so it wrote nothing.`]);
       }
       const found = entry === undefined || adding.length > 0 ? [] : problems(where, tool, entry);
-      if (found.length > 0) {
+      if (entry !== undefined && found.length > 0) {
+        const stuck = interrupted(where, tool, entry, entry.harnesses);
         return refuse([
           ...recovered,
           ...found,
-          `${tool} ${entry?.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`,
+          ...(stuck.length > 0
+            ? finishFirst(tool, stuck)
+            : [`${tool} ${entry.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`]),
         ]);
       }
       // What --migrate removes is every entry for the tool, enabled or not,
@@ -289,6 +333,20 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
         };
       }
       const recovered = recoverAll(where, entry.harnesses);
+      // Only the update that stopped partway may go on: any other would
+      // move a fresh copy over the prev/ copy holding the hand edits.
+      const stuck = interrupted(where, tool, entry, entry.harnesses);
+      const elsewhere = stuck.filter(({ tag, commit }) => tag !== fetched.tag || commit !== fetched.commit);
+      if (elsewhere.length > 0) {
+        const moved = elsewhere.filter(({ tag }) => tag === fetched.tag);
+        return refuse([
+          ...recovered,
+          ...finishFirst(tool, elsewhere),
+          ...(moved.length > 0
+            ? [`${fetched.tag} now points at ${fetched.commit}, not ${moved[0].commit}, so that update cannot be finished as it was; copy each prev/ folder above somewhere safe first.`]
+            : []),
+        ]);
+      }
       if (fetched.tag === entry.tag && fetched.commit === entry.commit) {
         return { code: 0, lines: [...recovered, `${tool} is already at ${entry.tag}.`] };
       }
@@ -304,24 +362,45 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
           const live = join(where.skills(harness), skill);
           const locked = entry.skills[skill];
           return locked !== undefined && ownerOf(live, tool).state === "ours" && !isPlaced(live, fetched, skill)
-            ? handEdits(live, locked, where.prev(harness, skill))
+            ? [{ key: `${harness}/${skill}`, lines: handEdits(live, locked, where.prev(harness, skill)) }]
             : [];
         }),
       );
-      const skills = placeSkills(where, fetched, entry.harnesses);
-      const dropped = Object.keys(entry.skills)
-        .filter((skill) => !names.includes(skill))
-        .flatMap((skill) => moveOut(where, tool, entry, entry.harnesses, skill));
-      writeLock(where.lock, {
-        lock: 1,
-        tools: { ...read.lock.tools, [tool]: { ...entry, tag: fetched.tag, commit: fetched.commit, skills } },
-      });
+      /** @type {Set<string>} */
+      const swapped = new Set();
+      /** @type {string[]} */
+      const dropped = [];
+      try {
+        const skills = placeSkills(where, fetched, entry.harnesses, swapped);
+        for (const skill of Object.keys(entry.skills).filter((skill) => !names.includes(skill))) {
+          for (const harness of entry.harnesses) dropped.push(...moveOut(where, tool, entry, [harness], skill));
+        }
+        writeLock(where.lock, {
+          lock: 1,
+          tools: { ...read.lock.tools, [tool]: { ...entry, tag: fetched.tag, commit: fetched.commit, skills } },
+        });
+      } catch (error) {
+        // The copies already swapped are in prev/, and the user must learn
+        // where before anything else runs.
+        return refuse([
+          ...recovered,
+          `kodhama stopped partway through updating ${tool} to ${fetched.tag}: ${error instanceof Error ? error.message : String(error)}`,
+          ...edits.filter(({ key }) => swapped.has(key)).flatMap(({ lines }) => lines),
+          ...dropped,
+          `To finish, run kodhama update ${tool}#${fetched.tag}.`,
+        ]);
+      }
       return {
         code: 0,
-        lines: [...recovered, `Updated ${tool} from ${entry.tag} to ${fetched.tag} (${fetched.commit}).`, ...edits, ...dropped],
+        lines: [
+          ...recovered,
+          `Updated ${tool} from ${entry.tag} to ${fetched.tag} (${fetched.commit}).`,
+          ...edits.flatMap(({ lines }) => lines),
+          ...dropped,
+        ],
       };
-  });
-  return "error" in done ? refuse([done.error]) : done.value;
+    });
+    return "error" in done ? refuse([done.error]) : done.value;
   });
 };
 
@@ -385,6 +464,8 @@ export const remove = ({ tool, harnesses }, { where }) =>
     if (leaving.length === 0) return refuse([`${tool} is not installed for ${harnesses.join(", ")} here.`]);
 
     const recovered = recoverAll(where, leaving);
+    const stuck = interrupted(where, tool, entry, leaving);
+    if (stuck.length > 0) return refuse([...recovered, ...finishFirst(tool, stuck)]);
     const lines = Object.keys(entry.skills).flatMap((skill) => moveOut(where, tool, entry, leaving, skill));
     const staying = entry.harnesses.filter((harness) => !leaving.includes(harness));
     const { [tool]: _gone, ...others } = read.lock.tools;

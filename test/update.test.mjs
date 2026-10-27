@@ -295,3 +295,101 @@ test("update fetches from the source install would use, and refuses a lock that 
   assert.ok(!existsSync(join(repo, ".claude", "skills", "planted")));
   assert.deepEqual(machine.state(), before);
 });
+
+/**
+ * Effect: installs demo at v1.1.0, hand-edits Claude's alpha and beta, and
+ * runs an update to v1.2.0 that fails partway: Claude's skills swap, so the
+ * hand-edited copies are now only in prev/, and Codex's stage cannot be
+ * made. Returns the machine, the failed run, and the prev/ copies.
+ * @param {import("node:test").TestContext} t
+ */
+const interruptedUpdate = (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["1.1.0", "1.2.0", "1.3.0"]);
+  assert.equal(machine.kodhama(["install", "demo#1.1.0"]).status, 0);
+  writeFileSync(join(machine.claudeSkills, "alpha", "SKILL.md"), "alpha edit\n");
+  writeFileSync(join(machine.claudeSkills, "beta", "SKILL.md"), "beta edit\n");
+  const agents = join(machine.home, ".agents");
+  chmodSync(agents, 0o555);
+  const failed = machine.kodhama(["update", "demo#1.2.0"]);
+  chmodSync(agents, 0o755);
+  assert.equal(failed.status, 1, failed.stdout);
+  assert.match(text(join(machine.claudeSkills, "alpha", "SKILL.md")), /Alpha 1\.2\.0/);
+  const kept = { alpha: join(machine.prev, "claude", "alpha"), beta: join(machine.prev, "claude", "beta") };
+  /** Asserts both hand-edited copies are still in prev/. */
+  const editsSurvive = (/** @type {string} */ after) => {
+    assert.equal(text(join(kept.alpha, "SKILL.md")), "alpha edit\n", after);
+    assert.equal(text(join(kept.beta, "SKILL.md")), "beta edit\n", after);
+  };
+  editsSurvive("the failed update");
+  return { machine, failed, kept, editsSurvive };
+};
+
+test("an update that fails partway names the prev/ copies that now hold the hand edits", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the first run with");
+    return;
+  }
+  const { machine, failed, kept } = interruptedUpdate(t);
+
+  for (const skill of /** @type {const} */ (["alpha", "beta"])) {
+    const line = `hand-edited ${join(machine.claudeSkills, skill, "SKILL.md")}; the copy with it is in ${kept[skill]}.`;
+    assert.ok(failed.stderr.includes(line), failed.stderr);
+  }
+  assert.ok(failed.stderr.includes("kodhama update demo#v1.2.0"), failed.stderr);
+});
+
+test("after an update fails partway, remove refuses and the hand-edited prev/ copies survive", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the first run with");
+    return;
+  }
+  const { machine, kept, editsSurvive } = interruptedUpdate(t);
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["remove", "demo"]);
+
+  assert.equal(outcome.status, 1, outcome.stdout);
+  assert.ok(outcome.stderr.includes("kodhama update demo#v1.2.0"), outcome.stderr);
+  assert.ok(outcome.stderr.includes(kept.alpha), outcome.stderr);
+  editsSurvive("remove");
+  assert.deepEqual(machine.state(), before);
+});
+
+test("after an update fails partway, an update to another tag refuses, and finishing the interrupted one keeps the edits", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the first run with");
+    return;
+  }
+  const { machine, editsSurvive } = interruptedUpdate(t);
+  const before = machine.state();
+
+  for (const args of [["update", "demo"], ["update", "demo#1.1.0"]]) {
+    const outcome = machine.kodhama(args);
+    assert.equal(outcome.status, 1, `${args.join(" ")}: ${outcome.stdout}`);
+    assert.ok(outcome.stderr.includes("kodhama update demo#v1.2.0"), outcome.stderr);
+    editsSurvive(args.join(" "));
+    assert.deepEqual(machine.state(), before, args.join(" "));
+  }
+
+  const finished = machine.kodhama(["update", "demo#1.2.0"]);
+
+  assert.equal(finished.status, 0, finished.stderr);
+  editsSurvive("the finished update");
+  assert.equal(machine.kodhama(["check"]).status, 0);
+});
+
+test("after an update fails partway, install does not recommend remove", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the first run with");
+    return;
+  }
+  const { machine, editsSurvive } = interruptedUpdate(t);
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 1, outcome.stdout);
+  assert.ok(!outcome.stderr.includes("kodhama remove"), outcome.stderr);
+  assert.ok(outcome.stderr.includes("kodhama update demo#v1.2.0"), outcome.stderr);
+  editsSurvive("install");
+});
