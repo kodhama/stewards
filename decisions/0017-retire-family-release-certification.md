@@ -7,7 +7,7 @@ informed_by: [kodhama-spec-0001-family-plugin-release-and-distribution-metadata,
 owner: agent
 updated: 2026-07-24
 provenance: "approved maintainer intent, 2026-07-24: retire the oversized family release-certification architecture while preserving only the future narrow goal (metadata recording where marketplaces were tested; a Stewards skill that adds Claude/Codex marketplace setup to CI)"
-superseded_in_part_by: [kodhama-0025-retire-the-surface-matrix, kodhama-0033-hub-and-spoke-topology]  # 0033 (2026-10-27): §4's tag and cross-repository-resolution exclusions, the Decision state's "retains only" and AC3, for the kodhama CLI only
+superseded_in_part_by: [kodhama-0025-retire-the-surface-matrix, kodhama-0033-hub-and-spoke-topology]  # 0033 (2026-10-27): §4's tag and cross-repository-resolution exclusions, the Decision state's "retains only", AC3, and two Consequences (the "thin install-door role" and the retained future work), for the kodhama CLI only
 ---
 
 # Decision: retire family release certification; keep only narrow marketplace-test setup
@@ -34,10 +34,16 @@ superseded_in_part_by: [kodhama-0025-retire-the-surface-matrix, kodhama-0033-hub
 > of "cross-repository resolution", the Decision state's "Stewards retains
 > only a narrow future distribution goal", and AC3. This repository owns that
 > mechanism, and only for the tools the CLI installs.
+> Two Consequences give way with them: the "thin install-door role", since
+> this repository also carries the CLI, while its return from product
+> release certification stands; and "The retained future work", which now
+> also includes the CLI's mechanism.
 > **Everything else stands:** version authority, bump judgment, release
 > inventories and history, release approval, runtime sandboxing and
 > effective support. Each tool still owns its version and release cadence,
-> and §1–§3 and §5 are untouched.
+> and §1–§3 and §5 are untouched, as are the other Consequences and
+> acceptance criteria. AC4's exclusion of universal machinery stands, because
+> the CLI's mechanism serves only the tools it installs.
 > This repository is to become `kodhama/cli` (0033 D6: renamed, or, if the
 > rename's redirect test fails, replaced by a fresh `kodhama/cli` with this
 > repository frozen).

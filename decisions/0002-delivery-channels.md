@@ -3,7 +3,7 @@ id: kodhama-0002-delivery-channels
 type: decision
 status: approved  # ratified by PR #1 merge (2026-07-07); names read through kodhama-0003-family-naming
 depends_on: [kodhama-0001-family-delivery]
-superseded_in_part_by: [kodhama-0009-org-topology-spirit-stewards-trees]  # 2026-07-15 — §Decision 2's host-repo clause only ("in kodhama/kodhama"); the one-marketplace principle and the "kodhama" name stand; 0033 (2026-10-27) — §Decision 1's org-wide-CLI rejection, and §Decision 3, the matrix row and the §5 block for espalier/grove
+superseded_in_part_by: [kodhama-0009-org-topology-spirit-stewards-trees]  # 2026-07-15 — §Decision 2's host-repo clause only ("in kodhama/kodhama"); the one-marketplace principle and the "kodhama" name stand; 0033 (2026-10-27) — §Decision 1's org-wide-CLI rejection; §Decision 3, the matrix row and the §5 block for espalier/grove; §Decision 2's one door, narrowed to plugins
 owner: agent
 updated: 2026-07-07
 provenance: maintainer review session 2026-07-07 — re-examination of family delivery prompted by espalier's interim vendoring UX; ratifies 0001's core and answers its marketplace open question
@@ -85,9 +85,12 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 > §Decision 3, the channel matrix's espalier row ("org marketplace + composed
 > overlay — never a binary, no npx") and §5's espalier install block. Under
 > 0033 D7, grove installs through that CLI, run with `npx` from GitHub.
+> **§Decision 2's "canonical install front door" narrows to plugins.** The
+> org marketplace stays the one door for plugins, and the CLI is a second
+> door, for harness-installed tools such as grove, which the marketplace does
+> not list (0033 D7).
 > **The one-door principle for plugins, the marketplace name `kodhama`, and
-> the other rows stand.** The CLI is a separate channel for tools that ship no
-> plugin.
+> the other rows stand.**
 > This repository is to become `kodhama/cli` (0033 D6: renamed, or, if the
 > rename's redirect test fails, replaced by a fresh `kodhama/cli` with this
 > repository frozen).

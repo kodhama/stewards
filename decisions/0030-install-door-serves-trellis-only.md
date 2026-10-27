@@ -40,8 +40,9 @@ provenance: "maintainer direction, 2026-08-29, given directly and reaffirmed in 
 > **Grove's return, anticipated in the annotation above, has arrived** as
 > 0033 D7. It is delivered by the kodhama CLI, not by this catalog, so the
 > framing of grove as retired is superseded. §Cost 1's record that grove has
-> no install door no longer describes grove: its door is the CLI, a separate
-> channel for tools that ship no plugin. Cost 1 still describes wisp.
+> no install door no longer describes grove: its door is the CLI, a second
+> door, for harness-installed tools the catalogs do not list. Cost 1 still
+> describes wisp.
 > **D1–D6 stand.** Both catalogs still list `trellis` and nothing else. The
 > catalogs stay the one door for plugins (D5). Nothing is re-listed, so D6's
 > guard is untouched.

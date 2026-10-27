@@ -23,6 +23,9 @@ provenance: "maintainer direction, 2026-08-29, given after being shown that kodh
 > **D1–D5 stand.** The deletions were carried out. Grove's return does not
 > restore the installed lifecycle charter D3 removed. Git history is still
 > the archive, and ratified decisions keep their dangling references unedited.
+> The local decline of the charter's terminal clause rested on grove being
+> retired here. Whether that clause binds this repository again now that
+> grove returns is left open (0033, What this does not decide).
 
 ## Decision
 
