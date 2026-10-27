@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
-import { join, sep } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { test } from "node:test";
 
 import { parseArgs } from "../src/cli.mjs";
@@ -36,6 +36,9 @@ test("the scratch machine keeps every path it hands the program under its root",
     assert.ok(machine.env[name].startsWith(machine.root + sep), name);
   }
   assert.deepEqual(machine.written(), UNTOUCHED);
+  // Git looks for a repo no higher than the root, so a repo the temp folder
+  // happens to sit in can never pass for the scratch machine's own.
+  assert.equal(machine.env.GIT_CEILING_DIRECTORIES, dirname(machine.root));
 });
 
 test("install reads a tool, a tag, a scope, harnesses and --migrate", () => {

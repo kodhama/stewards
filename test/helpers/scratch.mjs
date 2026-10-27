@@ -122,6 +122,9 @@ export const scratch = (t) => {
     GIT_CONFIG_GLOBAL: devNull,
     GIT_CONFIG_NOSYSTEM: "1",
     GIT_TERMINAL_PROMPT: "0",
+    // Git looks for a repo no higher than the root, so a repo the temp
+    // folder happens to sit in cannot answer for a folder that has none.
+    GIT_CEILING_DIRECTORIES: dirname(root),
     GIT_AUTHOR_NAME: "Fixture",
     GIT_AUTHOR_EMAIL: "fixture@example.invalid",
     GIT_COMMITTER_NAME: "Fixture",
