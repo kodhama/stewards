@@ -165,6 +165,19 @@ export const moveTo = (from, to) => {
 };
 
 /**
+ * Effect: the stage folder for a skills folder: beside the folder it really
+ * is, through any symlink, so its renames never cross filesystems.
+ * @param {string} skills
+ */
+const stageOf = (skills) => {
+  try {
+    return join(dirname(realpathSync(skills)), STAGE);
+  } catch {
+    return join(dirname(skills), STAGE);
+  }
+};
+
+/**
  * Effect: deletes a folder if it is empty.
  * @param {string} dir
  */
@@ -181,7 +194,7 @@ const pruneEmpty = (dir) => {
  * @returns {readonly string[]} a line per folder put back or moved
  */
 export const recover = (skills, prev) => {
-  const stage = join(dirname(skills), STAGE);
+  const stage = stageOf(skills);
   if (!present(stage)) return [];
   const lines = [];
   for (const name of readdirSync(stage).sort()) {
@@ -213,7 +226,7 @@ export const recover = (skills, prev) => {
  * @returns {boolean} whether an old copy went to prev/
  */
 export const swapIn = (skills, skill, build, prev) => {
-  const stage = join(dirname(skills), STAGE);
+  const stage = stageOf(skills);
   const fresh = join(stage, skill);
   const old = join(stage, `${skill}.old`);
   const live = join(skills, skill);

@@ -3,7 +3,7 @@
 // stage folder recovered by the next run.
 
 import assert from "node:assert/strict";
-import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -181,4 +181,24 @@ test("an update retried after it failed partway keeps the hand-edited copy in pr
   assert.match(text(join(machine.codexSkills, "alpha", "SKILL.md")), /Alpha 0\.2\.0/);
   assert.equal(/** @type {any} */ (readJson(machine.lock)).tools.demo.tag, "v0.2.0");
   assert.equal(machine.kodhama(["check"]).status, 0);
+});
+
+test("a skills folder that is a symlink keeps its stage beside the real folder, where renames stay on one filesystem", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const volume = join(machine.root, "volume");
+  mkdirSync(join(volume, "skills"), { recursive: true });
+  symlinkSync(join(volume, "skills"), machine.claudeSkills);
+  assert.equal(machine.kodhama(["install", "demo"]).status, 0);
+  assert.ok(lstatSync(machine.claudeSkills).isSymbolicLink());
+  const stage = join(volume, ".kodhama-stage");
+  mkdirSync(stage);
+  renameSync(join(volume, "skills", "alpha"), join(stage, "alpha.old"));
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.ok(existsSync(join(volume, "skills", "alpha", ".kodhama-skill.json")));
+  assert.ok(!existsSync(stage));
+  assert.ok(!existsSync(join(machine.claude, ".kodhama-stage")));
 });
