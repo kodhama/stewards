@@ -1089,13 +1089,22 @@ test("an install that fails partway still names what recovery moved first", (t) 
   }
   const { machine, unblock } = failingInstall(t);
 
-  const outcome = machine.kodhama(["install", "demo", "--harness", "claude"]);
-  unblock();
+  let outcome;
+  try {
+    outcome = machine.kodhama(["install", "demo", "--harness", "claude"]);
+  } finally {
+    unblock();
+  }
 
   assert.equal(outcome.status, 1, outcome.stdout);
   const recovered = `Moved ${join(machine.claude, ".kodhama-stage", "claude", "beta.old")}, left by an interrupted run, to ${join(machine.prev, "claude", "beta")}.`;
   assert.ok(outcome.stderr.includes(recovered), outcome.stderr);
   assert.match(outcome.stderr, /kodhama stopped/);
+  // alpha's swap stopped with its hand-edited old copy still in the stage.
+  const old = join(machine.claude, ".kodhama-stage", "claude", "alpha.old");
+  const aside = `${join(machine.claudeSkills, "alpha")}'s old copy is in ${old}; the next kodhama run moves it to ${join(machine.prev, "claude", "alpha")}.`;
+  assert.ok(outcome.stderr.includes(aside), outcome.stderr);
+  assert.equal(readFileSync(join(old, "SKILL.md"), "utf8"), "alpha edit\n");
 });
 
 test("an install that replaces a folder marked at another tag says it moved that copy to prev/", (t) => {

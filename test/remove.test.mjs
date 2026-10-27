@@ -158,3 +158,27 @@ test("a remove that fails on a later skill still names each folder it already mo
   assert.match(outcome.stderr, /stopped partway through removing demo/);
   assert.equal(readFileSync(join(prev, "SKILL.md"), "utf8"), "alpha edit\n");
 });
+
+test("a recovery that stops on a later harness still names what it moved, and the prev/ slot it replaced", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  assert.equal(machine.kodhama(["install", "demo"]).status, 0);
+  const prev = join(machine.prev, "claude", "alpha");
+  mkdirSync(prev, { recursive: true });
+  writeFileSync(join(prev, "SKILL.md"), "alpha edit\n");
+  const old = join(machine.claude, ".kodhama-stage", "claude", "alpha.old");
+  mkdirSync(old, { recursive: true });
+  writeFileSync(join(old, "SKILL.md"), "leftover\n");
+  // Codex's stage is a symlink, so its recovery refuses after Claude's ran.
+  const victim = join(machine.root, "victim");
+  mkdirSync(victim);
+  symlinkSync(victim, join(machine.home, ".agents", ".kodhama-stage"));
+
+  const outcome = machine.kodhama(["remove", "demo"]);
+
+  assert.equal(outcome.status, 1, outcome.stdout);
+  assert.ok(outcome.stderr.includes(`${prev} held a copy with no kodhama marker it can read, which this run replaced.`), outcome.stderr);
+  assert.ok(outcome.stderr.includes(`Moved ${old}, left by an interrupted run, to ${prev}.`), outcome.stderr);
+  assert.match(outcome.stderr, /not a real folder/);
+  assert.equal(readFileSync(join(prev, "SKILL.md"), "utf8"), "leftover\n");
+});

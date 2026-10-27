@@ -35,12 +35,22 @@ import { HARNESSES, moveToPrev, ownerOf, places, present, readMarker, realOf, re
 const refuse = (lines) => ({ code: 1, lines });
 
 /**
- * Effect: recovers the stage of each harness the run works on.
+ * Effect: recovers the stage of each harness the run works on. Should one
+ * step throw, the error carries the lines of the steps before it as
+ * `lines`, which the program prints ahead of it.
  * @param {Places} where
  * @param {readonly Harness[]} harnesses
  */
-const recoverAll = (where, harnesses) =>
-  harnesses.flatMap((harness) => recover(where.skills(harness), harness, (skill) => where.prev(harness, skill)));
+const recoverAll = (where, harnesses) => {
+  /** @type {string[]} */
+  const lines = [];
+  try {
+    for (const harness of harnesses) recover(where.skills(harness), harness, (skill) => where.prev(harness, skill), lines);
+  } catch (error) {
+    throw Object.assign(error instanceof Error ? error : new Error(String(error)), { lines });
+  }
+  return lines;
+};
 
 /**
  * Effect: a line per target folder that would be written and is not the
@@ -355,6 +365,11 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           ...migrated.lines,
           migrated.lines.length > 0 ? `kodhama stopped after --migrate: ${why}` : `kodhama stopped: ${why}`,
           ...movedOut(),
+          // A swap that stopped after renaming the live folder aside.
+          ...[...placed.aside].filter(([key]) => !placed.swapped.has(key)).map(([key, old]) => {
+            const [harness, name] = /** @type {[Harness, string]} */ (key.split("/"));
+            return `${join(where.skills(harness), name)}'s old copy is in ${old}; the next kodhama run moves it to ${where.prev(harness, name)}.`;
+          }),
           ...placed.notes,
         ]);
       }

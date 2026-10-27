@@ -313,15 +313,14 @@ const intoPrev = (from, prev, aside, { report }) => {
  * @param {string} skills the skills folder
  * @param {Harness} harness
  * @param {(skill: string) => string} prev the prev/ slot for a skill
- * @returns {readonly string[]} a line per folder put back or moved, and per
- *   prev/ slot whose copy that replaced
+ * @param {string[]} [lines] the caller's, so what a throw cuts short is kept
+ * @returns {readonly string[]} `lines`, with a line added per folder put back
+ *   or moved, and per prev/ slot whose copy that replaced
  */
-export const recover = (skills, harness, prev) => {
+export const recover = (skills, harness, prev, lines = []) => {
   keepAlive();
   const stage = stageOf(skills, harness);
-  if (!present(stage)) return [];
-  /** @type {string[]} */
-  const lines = [];
+  if (!present(stage)) return lines;
   for (const name of readdirSync(stage).sort()) {
     const skill = name.slice(0, -".old".length);
     if (!name.endsWith(".old") || !NAME.test(skill)) continue;
