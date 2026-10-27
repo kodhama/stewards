@@ -758,3 +758,32 @@ test("a run lock older than ten minutes is stale and taken over", (t) => {
   assert.equal(outcome.status, 0, outcome.stderr);
   assert.ok(!existsSync(held), "the run lock is released");
 });
+
+test("--migrate takes out a disabled grove enable, and a grove marketplace left on its own", (t) => {
+  for (const [name, files] of /** @type {const} */ ([
+    ["disabled", { "claude/settings.json": '{"enabledPlugins": {"grove@grove": false, "trellis@kodhama": true}}\n' }],
+    [
+      "marketplace only",
+      {
+        "claude/settings.json": '{"extraKnownMarketplaces": {"grove": {"source": {"source": "github", "repo": "kodhama/grove"}}}}\n',
+        "codex/config.toml": `${TOML_HEAD}\n[marketplaces.grove]\nsource = "https://github.com/kodhama/grove"\n`,
+      },
+    ],
+  ])) {
+    const machine = scratch(t);
+    machine.fakeTool("grove", ["0.3.0"]);
+    writeFiles(machine.root, files);
+
+    const outcome = machine.kodhama(["install", "grove", "--migrate"]);
+
+    assert.equal(outcome.status, 0, `${name}: ${outcome.stderr}`);
+    const settings = /** @type {any} */ (readJson(join(machine.claude, "settings.json")));
+    assert.equal(settings.enabledPlugins?.["grove@grove"], undefined, name);
+    assert.equal(settings.extraKnownMarketplaces?.grove, undefined, name);
+    if (files["codex/config.toml"] !== undefined) {
+      assert.equal(readFileSync(join(machine.codex, "config.toml"), "utf8"), `${TOML_HEAD}\n`, name);
+    }
+    assert.equal(readdirSync(join(machine.data, "kodhama", "receipts")).length, 1, name);
+    assert.match(outcome.stdout, /claude plugin marketplace remove grove/, name);
+  }
+});

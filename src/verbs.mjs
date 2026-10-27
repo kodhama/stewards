@@ -143,6 +143,7 @@ const problems = (where, tool, entry) =>
 const migrateOut = (tool, env) => {
   const plan = planMigration(tool, env);
   if ("error" in plan) return { error: `${plan.error} --migrate changed nothing.` };
+  if (plan.edits.length === 0) return { lines: [] };
   const receipt = applyMigration(tool, plan.edits, env);
   return {
     lines: [
@@ -150,7 +151,7 @@ const migrateOut = (tool, env) => {
       `The receipt, with each file as it was, is ${receipt}.`,
       // Claude's own plugin registry is not a documented file, so kodhama
       // leaves it to Claude's command.
-      ...(plan.hadClaudeEnable ? [`Next, run: claude plugin marketplace remove ${tool}`] : []),
+      ...(plan.touchedClaude ? [`Next, run: claude plugin marketplace remove ${tool}`] : []),
     ],
   };
 };
@@ -163,10 +164,9 @@ const migrateOut = (tool, env) => {
  * @returns {Outcome}
  */
 export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, where }) => {
-  const hits = findEnables(tool, scope, env, root);
   const blocked = guardRefusal(
     tool,
-    hits,
+    findEnables(tool, scope, env, root),
     migrate,
     `Run kodhama install ${tool} --migrate to take the user-level ones out, keeping a receipt, or turn them off by hand.`,
   );
@@ -197,7 +197,9 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           `${tool} ${entry?.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`,
         ]);
       }
-      const migrated = migrate && hits.length > 0 ? migrateOut(tool, env) : { lines: [] };
+      // What --migrate removes is every entry for the tool, enabled or not,
+      // and its marketplace, not only the enables the guard stops on.
+      const migrated = migrate ? migrateOut(tool, env) : { lines: [] };
       if ("error" in migrated) return refuse([...recovered, migrated.error]);
       if (entry !== undefined && adding.length === 0) {
         return {

@@ -194,12 +194,11 @@ export const guardRefusal = (tool, hits, migrate, fix) => {
  * it must leave them to be edited by hand. Nothing is written.
  * @param {string} tool
  * @param {NodeJS.ProcessEnv} env
- * @returns {{ readonly edits: readonly Edit[], readonly hadClaudeEnable: boolean } | { readonly error: string }}
+ * @returns {{ readonly edits: readonly Edit[], readonly touchedClaude: boolean } | { readonly error: string }}
  */
 export const planMigration = (tool, env) => {
   /** @type {Edit[]} */
   const edits = [];
-  let hadClaudeEnable = false;
 
   const settings = claudeSettings(env);
   if (existsSync(settings)) {
@@ -217,7 +216,6 @@ export const planMigration = (tool, env) => {
       const enabled = value.enabledPlugins;
       for (const key of Object.keys(enabled).filter((name) => name.startsWith(`${tool}@`))) {
         removed.push({ key: `enabledPlugins[${JSON.stringify(key)}]`, text: JSON.stringify(enabled[key]) });
-        hadClaudeEnable ||= enabled[key] === true;
         delete enabled[key];
       }
     }
@@ -255,7 +253,7 @@ export const planMigration = (tool, env) => {
     }
     if (removed.length > 0) edits.push({ path: config, before, after, removed });
   }
-  return { edits, hadClaudeEnable };
+  return { edits, touchedClaude: edits.some(({ path }) => path === settings) };
 };
 
 /**
