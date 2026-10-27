@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { copyFiles, isNewer, toolSource, versionOf, withTool } from "./fetch.mjs";
 import { diffTree, hashTree, readLock, writeLock } from "./lock.mjs";
 import { applyMigration, findEnables, guardRefusal, planMigration } from "./migrate.mjs";
-import { HARNESSES, moveTo, ownerOf, places, present, readMarker, realOf, recover, swapIn, withRunLock, writeMarker } from "./targets.mjs";
+import { HARNESSES, moveToPrev, ownerOf, places, present, readMarker, realOf, recover, swapIn, withRunLock, writeMarker } from "./targets.mjs";
 
 /** @typedef {import("./cli.mjs").Outcome} Outcome */
 /** @typedef {import("./lock.mjs").Entry} Entry */
@@ -428,7 +428,7 @@ const moveOut = (where, tool, entry, harnesses, skill) =>
     if (owner.state === "absent") return [];
     if (owner.state === "theirs") return [`Left ${live} alone: it ${owner.why}.`];
     const edits = handEdits(live, entry.skills[skill] ?? {}, prev);
-    moveTo(live, prev);
+    moveToPrev(where.skills(harness), harness, skill, prev);
     return [`Moved ${live} to ${prev}.`, ...edits];
   });
 

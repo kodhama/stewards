@@ -189,8 +189,12 @@ const copyTree = (from, to) => {
  * copy and delete when the two sit on different filesystems.
  * @param {string} from
  * @param {string} to
+ * @param {string} aside where `from` is renamed before it is deleted, after
+ *   a copy: a path in a stage, on `from`'s filesystem, so a crash mid-delete
+ *   leaves a leftover that recovery deletes, never a half copy it would move
+ *   over the full one, nor one a harness would load as a skill
  */
-export const moveTo = (from, to) => {
+const moveTo = (from, to, aside) => {
   rmSync(to, { recursive: true, force: true });
   mkdirSync(dirname(to), { recursive: true });
   try {
@@ -198,11 +202,10 @@ export const moveTo = (from, to) => {
   } catch (error) {
     if (/** @type {NodeJS.ErrnoException} */ (error).code !== "EXDEV") throw error;
     copyTree(from, to);
-    // Renamed aside before it is deleted, so a crash mid-delete leaves a
-    // `.moved` leftover that recovery deletes, never a half copy it would
-    // move over the full one.
-    renameSync(from, `${from}.moved`);
-    rmSync(`${from}.moved`, { recursive: true, force: true });
+    rmSync(aside, { recursive: true, force: true });
+    mkdirSync(dirname(aside), { recursive: true });
+    renameSync(from, aside);
+    rmSync(aside, { recursive: true, force: true });
   }
 };
 
@@ -258,7 +261,7 @@ export const recover = (skills, harness, prev) => {
     if (!name.endsWith(".old") || !NAME.test(skill)) continue;
     const live = join(skills, skill);
     if (present(live)) {
-      moveTo(join(stage, name), prev(skill));
+      moveTo(join(stage, name), prev(skill), join(stage, `${name}.moved`));
       lines.push(`Moved ${join(stage, name)}, left by an interrupted run, to ${prev(skill)}.`);
     } else {
       mkdirSync(skills, { recursive: true });
@@ -296,10 +299,28 @@ export const swapIn = (skills, harness, skill, build, prev) => {
   const replaced = present(live);
   if (replaced) renameSync(live, old);
   renameSync(fresh, live);
-  if (replaced) moveTo(old, prev);
+  if (replaced) moveTo(old, prev, `${old}.moved`);
   pruneEmpty(stage);
   pruneEmpty(dirname(stage));
   return replaced;
+};
+
+/**
+ * Effect: moves a live skill folder out to its prev/ slot. Should that take
+ * a copy across filesystems, the live folder is set aside in the harness's
+ * stage before it is deleted, where the next run's recovery finishes the
+ * job.
+ * @param {string} skills the skills folder
+ * @param {Harness} harness
+ * @param {string} skill
+ * @param {string} prev the skill's prev/ slot
+ */
+export const moveToPrev = (skills, harness, skill, prev) => {
+  keepAlive();
+  const stage = stageOf(skills, harness);
+  moveTo(join(skills, skill), prev, join(stage, `${skill}.moved`));
+  pruneEmpty(stage);
+  pruneEmpty(dirname(stage));
 };
 
 // A run lock older than this is taken to be left by a run that died.
