@@ -395,7 +395,7 @@ test("a tool whose kodhama.json or skills break the contract exits 1, writing no
     ["escape", { files: manifest({ name: "escape", skills: "../x" }) }, /\.\./],
     [
       "linkout",
-      { files: manifest({ name: "linkout", skills: "out" }), links: { out: "/" } },
+      { files: manifest({ name: "linkout", skills: "out" }), links: { out: machine.home } },
       /outside the tool's repo/,
     ],
     ["badname", { files: { "skills/Bad_Name/SKILL.md": "Bad.\n" } }, /Bad_Name is not a skill name/],
