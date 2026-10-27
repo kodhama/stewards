@@ -445,3 +445,49 @@ test("with one skills folder shared through a symlink, install --harness codex a
   assert.equal(text(kept), "alpha edit\n");
   assert.deepEqual(machine.state(), before);
 });
+
+test("after an update fails partway and its tag then moves, update prints the way out by hand, which works and keeps the edits", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the first run with");
+    return;
+  }
+  const { machine, kept } = interruptedUpdate(t);
+  const source = join(machine.source, "demo");
+  writeFileSync(join(source, "VERSION"), "retagged\n");
+  machine.git(source, ["commit", "-q", "-am", "retag"]);
+  machine.git(source, ["tag", "-f", "-a", "v1.2.0", "-m", "retag"]);
+
+  const outcome = machine.kodhama(["update", "demo#1.2.0"]);
+
+  assert.equal(outcome.status, 1, outcome.stdout);
+  assert.ok(!outcome.stderr.includes("kodhama update demo#v1.2.0"), outcome.stderr);
+  for (const step of [
+    "Copy each prev/ folder named above somewhere safe.",
+    "Move each live folder named above out of its skills folder.",
+    "kodhama remove demo, then kodhama install demo",
+    "KOD-25",
+  ]) {
+    assert.ok(outcome.stderr.includes(step), outcome.stderr);
+  }
+  for (const skill of /** @type {const} */ (["alpha", "beta"])) {
+    assert.ok(outcome.stderr.includes(kept[skill]), outcome.stderr);
+    assert.ok(outcome.stderr.includes(join(machine.claudeSkills, skill)), outcome.stderr);
+  }
+
+  // The steps, as printed.
+  const safe = join(machine.root, "safe");
+  mkdirSync(safe);
+  const aside = join(machine.root, "aside");
+  mkdirSync(aside);
+  for (const skill of /** @type {const} */ (["alpha", "beta"])) {
+    writeFileSync(join(safe, `${skill}.md`), text(join(kept[skill], "SKILL.md")));
+    renameSync(join(machine.claudeSkills, skill), join(aside, skill));
+  }
+  const removed = machine.kodhama(["remove", "demo"]);
+  assert.equal(removed.status, 0, removed.stderr);
+  const installed = machine.kodhama(["install", "demo"]);
+  assert.equal(installed.status, 0, installed.stderr);
+  assert.equal(text(join(safe, "alpha.md")), "alpha edit\n");
+  assert.equal(text(join(safe, "beta.md")), "beta edit\n");
+  assert.equal(machine.kodhama(["check"]).status, 0);
+});

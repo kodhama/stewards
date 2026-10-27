@@ -24,6 +24,8 @@ cross-repository-resolution, or effective-support machinery.
 
 Run the command as `npx -y github:kodhama/stewards#v<version> <verb>`. `install <tool>[#<tag>]` copies a tool's skills into Claude's and Codex's skills folders, `update <tool>[#<tag>]` moves them to another tag (the newest by default), `check [<tool>]` compares them with the lock without touching the network, and `remove <tool>` moves them out to `prev/`. `--scope user|project` picks your own folders (the default) or the current git repo's, `--harness claude|codex` limits `install` and `remove` to one harness, and `install --migrate` first takes a clashing plugin enable out of your user settings, keeping a receipt.
 
+An `update` that stops partway can only be finished, with the `kodhama update <tool>#<tag>` it prints, because the copies it replaced, hand edits included, are only in `prev/`. If that tag has since moved to another commit, the update can't be finished, and the way out is by hand: copy each `prev/` folder the message names somewhere safe, move each live folder it names out of its skills folder, then run `kodhama remove <tool>` and `kodhama install <tool>` and re-apply your edits. A command that discards an interrupted update is tracked as KOD-25.
+
 The stewards: [trellis](https://github.com/kodhama/trellis) (governance) · [grove](https://github.com/kodhama/grove) (agent swarm) · [wisp](https://github.com/kodhama/wisp) (runtime observability) · [design-system](https://github.com/kodhama/design-system) (brand) · [homebrew-tap](https://github.com/kodhama/homebrew-tap) (delivery).
 
 **Spore remains retired.** [Decision `kodhama-0019`](decisions/0019-spore-handoff-capsules.md)

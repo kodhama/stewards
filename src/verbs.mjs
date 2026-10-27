@@ -164,17 +164,34 @@ const interrupted = (where, tool, entry, harnesses) =>
 
 /**
  * Lines naming each folder an interrupted update left, where the copy it
- * replaced is, and the update that finishes it.
+ * replaced is, and the update that finishes it. When the tag that update
+ * was moving to now names another commit, that update can no longer be
+ * finished, so the way out by hand is printed in its place.
  * @param {string} tool
  * @param {ReturnType<typeof interrupted>} found
+ * @param {{ readonly tag: string, readonly commit: string }} [moved] the
+ *   moved tag and the commit it names now
  */
-const finishFirst = (tool, found) => [
-  ...found.map(
-    ({ live, prev, tag }) =>
-      `${live} is at ${tag}, left by an update that stopped partway; the copy it replaced, with any hand edits, is in ${prev}.`,
-  ),
-  `Finish that update first: ${[...new Set(found.map(({ tag }) => `kodhama update ${tool}#${tag}`))].join(", or ")}.`,
-];
+const finishFirst = (tool, found, moved) => {
+  const finishable = [...new Set(found.filter(({ tag }) => tag !== moved?.tag).map(({ tag }) => `kodhama update ${tool}#${tag}`))];
+  const stranded = found.filter(({ tag }) => tag === moved?.tag);
+  return [
+    ...found.map(
+      ({ live, prev, tag }) =>
+        `${live} is at ${tag}, left by an update that stopped partway; the copy it replaced, with any hand edits, is in ${prev}.`,
+    ),
+    ...(finishable.length > 0 ? [`Finish that update first: ${finishable.join(", or ")}.`] : []),
+    ...(moved === undefined || stranded.length === 0
+      ? []
+      : [
+          `${moved.tag} now points at ${moved.commit}, not ${stranded[0].commit}, so that update cannot be finished. The way out, by hand:`,
+          "1. Copy each prev/ folder named above somewhere safe.",
+          "2. Move each live folder named above out of its skills folder.",
+          `3. Run kodhama remove ${tool}, then kodhama install ${tool}, then re-apply your edits from the copies.`,
+          "A command that discards an interrupted update is tracked as KOD-25.",
+        ]),
+  ];
+};
 
 /**
  * Effect: takes the tool's enables and marketplace out of the user-level
@@ -341,14 +358,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
       const stuck = interrupted(where, tool, entry, entry.harnesses);
       const elsewhere = stuck.filter(({ tag, commit }) => tag !== fetched.tag || commit !== fetched.commit);
       if (elsewhere.length > 0) {
-        const moved = elsewhere.filter(({ tag }) => tag === fetched.tag);
-        return refuse([
-          ...recovered,
-          ...finishFirst(tool, elsewhere),
-          ...(moved.length > 0
-            ? [`${fetched.tag} now points at ${fetched.commit}, not ${moved[0].commit}, so that update cannot be finished as it was; copy each prev/ folder above somewhere safe first.`]
-            : []),
-        ]);
+        return refuse([...recovered, ...finishFirst(tool, elsewhere, { tag: fetched.tag, commit: fetched.commit })]);
       }
       if (fetched.tag === entry.tag && fetched.commit === entry.commit) {
         return { code: 0, lines: [...recovered, `${tool} is already at ${entry.tag}.`] };
