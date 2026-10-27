@@ -1114,3 +1114,15 @@ test("an install that replaces a folder marked at another tag says it moved that
   }
   assert.equal(readFileSync(join(machine.prev, "claude", "alpha", "SKILL.md"), "utf8"), "alpha edit\n");
 });
+
+test("the repo kodhama runs in never redirects the tag lookup through its own git config", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const repo = machine.project("work");
+  machine.git(repo, ["config", `url.file://${join(machine.root, "nowhere")}/.insteadOf`, "file://"]);
+
+  const outcome = machine.kodhama(["install", "demo"], { cwd: repo });
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.ok(existsSync(join(machine.claudeSkills, "alpha")));
+});

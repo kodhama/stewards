@@ -209,7 +209,31 @@ export const withTool = (tool, wanted, { env: given, tmp = tmpdir(), source = to
   // at the caller's repo instead of the temp folder.
   const env = Object.fromEntries(Object.entries(given).filter(([name]) => !REPO_VARIABLES.includes(name)));
   if (!isSource(source)) return { error: `${tool}'s source ${source} is not an https:// or file:// URL.` };
-  const listed = git(["ls-remote", "--tags", "--", source], env);
+  const dir = mkdtempSync(join(tmp, `kodhama-${tool}-`));
+  try {
+    return fetchInto(dir, tool, wanted, source, env, use);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+};
+
+/**
+ * Effect: `withTool`'s work, in the fresh temp folder `dir`. Every git call
+ * runs in that folder's own empty repo, so the config of the repo kodhama
+ * was started in (an `insteadOf`, an include) never touches the fetch.
+ * @template T
+ * @param {string} dir
+ * @param {string} tool
+ * @param {string | undefined} wanted
+ * @param {string} source
+ * @param {NodeJS.ProcessEnv} env
+ * @param {(fetched: Fetched) => T} use
+ * @returns {{ readonly value: T } | { readonly error: string }}
+ */
+const fetchInto = (dir, tool, wanted, source, env, use) => {
+  const init = git(["init", "--quiet"], env, dir);
+  if (!init.ok) return { error: `kodhama could not fetch ${tool}: ${init.out}` };
+  const listed = git(["ls-remote", "--tags", "--", source], env, dir);
   if (!listed.ok) return { error: `kodhama could not list the tags of ${tool} at ${source}: ${listed.out}` };
   // Each tag's sha, and an annotated tag's commit under `<tag>^{}`.
   const refs = new Map(
@@ -229,41 +253,35 @@ export const withTool = (tool, wanted, { env: given, tmp = tmpdir(), source = to
     };
   }
 
-  const dir = mkdtempSync(join(tmp, `kodhama-${tool}-`));
-  try {
-    // The tag's own ref, fetched by its full name, so a branch of the same
-    // name can never stand in for it; `clone --branch` prefers the branch.
-    const steps = [
-      ["init", "--quiet"],
-      ["fetch", "--quiet", "--depth", "1", "--", source, `refs/tags/${tag}`],
-      ["-c", "advice.detachedHead=false", "checkout", "--quiet", "FETCH_HEAD"],
-    ];
-    for (const step of steps) {
-      const ran = git(step, env, dir);
-      if (!ran.ok) return { error: `kodhama could not fetch ${tool} at ${tag}: ${ran.out}` };
-    }
-    const head = git(["rev-parse", "HEAD"], env, dir);
-    if (!head.ok) return { error: `kodhama could not read the commit of ${tool} at ${tag}: ${head.out}` };
-    const tagged = refs.get(`${tag}^{}`) ?? refs.get(tag);
-    if (head.out.trim() !== tagged) {
-      return { error: `${tool} at ${tag} checked out ${head.out.trim()}, not ${tagged}, the commit the tag names; nothing was written.` };
-    }
-
-    const read = readManifest(dir, tool);
-    if ("error" in read) return read;
-    /** @type {Skill[]} */
-    const skills = [];
-    for (const name of read.skills) {
-      const skillDir = join(read.skillsDir, name);
-      const listed = listFiles(skillDir, join(read.skillsPath, name));
-      if ("error" in listed) return { error: `${tool}: ${listed.error}` };
-      if (listed.files.includes(MARKER)) {
-        return { error: `${tool}: ${join(read.skillsPath, name)} ships its own ${MARKER}, the file kodhama writes to mark a folder it installed.` };
-      }
-      skills.push({ name, dir: skillDir, files: listed.files });
-    }
-    return { value: use({ tool, tag, commit: head.out.trim(), source, skills }) };
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
+  // The tag's own ref, fetched by its full name, so a branch of the same
+  // name can never stand in for it; `clone --branch` prefers the branch.
+  const steps = [
+    ["fetch", "--quiet", "--depth", "1", "--", source, `refs/tags/${tag}`],
+    ["-c", "advice.detachedHead=false", "checkout", "--quiet", "FETCH_HEAD"],
+  ];
+  for (const step of steps) {
+    const ran = git(step, env, dir);
+    if (!ran.ok) return { error: `kodhama could not fetch ${tool} at ${tag}: ${ran.out}` };
   }
+  const head = git(["rev-parse", "HEAD"], env, dir);
+  if (!head.ok) return { error: `kodhama could not read the commit of ${tool} at ${tag}: ${head.out}` };
+  const tagged = refs.get(`${tag}^{}`) ?? refs.get(tag);
+  if (head.out.trim() !== tagged) {
+    return { error: `${tool} at ${tag} checked out ${head.out.trim()}, not ${tagged}, the commit the tag names; nothing was written.` };
+  }
+
+  const read = readManifest(dir, tool);
+  if ("error" in read) return read;
+  /** @type {Skill[]} */
+  const skills = [];
+  for (const name of read.skills) {
+    const skillDir = join(read.skillsDir, name);
+    const listed = listFiles(skillDir, join(read.skillsPath, name));
+    if ("error" in listed) return { error: `${tool}: ${listed.error}` };
+    if (listed.files.includes(MARKER)) {
+      return { error: `${tool}: ${join(read.skillsPath, name)} ships its own ${MARKER}, the file kodhama writes to mark a folder it installed.` };
+    }
+    skills.push({ name, dir: skillDir, files: listed.files });
+  }
+  return { value: use({ tool, tag, commit: head.out.trim(), source, skills }) };
 };
