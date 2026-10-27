@@ -53,45 +53,76 @@ const patterns = (tool) => ({
  */
 
 /**
- * How far a value line opens (or closes) arrays and inline tables, counting
- * no bracket inside a quoted string or after a comment.
+ * What one line of config.toml does to the reader's state: how far it opens
+ * (or closes) arrays and inline tables, and the multi-line string (`"""` or
+ * `'''`) still open at its end. No bracket inside a string, or after a
+ * comment, counts.
  * @param {string} line
+ * @param {string | undefined} open the multi-line string open at its start
+ * @returns {{ readonly depth: number, readonly open: string | undefined }}
  */
-const bracketDepth = (line) => {
+const scanLine = (line, open) => {
   let depth = 0;
-  /** @type {string | undefined} */
-  let quote;
+  let quote = open;
   for (let at = 0; at < line.length; at += 1) {
     const char = line[at];
-    if (quote !== undefined) {
+    if (quote !== undefined && quote.length === 3) {
+      if (quote === '"""' && char === "\\") at += 1;
+      else if (line.startsWith(quote, at)) {
+        at += 2;
+        quote = undefined;
+      }
+    } else if (quote !== undefined) {
       if (quote === '"' && char === "\\") at += 1;
       else if (char === quote) quote = undefined;
     } else if (char === "#") break;
-    else if (char === '"' || char === "'") quote = char;
+    else if (line.startsWith('"""', at) || line.startsWith("'''", at)) {
+      quote = line.slice(at, at + 3);
+      at += 2;
+    } else if (char === '"' || char === "'") quote = char;
     else if (char === "[" || char === "{") depth += 1;
     else if (char === "]" || char === "}") depth -= 1;
   }
-  return depth;
+  // A one-line string left open is malformed; it ends with its line.
+  return { depth, open: quote !== undefined && quote.length === 3 ? quote : undefined };
 };
 
 /**
  * config.toml split into lines, each with the recognised table it sits in,
- * if any, and the bracket depth after it. A table runs from its header to
- * just before the next line whose first non-space character is `[` while no
- * multi-line value is open; inside one, such a line is part of the value.
+ * if any, whether it starts inside a multi-line string, and the bracket
+ * depth and open string after it. A table runs from its header to just
+ * before the next line whose first non-space character is `[` while no
+ * multi-line value or string is open; inside one, such a line is part of
+ * the value.
  * @param {string} text
  * @param {string} tool
- * @returns {readonly { readonly line: string, readonly at: number, readonly text: string, readonly header: boolean, readonly table: Table | undefined, readonly depth: number }[]}
+ * @returns {readonly {
+ *   readonly line: string,
+ *   readonly at: number,
+ *   readonly text: string,
+ *   readonly header: boolean,
+ *   readonly quoted: boolean,
+ *   readonly table: Table | undefined,
+ *   readonly depth: number,
+ *   readonly open: string | undefined,
+ * }[]}
  */
 const tomlRows = (text, tool) => {
   const { plugin, marketplace } = patterns(tool);
   /** @type {Table | undefined} */
   let table;
   let depth = 0;
+  /** @type {string | undefined} */
+  let open;
   return text.split(/(?<=\n)/).map((line, at) => {
     const trimmed = line.trim();
-    const header = depth === 0 && trimmed.startsWith("[");
-    if (!header) depth += bracketDepth(trimmed);
+    const quoted = open !== undefined;
+    const header = !quoted && depth === 0 && trimmed.startsWith("[");
+    if (!header) {
+      const scanned = scanLine(line, open);
+      depth += scanned.depth;
+      open = scanned.open;
+    }
     if (header) {
       const asPlugin = plugin.exec(trimmed);
       const recognised = asPlugin ?? marketplace.exec(trimmed);
@@ -103,7 +134,7 @@ const tomlRows = (text, tool) => {
               enables: asPlugin !== null && asPlugin[2] === undefined,
             };
     }
-    return { line, at, text: trimmed, header, table, depth };
+    return { line, at, text: trimmed, header, quoted, table, depth, open };
   });
 };
 
@@ -136,8 +167,9 @@ const hitsIn = ({ path, kind, user }, tool) => {
       : [];
   }
   const { mention } = patterns(tool);
-  return tomlRows(text, tool).flatMap(({ at, text: line, header, table }) => {
-    if (isComment(line)) return [];
+  return tomlRows(text, tool).flatMap(({ at, text: line, header, quoted, table }) => {
+    // A line inside a multi-line string is text, whatever it looks like.
+    if (quoted || isComment(line)) return [];
     if (table?.enables && !header && /^(?:enabled|"enabled"|'enabled')\s*=\s*true\s*(?:#.*)?$/.test(line)) {
       return [{ path, key: `[${table.key}] enabled`, user, editable: true }];
     }
@@ -235,9 +267,9 @@ export const planMigration = (tool, env) => {
     const removed = [];
     let after = "";
     const rows = tomlRows(before, tool);
-    for (const { line, at, text, header, table } of rows) {
+    for (const { line, at, text, header, quoted, table } of rows) {
       if (table === undefined) {
-        if (!isComment(text) && (mention.test(text) || market.test(text))) {
+        if (!quoted && !isComment(text) && (mention.test(text) || market.test(text))) {
           return { error: `${config} line ${at + 1} mentions ${tool} in a form kodhama does not edit; edit it by hand.` };
         }
         after += line;
@@ -245,8 +277,9 @@ export const planMigration = (tool, env) => {
       else removed[removed.length - 1] = { key: table.key, text: removed[removed.length - 1].text + line };
     }
     const multiline = removed.find((item) => item.text.includes('"""') || item.text.includes("'''"));
-    if (removed.length > 0 && (rows.at(-1)?.depth ?? 0) !== 0) {
-      return { error: `${config} ends inside an open array or inline table, so kodhama cannot tell where a table ends; edit it by hand.` };
+    const last = rows.at(-1);
+    if (removed.length > 0 && ((last?.depth ?? 0) !== 0 || last?.open !== undefined)) {
+      return { error: `${config} ends inside an open array, inline table or multi-line string, so kodhama cannot tell where a table ends; edit it by hand.` };
     }
     if (multiline !== undefined) {
       return { error: `${config}: the [${multiline.key}] table holds a multi-line string, which kodhama does not cut; edit it by hand.` };

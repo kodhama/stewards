@@ -833,3 +833,67 @@ test("adding a harness when the lock's tag now points at another commit refuses 
   assert.match(outcome.stderr, /kodhama update demo#v0\.1\.0/);
   assert.deepEqual(machine.state(), before);
 });
+
+// A multi-line string that shows a plugin table as an example: it is text,
+// so it must neither block the guard nor be cut by --migrate.
+const AGENTS = `[agents]
+developer_instructions = """
+To turn grove on by hand, add:
+[plugins."grove@grove"]
+enabled = true
+[other]
+key = 1
+"""
+`;
+
+test("a grove table shown inside a multi-line string fools neither the guard nor --migrate", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  const config = join(machine.codex, "config.toml");
+
+  // Only the string: nothing is enabled, so install goes ahead.
+  writeFiles(machine.codex, { "config.toml": `${TOML_HEAD}\n${AGENTS}` });
+  const plain = machine.kodhama(["install", "grove", "--harness", "claude"]);
+  assert.equal(plain.status, 0, plain.stderr);
+  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n${AGENTS}`);
+
+  // A real table after the string still blocks, and --migrate cuts only it.
+  const before = `${TOML_HEAD}\n${AGENTS}\n${TOML_GROVE}${TOML_TAIL}`;
+  writeFiles(machine.codex, { "config.toml": before });
+  const blocked = machine.kodhama(["install", "grove", "--harness", "codex"]);
+  assert.equal(blocked.status, 1);
+  assert.ok(blocked.stderr.includes(`${config}: [plugins."grove@grove"] enabled`), blocked.stderr);
+  assert.doesNotMatch(blocked.stderr, /line \d+/);
+
+  const migrated = machine.kodhama(["install", "grove", "--harness", "codex", "--migrate"]);
+  assert.equal(migrated.status, 0, migrated.stderr);
+  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n${AGENTS}\n${TOML_TAIL}`);
+});
+
+test("a branch named like the tag never stands in for it", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", ["0.1.0"]);
+  writeFiles(tool.path, { "skills/alpha/SKILL.md": "unreleased branch content\n" });
+  machine.git(tool.path, ["commit", "-q", "-am", "work in progress"]);
+  machine.git(tool.path, ["branch", "v0.1.0"]);
+  const tagged = tool.commit("refs/tags/v0.1.0");
+
+  const outcome = machine.kodhama(["install", "demo#0.1.0"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  for (const skills of [machine.claudeSkills, machine.codexSkills]) {
+    assert.match(readFileSync(join(skills, "alpha", "SKILL.md"), "utf8"), /Alpha 0\.1\.0/);
+  }
+  assert.equal(/** @type {any} */ (readJson(machine.lock)).tools.demo.commit, tagged);
+});
+
+test("a lightweight tag installs at the commit it names", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", []);
+  machine.git(tool.path, ["tag", "v0.1.0"]);
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.equal(/** @type {any} */ (readJson(machine.lock)).tools.demo.commit, tool.commit("refs/tags/v0.1.0"));
+});

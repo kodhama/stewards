@@ -49,7 +49,7 @@ const STABLE = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 /**
  * Where a tool's repo is: GitHub, or with `KODHAMA_TOOL_SOURCE` set, the
  * repo of that name in that folder. The `file://` form makes git honour
- * `--depth`, which it ignores on a plain-path clone.
+ * `--depth`, which it ignores for a plain path.
  * @param {string} tool
  * @param {NodeJS.ProcessEnv} env
  * @returns {string}
@@ -191,13 +191,16 @@ export const copyFiles = (from, to, files) => {
  */
 export const withTool = (tool, wanted, { env, tmp = tmpdir(), source = toolSource(tool, env) }, use) => {
   if (!isSource(source)) return { error: `${tool}'s source ${source} is not an https:// or file:// URL.` };
-  const listed = git(["ls-remote", "--tags", "--refs", "--", source], env);
+  const listed = git(["ls-remote", "--tags", "--", source], env);
   if (!listed.ok) return { error: `kodhama could not list the tags of ${tool} at ${source}: ${listed.out}` };
-  const tags = listed.out
-    .split("\n")
-    .map((line) => line.split("\t")[1] ?? "")
-    .filter((ref) => ref.startsWith("refs/tags/"))
-    .map((ref) => ref.slice("refs/tags/".length));
+  // Each tag's sha, and an annotated tag's commit under `<tag>^{}`.
+  const refs = new Map(
+    listed.out
+      .split("\n")
+      .map((line) => line.split("\t"))
+      .flatMap(([sha, ref]) => (sha && ref?.startsWith("refs/tags/") ? [[ref.slice("refs/tags/".length), sha]] : [])),
+  );
+  const tags = [...refs.keys()].filter((name) => !name.endsWith("^{}"));
   const tag = pickTag(tags, wanted);
   if (tag === undefined) {
     return {
@@ -210,13 +213,23 @@ export const withTool = (tool, wanted, { env, tmp = tmpdir(), source = toolSourc
 
   const dir = mkdtempSync(join(tmp, `kodhama-${tool}-`));
   try {
-    const cloned = git(
-      ["-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1", "--branch", tag, "--", source, dir],
-      env,
-    );
-    if (!cloned.ok) return { error: `kodhama could not clone ${tool} at ${tag}: ${cloned.out}` };
+    // The tag's own ref, fetched by its full name, so a branch of the same
+    // name can never stand in for it; `clone --branch` prefers the branch.
+    const steps = [
+      ["init", "--quiet"],
+      ["fetch", "--quiet", "--depth", "1", "--", source, `refs/tags/${tag}`],
+      ["-c", "advice.detachedHead=false", "checkout", "--quiet", "FETCH_HEAD"],
+    ];
+    for (const step of steps) {
+      const ran = git(step, env, dir);
+      if (!ran.ok) return { error: `kodhama could not fetch ${tool} at ${tag}: ${ran.out}` };
+    }
     const head = git(["rev-parse", "HEAD"], env, dir);
     if (!head.ok) return { error: `kodhama could not read the commit of ${tool} at ${tag}: ${head.out}` };
+    const tagged = refs.get(`${tag}^{}`) ?? refs.get(tag);
+    if (head.out.trim() !== tagged) {
+      return { error: `${tool} at ${tag} checked out ${head.out.trim()}, not ${tagged}, the commit the tag names; nothing was written.` };
+    }
 
     const read = readManifest(dir, tool);
     if ("error" in read) return read;
