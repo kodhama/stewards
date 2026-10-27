@@ -9,7 +9,7 @@ import { isAbsolute, join, resolve, sep } from "node:path";
 /** Tool and skill names: lowercase, so always safe as one path segment. */
 export const NAME = /^[a-z][a-z0-9-]*$/;
 
-export const MANIFEST = "kodhama.json";
+const MANIFEST = "kodhama.json";
 
 /**
  * The file the CLI writes into each skill folder it installs, naming the tool

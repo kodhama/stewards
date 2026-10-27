@@ -98,7 +98,7 @@ export const pickTag = (tags, wanted) => {
  * @param {string} [cwd]
  * @returns {{ readonly ok: true, readonly out: string } | { readonly ok: false, readonly out: string }}
  */
-const git = (args, env, cwd) => {
+export const git = (args, env, cwd) => {
   try {
     return {
       ok: true,

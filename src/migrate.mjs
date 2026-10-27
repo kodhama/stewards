@@ -9,7 +9,7 @@
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { homeOf, jsonText, sha256, stateHome, writeAtomic } from "./lock.mjs";
+import { claudeHome, homeOf, isRecord, jsonText, sha256, stateHome, writeAtomic } from "./lock.mjs";
 
 /**
  * An enable the guard found: the file, what in it, whether it is a user-level
@@ -29,16 +29,10 @@ import { homeOf, jsonText, sha256, stateHome, writeAtomic } from "./lock.mjs";
  */
 
 /** @param {NodeJS.ProcessEnv} env */
-const claudeSettings = (env) => join(env.CLAUDE_CONFIG_DIR || join(homeOf(env), ".claude"), "settings.json");
+const claudeSettings = (env) => join(claudeHome(env), "settings.json");
 
 /** @param {NodeJS.ProcessEnv} env */
 const codexConfig = (env) => join(env.CODEX_HOME || join(homeOf(env), ".codex"), "config.toml");
-
-/**
- * @param {unknown} value
- * @returns {value is Record<string, unknown>}
- */
-const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
  * The patterns for one tool. Its name is lowercase letters, digits and "-",

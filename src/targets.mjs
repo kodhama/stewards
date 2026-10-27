@@ -5,7 +5,6 @@
 // one rename, or the new copy, never half of one. The copy it replaces moves
 // to prev/, one generation per harness and skill.
 
-import { createHash } from "node:crypto";
 import {
   chmodSync,
   copyFileSync,
@@ -22,7 +21,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { homeOf, jsonText, stateHome, writeAtomic } from "./lock.mjs";
+import { claudeHome, homeOf, jsonText, sha256, stateHome, writeAtomic } from "./lock.mjs";
 import { MARKER, NAME } from "./manifest.mjs";
 
 /** @typedef {"claude" | "codex"} Harness */
@@ -55,7 +54,7 @@ export const places = (scope, env, root) => {
   const state = stateHome(env);
   if (scope === "project") {
     if (root === undefined) throw new Error("project scope needs a repo root");
-    const key = createHash("sha256").update(realpathSync(root)).digest("hex").slice(0, 12);
+    const key = sha256(realpathSync(root)).slice(0, 12);
     return {
       lock: join(root, ".kodhama", "cli", "lock.json"),
       skills: (harness) => join(root, harness === "claude" ? ".claude" : ".agents", "skills"),
@@ -66,7 +65,7 @@ export const places = (scope, env, root) => {
     lock: join(state, "lock.json"),
     skills: (harness) =>
       harness === "claude"
-        ? join(env.CLAUDE_CONFIG_DIR || join(home, ".claude"), "skills")
+        ? join(claudeHome(env), "skills")
         : join(home, ".agents", "skills"),
     prev: (harness, skill) => join(state, "prev", harness, skill),
   };

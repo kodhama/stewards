@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { copyFiles, withTool } from "./fetch.mjs";
 import { diffTree, hashTree, readLock, writeLock } from "./lock.mjs";
 import { applyMigration, findEnables, guardRefusal, planMigration } from "./migrate.mjs";
-import { HARNESSES, moveTo, ownerOf, readMarker, recover, swapIn, writeMarker } from "./targets.mjs";
+import { HARNESSES, moveTo, ownerOf, present, readMarker, recover, swapIn, writeMarker } from "./targets.mjs";
 
 /** @typedef {import("./cli.mjs").Outcome} Outcome */
 /** @typedef {import("./lock.mjs").Entry} Entry */
@@ -104,9 +104,8 @@ const problems = (where, tool, entry) =>
   entry.harnesses.flatMap((harness) =>
     Object.entries(entry.skills).flatMap(([skill, locked]) => {
       const path = join(where.skills(harness), skill);
+      if (!present(path)) return [`missing ${path}`];
       const marker = readMarker(path);
-      const owner = ownerOf(path, tool);
-      if (owner.state === "absent") return [`missing ${path}`];
       if (marker === undefined) return [`unmarked ${path}`];
       const differs =
         marker.tool !== tool || marker.skill !== skill || marker.tag !== entry.tag || marker.commit !== entry.commit;

@@ -2,9 +2,9 @@
 // harnesses, and running it. Nothing here prompts, so a command run with no
 // terminal completes or refuses on its own.
 
-import { execFileSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 
+import { git } from "./fetch.mjs";
 import { NAME } from "./manifest.mjs";
 import { HARNESSES, places } from "./targets.mjs";
 import { check, install, remove, update } from "./verbs.mjs";
@@ -26,7 +26,7 @@ import { check, install, remove, update } from "./verbs.mjs";
  * } | { readonly error: string }} Parsed
  */
 
-export const USAGE = [
+const USAGE = [
   "Usage: kodhama <command> [options]",
   "",
   "  install <tool>[#<tag>]  copy a tool's skills into the harnesses' skills folders",
@@ -36,7 +36,7 @@ export const USAGE = [
   "",
   "  --scope user|project    the user's folders, or this git repo's (default user)",
   "  --harness claude|codex  install and remove: one harness; repeat for both (default both)",
-  "  --migrate               install: first take grove plugin enables out of user settings",
+  "  --migrate               install: first take the tool's plugin enables out of user settings",
 ].join("\n");
 
 // A tag as git might name one. It never starts with "-", so git cannot read
@@ -157,20 +157,10 @@ export const parseArgs = (args) => {
  * when there is none.
  * @param {string} cwd
  * @param {NodeJS.ProcessEnv} env
- * @returns {string | undefined}
  */
 const repoRoot = (cwd, env) => {
-  try {
-    const root = execFileSync("git", ["rev-parse", "--show-toplevel"], {
-      cwd,
-      env,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    return realpathSync(root);
-  } catch {
-    return undefined;
-  }
+  const found = git(["rev-parse", "--show-toplevel"], env, cwd);
+  return found.ok ? realpathSync(found.out.trim()) : undefined;
 };
 
 /**

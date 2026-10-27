@@ -50,6 +50,12 @@ import { MARKER } from "./manifest.mjs";
 export const homeOf = (env) => env.HOME || homedir();
 
 /**
+ * Claude's config folder: `$CLAUDE_CONFIG_DIR`, or `~/.claude`.
+ * @param {NodeJS.ProcessEnv} env
+ */
+export const claudeHome = (env) => env.CLAUDE_CONFIG_DIR || join(homeOf(env), ".claude");
+
+/**
  * Where kodhama keeps its user-level state: `$XDG_DATA_HOME/kodhama`.
  * @param {NodeJS.ProcessEnv} env
  */
@@ -100,7 +106,7 @@ export const writeAtomic = (path, text, mode) => {
  * @param {unknown} value
  * @returns {value is Record<string, unknown>}
  */
-const isRecord = (value) =>
+export const isRecord = (value) =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
