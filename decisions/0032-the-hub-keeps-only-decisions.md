@@ -16,11 +16,13 @@ provenance: "maintainer direction, 2026-08-29, given after being shown that kodh
 > lives in `kodhama/kodhama` (`decisions/0033-hub-and-spoke-topology.md`).
 > **This repository stops being the hub.** `kodhama/kodhama` becomes the
 > suite's hub and takes in these decisions under their existing ids (0033 D1,
-> D6). This repository is renamed `kodhama/cli`, the spoke that carries the
-> kodhama CLI and keeps the `kodhama` marketplace. **D1–D5 stand.** The
-> deletions were carried out, the lifecycle is still not restated per
-> repository, git history is still the archive, and ratified decisions keep
-> their dangling references unedited.
+> D6). The CLI and the `kodhama` marketplace go to `kodhama/cli`.
+> This repository is to become `kodhama/cli` (0033 D6: renamed, or, if the
+> rename's redirect test fails, replaced by a fresh `kodhama/cli` with this
+> repository frozen).
+> **D1–D5 stand.** The deletions were carried out. Grove's return does not
+> restore the installed lifecycle charter D3 removed. Git history is still
+> the archive, and ratified decisions keep their dangling references unedited.
 
 ## Decision
 

@@ -7,7 +7,7 @@ informed_by: [kodhama-spec-0001-family-plugin-release-and-distribution-metadata,
 owner: agent
 updated: 2026-07-24
 provenance: "approved maintainer intent, 2026-07-24: retire the oversized family release-certification architecture while preserving only the future narrow goal (metadata recording where marketplaces were tested; a Stewards skill that adds Claude/Codex marketplace setup to CI)"
-superseded_in_part_by: [kodhama-0025-retire-the-surface-matrix, kodhama-0033-hub-and-spoke-topology]  # 0033 (2026-10-27): §4's tag and cross-repository-resolution exclusions, for the kodhama CLI only
+superseded_in_part_by: [kodhama-0025-retire-the-surface-matrix, kodhama-0033-hub-and-spoke-topology]  # 0033 (2026-10-27): §4's tag and cross-repository-resolution exclusions, the Decision state's "retains only" and AC3, for the kodhama CLI only
 ---
 
 # Decision: retire family release certification; keep only narrow marketplace-test setup
@@ -27,16 +27,20 @@ superseded_in_part_by: [kodhama-0025-retire-the-surface-matrix, kodhama-0033-hub
 > **Superseded in part by `kodhama-0033-hub-and-spoke-topology`** (2026-10-27,
 > post-ratification annotation; text below preserved as written). The record
 > lives in `kodhama/kodhama` (`decisions/0033-hub-and-spoke-topology.md`).
-> §4's exclusions of "SemVer and tags" and of "cross-repository resolution"
-> are narrowed for one mechanism. That mechanism is the kodhama CLI's: its
-> tag lookup (the newest SemVer tag, or an explicit `#<tag>`), the
-> `kodhama.json` manifest each tool it installs carries, and the lock that
-> records tag, commit and file hashes. This repository owns it as it becomes
-> `kodhama/cli`, and only for the tools that CLI installs. **Everything else
-> in §4 stands:** version authority, bump judgment, release inventories and
-> history, release approval, runtime sandboxing and effective support. Each
-> tool still owns its version and release cadence, and §1–§3 and §5 are
-> untouched.
+> Three clauses are narrowed for one mechanism: the kodhama CLI's tag lookup
+> (the newest SemVer tag, or an explicit `#<tag>`), the `kodhama.json`
+> manifest each tool it installs carries, and the lock that records tag,
+> commit and file hashes. They are §4's exclusions of "SemVer and tags" and
+> of "cross-repository resolution", the Decision state's "Stewards retains
+> only a narrow future distribution goal", and AC3. This repository owns that
+> mechanism, and only for the tools the CLI installs.
+> **Everything else stands:** version authority, bump judgment, release
+> inventories and history, release approval, runtime sandboxing and
+> effective support. Each tool still owns its version and release cadence,
+> and §1–§3 and §5 are untouched.
+> This repository is to become `kodhama/cli` (0033 D6: renamed, or, if the
+> rename's redirect test fails, replaced by a fresh `kodhama/cli` with this
+> repository frozen).
 
 ## Decision state
 

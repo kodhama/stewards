@@ -5,7 +5,7 @@ status: approved  # maintainer intent act 2026-08-29, in session: "Can you remov
 depends_on: [kodhama-0002-delivery-channels, kodhama-0012-codex-marketplace-channel, kodhama-0018-stewards-dual-host-plugin-package, kodhama-0020-name-overarching-plugin-kodhama, kodhama-0021-separate-adoption-posture-from-support]
 owner: agent
 updated: 2026-08-29
-superseded_in_part_by: [kodhama-0033-hub-and-spoke-topology]  # 2026-10-27 — the annotation's 'retired' framing for grove, and §Cost 1 as an open gap; D1-D6 stand
+superseded_in_part_by: [kodhama-0033-hub-and-spoke-topology]  # 2026-10-27 — the annotation's framing of grove as retired, and §Cost 1 as it applies to grove; D1-D6 stand
 provenance: "maintainer direction, 2026-08-29, given directly and reaffirmed in the same message. The three delistings and the deletion of the in-repo package were chosen by the maintainer against a stated account of what each one breaks; the costs recorded below were put to them before any file changed."
 ---
 
@@ -38,12 +38,13 @@ provenance: "maintainer direction, 2026-08-29, given directly and reaffirmed in 
 > post-ratification annotation; text below preserved as written). The record
 > lives in `kodhama/kodhama` (`decisions/0033-hub-and-spoke-topology.md`).
 > **Grove's return, anticipated in the annotation above, has arrived** as
-> 0033 D7. It is delivered by the kodhama CLI, not by this catalog. So the
-> framing of grove as retired is superseded, and §Cost 1's "no install door"
-> stops being an open gap for grove: its door is the CLI, outside the
-> marketplace. **D1–D6 stand.** Both catalogs still list `trellis` and nothing
-> else. Nothing is re-listed, so D6's guard is untouched. wisp's delisting is
-> unaffected.
+> 0033 D7. It is delivered by the kodhama CLI, not by this catalog, so the
+> framing of grove as retired is superseded. §Cost 1's record that grove has
+> no install door no longer describes grove: its door is the CLI, a separate
+> channel for tools that ship no plugin. Cost 1 still describes wisp.
+> **D1–D6 stand.** Both catalogs still list `trellis` and nothing else. The
+> catalogs stay the one door for plugins (D5). Nothing is re-listed, so D6's
+> guard is untouched.
 
 ## Decision
 

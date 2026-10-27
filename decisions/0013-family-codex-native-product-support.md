@@ -3,7 +3,7 @@ id: kodhama-0013-family-codex-native-product-support
 type: decision
 status: approved  # maintainer intent act 2026-08-02, in session: "I would say approve them" — an in-PR flip recording that act, per grove/charters/lifecycle.md's gated -> approved mover rule; the merge performs the ship. Content re-read on flip 2026-08-02 and still live: trellis#220 is executing this decision's Codex-distribution mandate.
 depends_on: [kodhama-0001-family-delivery, kodhama-0002-delivery-channels, kodhama-0008-family-inheritance-restate-nothing, kodhama-0012-codex-marketplace-channel]
-superseded_in_part_by: [kodhama-0028]  # 2026-08-02 kodhama-0028 amends exactly two clauses: (a) "Each user-facing product MUST gain a Codex-native surface; trellis, grove, and wisp are the initial REQUIRED products" becomes a named intent with no schedule and no required tranche; (b) "in parallel with its existing Claude Code support" no longer obliges a Codex counterpart to a Claude-path change, so divergence between the two is expected rather than a defect. The DIRECTION of this record is unchanged and is not superseded.
+superseded_in_part_by: [kodhama-0028, kodhama-0033-hub-and-spoke-topology]  # 2026-08-02 kodhama-0028 amends exactly two clauses: (a) "Each user-facing product MUST gain a Codex-native surface; trellis, grove, and wisp are the initial REQUIRED products" becomes a named intent with no schedule and no required tranche; (b) "in parallel with its existing Claude Code support" no longer obliges a Codex counterpart to a Claude-path change, so divergence between the two is expected rather than a defect. The DIRECTION of this record is unchanged and is not superseded.; 0033 (2026-10-27) — plugin distribution as grove's preferred mechanism, and "not … a shared runtime" for the cluster helper
 owner: agent
 updated: 2026-07-24
 provenance: maintainer request 2026-07-24 to make native Codex support, preferably through plugin distribution, a product-family standard; initial named products trellis, grove, and wisp. Reconciled 2026-07-24 with merged grove#134 (dual-host Grove distribution) and merged stewards#9 / kodhama-0012 (the Grove-first Codex marketplace catalog). Maintainer merge of PR #11 preserved this record as a draft; the author self-check below promotes it to the execution-ready gate without claiming human approval.
@@ -14,6 +14,18 @@ provenance: maintainer request 2026-07-24 to make native Codex support, preferab
 > **Spore follow-up (2026-07-24):** `kodhama-0014-retire-spore` settles this
 > decision’s parked Spore question by retiring the tool from the family. The
 > Trellis/Grove/Wisp Codex mandate is unchanged.
+
+> **Superseded in part by `kodhama-0033-hub-and-spoke-topology`** (2026-10-27,
+> post-ratification annotation; text below preserved as written). The record
+> lives in `kodhama/kodhama` (`decisions/0033-hub-and-spoke-topology.md`).
+> Two clauses give way. "Codex plugin distribution is the preferred delivery
+> mechanism" no longer covers grove: grove's skills reach Codex through the
+> kodhama CLI (0033 D7). "It does not become a builder repo or a shared
+> runtime" admits one shared command, the cluster helper, which the CLI
+> installs and more than one tool calls. It is still not a builder (0033 D8).
+> **The direction stands:** Codex is a delivery target for each user-facing
+> product, products own their bundles and releases, and there is one
+> marketplace surface.
 
 ## Decision state
 
