@@ -634,3 +634,32 @@ test("an update finished after a SIGKILL names each prev/ slot holding a copy it
   assert.equal(text(join(prev, "SKILL.md")), "my edit\n");
   assert.equal(machine.kodhama(["check"]).status, 0);
 });
+
+test("at project scope, the commands a failed update and the refusals after it print keep --scope project, and work", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the first run with");
+    return;
+  }
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  const repo = machine.project("work");
+  assert.equal(machine.kodhama(["install", "demo#0.1.0", "--scope", "project"], { cwd: repo }).status, 0);
+  // Claude's skills swap first; Codex's stage cannot be made.
+  const agents = join(repo, ".agents");
+  chmodSync(agents, 0o555);
+  let failed;
+  try {
+    failed = machine.kodhama(["update", "demo", "--scope", "project"], { cwd: repo });
+  } finally {
+    chmodSync(agents, 0o755);
+  }
+  assert.equal(failed.status, 1, failed.stdout);
+  assert.ok(failed.stderr.includes("To finish, run kodhama update demo#v0.2.0 --scope project."), failed.stderr);
+
+  const removed = machine.kodhama(["remove", "demo", "--scope", "project"], { cwd: repo });
+
+  assert.equal(removed.status, 1, removed.stdout);
+  assert.ok(removed.stderr.includes("Finish that update first: kodhama update demo#v0.2.0 --scope project."), removed.stderr);
+  const finished = machine.kodhama(["update", "demo#v0.2.0", "--scope", "project"], { cwd: repo });
+  assert.equal(finished.status, 0, finished.stderr);
+});

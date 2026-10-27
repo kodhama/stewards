@@ -35,6 +35,12 @@ import { HARNESSES, moveToPrev, ownerOf, places, present, readMarker, realOf, re
 const refuse = (lines) => ({ code: 1, lines });
 
 /**
+ * What a printed command adds so it runs at the scope it was printed at.
+ * @param {Context["scope"]} scope
+ */
+const scoped = (scope) => (scope === "project" ? " --scope project" : "");
+
+/**
  * Effect: recovers the stage of each harness the run works on. Should one
  * step throw, the error carries the lines of the steps before it as
  * `lines`, which the program prints ahead of it.
@@ -211,12 +217,13 @@ const interrupted = (where, tool, entry, harnesses) => {
  * was moving to now names another commit, that update can no longer be
  * finished, so the way out by hand is printed in its place.
  * @param {string} tool
+ * @param {string} at what `scoped` gives for the run's scope
  * @param {ReturnType<typeof interrupted>} found
  * @param {{ readonly tag: string, readonly commit: string }} [moved] the
  *   moved tag and the commit it names now
  */
-const finishFirst = (tool, found, moved) => {
-  const finishable = [...new Set(found.filter(({ tag }) => tag !== moved?.tag).map(({ tag }) => `kodhama update ${tool}#${tag}`))];
+const finishFirst = (tool, at, found, moved) => {
+  const finishable = [...new Set(found.filter(({ tag }) => tag !== moved?.tag).map(({ tag }) => `kodhama update ${tool}#${tag}${at}`))];
   const stranded = found.filter(({ tag }) => tag === moved?.tag);
   return [
     ...found.map(
@@ -230,7 +237,7 @@ const finishFirst = (tool, found, moved) => {
           `${moved.tag} now points at ${moved.commit}, not ${stranded[0].commit}, so that update cannot be finished. The way out, by hand:`,
           "1. Copy each prev/ folder named above somewhere safe.",
           "2. Move each live folder named above out of its skills folder.",
-          `3. Run kodhama remove ${tool}, then kodhama install ${tool}, then re-apply your edits from the copies.`,
+          `3. Run kodhama remove ${tool}${at}, then kodhama install ${tool}${at}, then re-apply your edits from the copies.`,
           "A command that discards an interrupted update is tracked as KOD-25.",
         ]),
   ];
@@ -267,11 +274,12 @@ const migrateOut = (tool, env) => {
  * @returns {Outcome}
  */
 export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, where }) => {
+  const at = scoped(scope);
   const blocked = guardRefusal(
     tool,
     findEnables(tool, scope, env, root),
     migrate,
-    `Run kodhama install ${tool} --migrate to take the user-level ones out, keeping a receipt, or turn them off by hand.`,
+    `Run kodhama install ${tool} --migrate${at} to take the user-level ones out, keeping a receipt, or turn them off by hand.`,
   );
   if (blocked !== undefined) return refuse(blocked);
   // --migrate edits user files, so at project scope it holds the user-scope
@@ -291,18 +299,18 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
       // lock's harnesses already use would swap that update's copies back
       // and leave the prev/ copies it made open to the next update.
       const stuck = entry === undefined ? [] : interrupted(where, tool, entry, entry.harnesses);
-      if (stuck.length > 0) return refuse([...recovered, ...finishFirst(tool, stuck)]);
+      if (stuck.length > 0) return refuse([...recovered, ...finishFirst(tool, at, stuck)]);
       if (entry !== undefined && entry.tag !== fetched.tag) {
         return refuse([
           ...recovered,
-          `${tool} is installed at ${entry.tag}. To move it to ${fetched.tag}, run kodhama update ${tool}#${fetched.tag}.`,
+          `${tool} is installed at ${entry.tag}. To move it to ${fetched.tag}, run kodhama update ${tool}#${fetched.tag}${at}.`,
         ]);
       }
       const adding = harnesses.filter((harness) => !entry?.harnesses.includes(harness));
       if (entry !== undefined && adding.length > 0 && entry.commit !== fetched.commit) {
         return refuse([
           ...recovered,
-          `${tool} ${entry.tag} now points at ${fetched.commit}, not the ${entry.commit} installed. Run kodhama update ${tool}#${entry.tag} first, so every harness gets the same copy.`,
+          `${tool} ${entry.tag} now points at ${fetched.commit}, not the ${entry.commit} installed. Run kodhama update ${tool}#${entry.tag}${at} first, so every harness gets the same copy.`,
         ]);
       }
       const occupied = preflight(where, tool, adding, fetched.skills.map((skill) => skill.name));
@@ -314,7 +322,7 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
         return refuse([
           ...recovered,
           ...found,
-          `${tool} ${entry.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`,
+          `${tool} ${entry.tag} is installed but differs from its lock. kodhama remove ${tool}${at} moves it to prev/, and install puts it back fresh.`,
         ]);
       }
       // What --migrate removes is every entry for the tool, enabled or not,
@@ -396,25 +404,26 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
  * @returns {Outcome}
  */
 export const update = ({ tool, tag }, { env, scope, root, where }) => {
+  const at = scoped(scope);
   const blocked = guardRefusal(
     tool,
     findEnables(tool, scope, env, root),
     false,
-    `Turn them off, or take the user-level ones out with kodhama install ${tool} --migrate at the installed tag, then update again.`,
+    `Turn them off, or take the user-level ones out with kodhama install ${tool} --migrate${at} at the installed tag, then update again.`,
   );
   if (blocked !== undefined) return refuse(blocked);
   return withRunLock(where.runLock, () => {
     const read = readLock(where.lock);
     if ("error" in read) return refuse([read.error]);
     const entry = read.lock.tools[tool];
-    if (entry === undefined) return refuse([`${tool} is not installed here; kodhama install ${tool} installs it.`]);
+    if (entry === undefined) return refuse([`${tool} is not installed here; kodhama install ${tool}${at} installs it.`]);
     // The lock's source is a record, not an instruction: a lock a repo
     // commits must not choose where the code comes from.
     const source = toolSource(tool, env);
     if (entry.source !== source) {
       return refuse([
         `The lock says ${tool} came from ${entry.source}, but kodhama fetches it from ${source}.`,
-        `To move ${tool} to ${source}, run kodhama remove ${tool}, then install it again.`,
+        `To move ${tool} to ${source}, run kodhama remove ${tool}${at}, then install it again.`,
       ]);
     }
 
@@ -433,7 +442,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
       const stuck = interrupted(where, tool, entry, entry.harnesses);
       const elsewhere = stuck.filter(({ tag, commit }) => tag !== fetched.tag || commit !== fetched.commit);
       if (elsewhere.length > 0) {
-        return refuse([...recovered, ...finishFirst(tool, elsewhere, { tag: fetched.tag, commit: fetched.commit })]);
+        return refuse([...recovered, ...finishFirst(tool, at, elsewhere, { tag: fetched.tag, commit: fetched.commit })]);
       }
       // A folder the interrupted update already swapped is skipped below, so
       // its prev/ copy is named now; a killed run never printed it. The
@@ -504,7 +513,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
             }),
           ...placed.notes,
           ...dropped,
-          `To finish, run kodhama update ${tool}#${fetched.tag}.`,
+          `To finish, run kodhama update ${tool}#${fetched.tag}${at}.`,
         ]);
       }
       return {
@@ -577,8 +586,9 @@ export const check = ({ tool }, { where }) => {
  * @param {Context} context
  * @returns {Outcome}
  */
-export const remove = ({ tool, harnesses }, { where }) =>
+export const remove = ({ tool, harnesses }, { scope, where }) =>
   withRunLock(where.runLock, () => {
+    const at = scoped(scope);
     const read = readLock(where.lock);
     if ("error" in read) return refuse([read.error]);
     const entry = read.lock.tools[tool];
@@ -588,7 +598,7 @@ export const remove = ({ tool, harnesses }, { where }) =>
 
     const recovered = recoverAll(where, leaving);
     const stuck = interrupted(where, tool, entry, leaving);
-    if (stuck.length > 0) return refuse([...recovered, ...finishFirst(tool, stuck)]);
+    if (stuck.length > 0) return refuse([...recovered, ...finishFirst(tool, at, stuck)]);
     const staying = entry.harnesses.filter((harness) => !leaving.includes(harness));
     // A skills folder a staying harness also resolves to is still in use:
     // the leaving harness only leaves the lock.
@@ -617,7 +627,7 @@ export const remove = ({ tool, harnesses }, { where }) =>
         ...recovered,
         `kodhama stopped partway through removing ${tool}: ${error instanceof Error ? error.message : String(error)}`,
         ...lines,
-        `To finish, run kodhama remove ${tool}${staying.length > 0 ? leaving.map((harness) => ` --harness ${harness}`).join("") : ""} again.`,
+        `To finish, run kodhama remove ${tool}${staying.length > 0 ? leaving.map((harness) => ` --harness ${harness}`).join("") : ""}${at} again.`,
       ]);
     }
     return { code: 0, lines: [...recovered, ...lines, `Removed ${tool} for ${leaving.join(", ")}.`] };
