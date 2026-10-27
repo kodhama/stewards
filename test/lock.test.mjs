@@ -4,8 +4,9 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import fs, { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 
 import { withTool } from "../src/fetch.mjs";
@@ -87,6 +88,38 @@ test("a run lock whose token is no longer ours survives our release", (t) => {
   withRunLock(path, () => writeFileSync(join(path, "owner"), "another run\n"));
 
   assert.ok(existsSync(join(path, "owner")));
+});
+
+test("a claimant that renamed aside a lock another run had just taken over puts it back and backs off", (t) => {
+  const machine = scratch(t);
+  const path = join(machine.data, "kodhama", "run.lock");
+  mkdirSync(path, { recursive: true });
+  writeFileSync(join(path, "owner"), "a run that died\n");
+  const old = new Date(Date.now() - 60 * 60 * 1000);
+  utimesSync(path, old, old);
+  // Between this claimant reading the stale token and renaming the lock
+  // aside, another run takes it over and writes its own token.
+  const { renameSync } = fs;
+  fs.renameSync = (from, to) => {
+    if (from === path && String(to).includes(".stale-")) writeFileSync(join(path, "owner"), "the run that took over\n");
+    return renameSync(from, to);
+  };
+  syncBuiltinESMExports();
+  let ran = false;
+  let outcome;
+  try {
+    outcome = withRunLock(path, () => {
+      ran = true;
+    });
+  } finally {
+    fs.renameSync = renameSync;
+    syncBuiltinESMExports();
+  }
+
+  assert.equal(ran, false);
+  assert.equal(/** @type {any} */ (outcome).code, 1);
+  assert.equal(readFileSync(join(path, "owner"), "utf8"), "the run that took over\n");
+  assert.deepEqual(readdirSync(dirname(path)).filter((name) => name.includes(".stale-")), []);
 });
 
 test("a held run lock is refreshed before each phase, so a long run never looks stale", (t) => {
