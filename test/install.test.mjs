@@ -1008,3 +1008,26 @@ test("SIGTERM mid-run releases the run lock and exits 143", async (t) => {
   assert.deepEqual(await exited, { code: 143, signal: null });
   assert.ok(!existsSync(held), "the run lock is released");
 });
+
+test("--migrate that fails after editing one config names the receipt and the file it already edited", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the second edit with");
+    return;
+  }
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  writeFiles(machine.claude, { "settings.json": SETTINGS_WITH_GROVE });
+  writeFiles(machine.codex, { "config.toml": `${TOML_HEAD}\n${TOML_GROVE}${TOML_TAIL}` });
+  // settings.json is edited first; config.toml's temp file cannot be made.
+  chmodSync(machine.codex, 0o555);
+
+  const outcome = machine.kodhama(["install", "grove", "--migrate"]);
+  chmodSync(machine.codex, 0o755);
+
+  assert.equal(outcome.status, 1);
+  const receipts = join(machine.data, "kodhama", "receipts");
+  const [name] = readdirSync(receipts);
+  assert.ok(outcome.stderr.includes(join(receipts, name)), outcome.stderr);
+  assert.ok(outcome.stderr.includes(join(machine.claude, "settings.json")), outcome.stderr);
+  assert.doesNotMatch(readFileSync(join(machine.claude, "settings.json"), "utf8"), /grove@grove/);
+});

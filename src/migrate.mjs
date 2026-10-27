@@ -311,7 +311,8 @@ export const planMigration = (tool, env) => {
  * the file's mode. A symlinked config is written through its link, so the
  * link survives, and the receipt names both paths. The receipt holds whole
  * config files, which may hold secrets, so only the user can read it.
- * Returns the receipt's path.
+ * An edit that fails throws an error naming the files already edited and
+ * the receipt. Returns the receipt's path.
  * @param {string} tool
  * @param {readonly Edit[]} edits
  * @param {NodeJS.ProcessEnv} env
@@ -341,6 +342,18 @@ export const applyMigration = (tool, edits, env) => {
     }),
     { flag: "wx", mode: 0o600 },
   );
-  edits.forEach(({ path, after }, index) => writeAtomic(resolved[index], after, statSync(path).mode & 0o7777));
+  /** @type {string[]} */
+  const done = [];
+  try {
+    edits.forEach(({ path, after }, index) => {
+      writeAtomic(resolved[index], after, statSync(path).mode & 0o7777);
+      done.push(path);
+    });
+  } catch (error) {
+    // Some configs may already be edited, so the receipt must not be lost.
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}. --migrate had already edited ${done.length === 0 ? "no file" : done.join(", ")}; the receipt, with each file as it was, is ${receipt}.`,
+    );
+  }
   return receipt;
 };
