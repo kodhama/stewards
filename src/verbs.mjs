@@ -296,9 +296,14 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           },
         });
       } catch (error) {
-        // The configs are already edited, so the receipt must not be lost.
-        if (migrated.lines.length === 0) throw error;
-        return refuse([...recovered, ...migrated.lines, `kodhama stopped after --migrate: ${String(error)}`]);
+        // What recovery moved, and the receipt when the configs are already
+        // edited, must not be lost with the error.
+        const why = error instanceof Error ? error.message : String(error);
+        return refuse([
+          ...recovered,
+          ...migrated.lines,
+          migrated.lines.length > 0 ? `kodhama stopped after --migrate: ${why}` : `kodhama stopped: ${why}`,
+        ]);
       }
       return {
         code: 0,

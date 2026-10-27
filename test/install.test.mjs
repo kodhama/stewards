@@ -1060,3 +1060,40 @@ test("--migrate that fails after editing one config names the receipt and the fi
   assert.ok(outcome.stderr.includes(join(machine.claude, "settings.json")), outcome.stderr);
   assert.doesNotMatch(readFileSync(join(machine.claude, "settings.json"), "utf8"), /grove@grove/);
 });
+
+/**
+ * Effect: a machine where demo v0.1.0 is installed for Claude but the lock
+ * is gone, a crashed run left beta's old copy in the stage, and alpha's
+ * prev/ slot holds a folder that cannot be cleared, so an install that swaps
+ * alpha recovers beta's copy, then fails. Returns the machine and what makes
+ * the slot clearable again, for the test to call once the install has run.
+ * @param {import("node:test").TestContext} t
+ */
+const failingInstall = (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0", "--harness", "claude"]).status, 0);
+  writeFiles(machine.claudeSkills, { "alpha/SKILL.md": "alpha edit\n" });
+  writeFiles(machine.data, { "kodhama/lock.json": null });
+  writeFiles(join(machine.claude, ".kodhama-stage", "claude"), { "beta.old/SKILL.md": "beta, left by a crash\n" });
+  const blocker = join(machine.prev, "claude", "alpha", "ro");
+  writeFiles(blocker, { f: "x\n" });
+  chmodSync(blocker, 0o555);
+  return { machine, unblock: () => chmodSync(blocker, 0o755) };
+};
+
+test("an install that fails partway still names what recovery moved first", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root clears the read-only folder this test fails the swap with");
+    return;
+  }
+  const { machine, unblock } = failingInstall(t);
+
+  const outcome = machine.kodhama(["install", "demo", "--harness", "claude"]);
+  unblock();
+
+  assert.equal(outcome.status, 1, outcome.stdout);
+  const recovered = `Moved ${join(machine.claude, ".kodhama-stage", "claude", "beta.old")}, left by an interrupted run, to ${join(machine.prev, "claude", "beta")}.`;
+  assert.ok(outcome.stderr.includes(recovered), outcome.stderr);
+  assert.match(outcome.stderr, /kodhama stopped/);
+});
