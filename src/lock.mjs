@@ -20,7 +20,7 @@ import {
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { MARKER, NAME } from "./manifest.mjs";
+import { COMMIT, MARKER, NAME, TAG } from "./manifest.mjs";
 
 /**
  * One file as the lock records it.
@@ -133,7 +133,9 @@ const isInside = (rel) =>
 const isEntry = (value) =>
   isRecord(value) &&
   typeof value.tag === "string" &&
+  TAG.test(value.tag) &&
   typeof value.commit === "string" &&
+  COMMIT.test(value.commit) &&
   typeof value.source === "string" &&
   isSource(value.source) &&
   Array.isArray(value.harnesses) &&

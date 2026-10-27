@@ -5,7 +5,7 @@
 import { realpathSync } from "node:fs";
 
 import { git } from "./fetch.mjs";
-import { NAME } from "./manifest.mjs";
+import { NAME, TAG } from "./manifest.mjs";
 import { HARNESSES, outsideRoot, places } from "./targets.mjs";
 import { check, install, remove, update } from "./verbs.mjs";
 
@@ -38,10 +38,6 @@ const USAGE = [
   "  --harness claude|codex  install and remove: one harness; repeat for both (default both)",
   "  --migrate               install: first take the tool's plugin enables out of user settings",
 ].join("\n");
-
-// A tag as git might name one. It never starts with "-", so git cannot read
-// it as an option, and never holds "..", which git refuses in a ref anyway.
-const TAG = /^(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._+/-]*$/;
 
 const SCOPES = /** @type {const} */ (["user", "project"]);
 

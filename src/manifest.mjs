@@ -9,6 +9,17 @@ import { isAbsolute, join, resolve, sep } from "node:path";
 /** Tool and skill names: lowercase, so always safe as one path segment. */
 export const NAME = /^[a-z][a-z0-9-]*$/;
 
+/**
+ * A tag as git might name one. It never starts with "-", so git cannot read
+ * it as an option, and never holds "..", which git refuses in a ref anyway.
+ * The command line, the lock and the markers all hold to it, so a tag
+ * kodhama prints in a command is one its own parser would accept.
+ */
+export const TAG = /^(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._+/-]*$/;
+
+/** A commit as git names one: a SHA-1 or SHA-256 in lowercase hex. */
+export const COMMIT = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
+
 const MANIFEST = "kodhama.json";
 
 /**

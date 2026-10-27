@@ -25,7 +25,7 @@ import {
 import { dirname, join, sep } from "node:path";
 
 import { RUN_LOCK_OWNER, claudeHome, heldRunLocks, homeOf, isRecord, jsonText, keepAlive, sha256, stateHome, writeAtomic } from "./lock.mjs";
-import { MARKER, NAME } from "./manifest.mjs";
+import { COMMIT, MARKER, NAME, TAG } from "./manifest.mjs";
 
 /** @typedef {"claude" | "codex"} Harness */
 
@@ -159,7 +159,21 @@ export const ownerOf = (path, tool) => {
   if (!lstatSync(path).isDirectory()) return { state: "theirs", why: "is not a folder" };
   const marker = readMarker(path);
   if (marker === undefined) return { state: "theirs", why: "has no kodhama marker" };
-  if (marker.tool !== tool) return { state: "theirs", why: `is marked as ${String(marker.tool)}'s` };
+  if (typeof marker.tool !== "string" || !NAME.test(marker.tool)) {
+    return { state: "theirs", why: "has a kodhama marker this kodhama cannot read" };
+  }
+  if (marker.tool !== tool) return { state: "theirs", why: `is marked as ${marker.tool}'s` };
+  // A marker kodhama wrote names a tag its own parser takes and a commit; a
+  // folder whose marker says otherwise is not one it installed, and its tag
+  // must never reach a command kodhama prints.
+  if (
+    typeof marker.tag !== "string" ||
+    !TAG.test(marker.tag) ||
+    typeof marker.commit !== "string" ||
+    !COMMIT.test(marker.commit)
+  ) {
+    return { state: "theirs", why: `has a ${tool} marker kodhama did not write` };
+  }
   return { state: "ours" };
 };
 
