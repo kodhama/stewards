@@ -19,7 +19,7 @@ import {
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { MARKER } from "./manifest.mjs";
+import { MARKER, NAME } from "./manifest.mjs";
 
 /**
  * One file as the lock records it.
@@ -110,6 +110,20 @@ export const isRecord = (value) =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
+ * A source git can only read as a repo, never as an option.
+ * @param {string} source
+ */
+export const isSource = (source) => /^(https|file):\/\//.test(source);
+
+/**
+ * A file's path in a skill folder as kodhama records it: relative,
+ * `/`-separated, and never stepping out of the folder.
+ * @param {string} rel
+ */
+const isInside = (rel) =>
+  rel !== "" && !rel.startsWith("/") && !rel.includes("\\") && !rel.split("/").includes("..");
+
+/**
  * @param {unknown} value
  * @returns {value is Entry}
  */
@@ -118,14 +132,17 @@ const isEntry = (value) =>
   typeof value.tag === "string" &&
   typeof value.commit === "string" &&
   typeof value.source === "string" &&
+  isSource(value.source) &&
   Array.isArray(value.harnesses) &&
   value.harnesses.every((harness) => harness === "claude" || harness === "codex") &&
   isRecord(value.skills) &&
-  Object.values(value.skills).every(
-    (files) =>
+  Object.entries(value.skills).every(
+    ([skill, files]) =>
+      NAME.test(skill) &&
       isRecord(files) &&
-      Object.values(files).every(
-        (file) => isRecord(file) && typeof file.sha256 === "string" && typeof file.exec === "boolean",
+      Object.entries(files).every(
+        ([rel, file]) =>
+          isInside(rel) && isRecord(file) && typeof file.sha256 === "string" && typeof file.exec === "boolean",
       ),
   );
 
@@ -144,7 +161,8 @@ export const readLock = (path) => {
   } catch {
     value = undefined;
   }
-  return isRecord(value) && value.lock === 1 && isRecord(value.tools) && Object.values(value.tools).every(isEntry)
+  return isRecord(value) && value.lock === 1 && isRecord(value.tools) &&
+    Object.entries(value.tools).every(([tool, entry]) => NAME.test(tool) && isEntry(entry))
     ? { lock: /** @type {Lock} */ (value) }
     : { error: `${path} is not a lock this kodhama can read. Move it aside to start over.` };
 };

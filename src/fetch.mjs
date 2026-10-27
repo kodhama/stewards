@@ -19,6 +19,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
+import { isSource } from "./lock.mjs";
 import { MARKER, readManifest } from "./manifest.mjs";
 
 const GIT_TIMEOUT_MS = 5 * 60 * 1000;
@@ -181,7 +182,8 @@ export const copyFiles = (from, to, files) => {
  * @returns {{ readonly value: T } | { readonly error: string }}
  */
 export const withTool = (tool, wanted, { env, tmp = tmpdir(), source = toolSource(tool, env) }, use) => {
-  const listed = git(["ls-remote", "--tags", "--refs", source], env);
+  if (!isSource(source)) return { error: `${tool}'s source ${source} is not an https:// or file:// URL.` };
+  const listed = git(["ls-remote", "--tags", "--refs", "--", source], env);
   if (!listed.ok) return { error: `kodhama could not list the tags of ${tool} at ${source}: ${listed.out}` };
   const tags = listed.out
     .split("\n")
@@ -201,7 +203,7 @@ export const withTool = (tool, wanted, { env, tmp = tmpdir(), source = toolSourc
   const dir = mkdtempSync(join(tmp, `kodhama-${tool}-`));
   try {
     const cloned = git(
-      ["-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1", "--branch", tag, source, dir],
+      ["-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1", "--branch", tag, "--", source, dir],
       env,
     );
     if (!cloned.ok) return { error: `kodhama could not clone ${tool} at ${tag}: ${cloned.out}` };
