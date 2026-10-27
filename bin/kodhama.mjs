@@ -22,6 +22,8 @@ for (const line of lines) {
   else console.error(line);
 }
 process.exitCode = code;
-// One turn of the event loop, so a SIGINT or SIGTERM that arrived while the
-// command ran is handled now (and exits 130 or 143) instead of being dropped.
-await new Promise((done) => setImmediate(done));
+// A SIGINT or SIGTERM that arrived while the command ran is handled at the
+// loop's next poll (and exits 130 or 143) instead of being dropped. Node 20
+// may run this from inside a poll callback, so one immediate would end the
+// script before that poll; the second runs only after it. Neither waits.
+await new Promise((done) => setImmediate(() => setImmediate(done)));
