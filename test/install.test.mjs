@@ -3,11 +3,24 @@
 // for GitHub.
 
 import assert from "node:assert/strict";
-import { sep } from "node:path";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { join, sep } from "node:path";
 import { test } from "node:test";
 
 import { parseArgs } from "../src/cli.mjs";
+import {
+  copyFiles,
+  listFiles,
+  pickTag,
+  toolSource,
+  withTool,
+} from "../src/fetch.mjs";
+import { parseManifest } from "../src/manifest.mjs";
 import { scratch } from "./helpers/scratch.mjs";
+
+// What a scratch machine holds before the program runs: its empty folders.
+const UNTOUCHED = ["claude", "codex", "data", "home", "tmp"];
 
 test("the scratch machine keeps every path it hands the program under its root", (t) => {
   const machine = scratch(t);
@@ -22,7 +35,7 @@ test("the scratch machine keeps every path it hands the program under its root",
   ]) {
     assert.ok(machine.env[name].startsWith(machine.root + sep), name);
   }
-  assert.deepEqual(machine.written(), ["claude", "codex", "data", "home", "tmp"]);
+  assert.deepEqual(machine.written(), UNTOUCHED);
 });
 
 test("install reads a tool, a tag, a scope, harnesses and --migrate", () => {
@@ -136,16 +149,198 @@ test("a usage error prints the usage and exits 2, for each way of making one", (
     assert.equal(outcome.stdout, "");
   }
   assert.match(machine.kodhama(["uninstall", "grove"]).stderr, /use remove/);
-  assert.deepEqual(machine.written(), ["claude", "codex", "data", "home", "tmp"]);
+  assert.deepEqual(machine.written(), UNTOUCHED);
 });
 
 test("a verb not built yet says so and exits 1, writing nothing", (t) => {
   const machine = scratch(t);
 
-  for (const args of [["update", "demo"], ["check"], ["remove", "demo"]]) {
+  for (const args of [["update", "demo"], ["check"], ["remove", "demo"], ["install", "demo", "--migrate"]]) {
     const outcome = machine.kodhama(args);
     assert.equal(outcome.status, 1, JSON.stringify(args));
     assert.match(outcome.stderr, /not built yet/, JSON.stringify(args));
   }
-  assert.deepEqual(machine.written(), ["claude", "codex", "data", "home", "tmp"]);
+  assert.deepEqual(machine.written(), UNTOUCHED);
+});
+
+test("with no tag named, the highest stable vX.Y.Z wins, in numeric order", () => {
+  const tags = ["v0.1.0", "v0.9.0", "v0.10.0", "v0.11.0-rc.1", "latest", "v1.0", "v01.0.0"];
+
+  assert.equal(pickTag(tags, undefined), "v0.10.0");
+  assert.equal(pickTag(tags, "v0.1.0"), "v0.1.0");
+  assert.equal(pickTag(tags, "v0.11.0-rc.1"), "v0.11.0-rc.1");
+  assert.equal(pickTag(tags, "latest"), "latest");
+  assert.equal(pickTag(tags, "v9.9.9"), undefined);
+  assert.equal(pickTag([], undefined), undefined);
+  assert.equal(pickTag(["latest", "v2.0.0-beta.1"], undefined), undefined);
+});
+
+test("a tool comes from GitHub, or from KODHAMA_TOOL_SOURCE when it is set", () => {
+  assert.equal(toolSource("grove", {}), "https://github.com/kodhama/grove.git");
+  assert.equal(
+    toolSource("grove", { KODHAMA_TOOL_SOURCE: "/srv/tools" }),
+    "file:///srv/tools/grove",
+  );
+});
+
+test("a fetched tool carries its tag, the clone's commit and its skills, and the clone is gone after", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", ["0.1.0", "0.9.0", "0.10.0", "0.11.0-rc.1"]);
+  const options = { env: machine.env, tmp: machine.tmp };
+
+  const newest = withTool("demo", undefined, options, (fetched) => fetched);
+  assert.ok("value" in newest, JSON.stringify(newest));
+  assert.equal(newest.value.tag, "v0.10.0");
+  assert.equal(newest.value.commit, tool.commit("v0.10.0"));
+  assert.equal(newest.value.source, `file://${tool.path}`);
+  assert.deepEqual(
+    newest.value.skills.map(({ name, files }) => ({ name, files })),
+    [
+      { name: "alpha", files: ["SKILL.md", join("scripts", "run.sh")] },
+      { name: "beta", files: ["SKILL.md"] },
+    ],
+  );
+
+  const older = withTool("demo", "v0.1.0", options, (fetched) => fetched);
+  assert.ok("value" in older);
+  assert.equal(older.value.tag, "v0.1.0");
+  assert.equal(older.value.commit, tool.commit("v0.1.0"));
+
+  const named = withTool("demo", "v0.11.0-rc.1", options, (fetched) => fetched.tag);
+  assert.deepEqual(named, { value: "v0.11.0-rc.1" });
+
+  assert.deepEqual(machine.written(), UNTOUCHED);
+});
+
+test("install with no tag fetches the newest stable tag, and writes nothing yet", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", ["0.1.0", "0.9.0", "0.10.0", "0.11.0-rc.1"]);
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 1, outcome.stderr);
+  assert.match(outcome.stderr, /demo v0\.10\.0/);
+  assert.ok(outcome.stderr.includes(tool.commit("v0.10.0")), outcome.stderr);
+  assert.match(outcome.stderr, /not built yet/);
+  assert.deepEqual(machine.written(), UNTOUCHED);
+});
+
+test("install demo#0.1.0 fetches that older tag", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+
+  const outcome = machine.kodhama(["install", "demo#0.1.0"]);
+
+  assert.match(outcome.stderr, /demo v0\.1\.0/);
+  assert.ok(outcome.stderr.includes(tool.commit("v0.1.0")), outcome.stderr);
+  assert.deepEqual(machine.written(), UNTOUCHED);
+});
+
+test("a missing tag, a tool with no tags and a tool not in the source each exit 1, writing nothing", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  machine.fakeTool("bare", []);
+
+  for (const [args, said] of /** @type {const} */ ([
+    [["install", "demo#v9.9.9"], /no tag v9\.9\.9/],
+    [["install", "bare"], /no vX\.Y\.Z tag/],
+    [["install", "ghost"], /could not list the tags/],
+  ])) {
+    const outcome = machine.kodhama(args);
+    assert.equal(outcome.status, 1, JSON.stringify(args));
+    assert.match(outcome.stderr, said, outcome.stderr);
+    assert.doesNotMatch(outcome.stderr, /not built yet/);
+  }
+  assert.deepEqual(machine.written(), UNTOUCHED);
+});
+
+test("a tool whose kodhama.json or skills break the contract exits 1, writing nothing", (t) => {
+  const machine = scratch(t);
+  /** @param {unknown} value */
+  const manifest = (value) => ({ "kodhama.json": `${JSON.stringify(value)}\n` });
+  const cases = [
+    ["missing", { files: { "kodhama.json": null } }, /has no kodhama\.json/],
+    ["notjson", { files: { "kodhama.json": "{\n" } }, /not valid JSON/],
+    ["mismatch", { files: manifest({ name: "other", skills: "skills" }) }, /names other/],
+    ["typo", { files: manifest({ name: "typo", skills: "skills", skil: "x" }) }, /unknown key skil/],
+    ["escape", { files: manifest({ name: "escape", skills: "../x" }) }, /\.\./],
+    [
+      "linkout",
+      { files: manifest({ name: "linkout", skills: "out" }), links: { out: "/" } },
+      /outside the tool's repo/,
+    ],
+    ["badname", { files: { "skills/Bad_Name/SKILL.md": "Bad.\n" } }, /Bad_Name is not a skill name/],
+    ["symlink", { links: { "skills/alpha/link.md": "SKILL.md" } }, /skills\/alpha\/link\.md is a symlink/],
+    ["noskills", { files: { "skills/alpha/SKILL.md": null, "skills/alpha/scripts/run.sh": null, "skills/beta/SKILL.md": null, "skills/README.md": "none\n" } }, /holds no skill/],
+    [
+      "helper",
+      { files: manifest({ name: "helper", skills: "skills", helper: ">=0.1.0" }) },
+      /later kodhama/,
+    ],
+  ];
+
+  for (const [name, change, said] of cases) {
+    machine.fakeTool(name, ["0.1.0"], change);
+    const outcome = machine.kodhama(["install", name]);
+    assert.equal(outcome.status, 1, `${name}: ${outcome.stderr}`);
+    assert.match(outcome.stderr, said, `${name}: ${outcome.stderr}`);
+    assert.doesNotMatch(outcome.stderr, /not built yet/, name);
+  }
+  assert.deepEqual(machine.written(), UNTOUCHED);
+});
+
+test("kodhama.json is a name and a skills folder inside the repo, and nothing else", () => {
+  assert.deepEqual(parseManifest('{"name": "grove", "skills": "skills"}', "grove"), {
+    manifest: { name: "grove", skills: "skills" },
+  });
+  assert.ok("manifest" in parseManifest('{"name": "grove", "skills": "./a/b"}', "grove"));
+  for (const text of [
+    "[]",
+    "null",
+    '"grove"',
+    '{"skills": "skills"}',
+    '{"name": "grove"}',
+    '{"name": "grove", "skills": 1}',
+    '{"name": "grove", "skills": ""}',
+    '{"name": "grove", "skills": "/etc"}',
+    '{"name": "grove", "skills": "a/../b"}',
+    '{"name": "grove", "skills": "a\\\\..\\\\b"}',
+    '{"name": "Grove", "skills": "skills"}',
+  ]) {
+    assert.ok("error" in parseManifest(text, "grove"), text);
+  }
+});
+
+test("copying a skill keeps its bytes and its exec bit, in both harness folders", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const targets = [join(machine.claude, "skills"), join(machine.home, ".agents", "skills")];
+
+  const copied = withTool("demo", undefined, { env: machine.env, tmp: machine.tmp }, (fetched) => {
+    const alpha = fetched.skills.find((skill) => skill.name === "alpha");
+    assert.ok(alpha);
+    for (const target of targets) copyFiles(alpha.dir, join(target, "alpha"), alpha.files);
+    return readFileSync(join(alpha.dir, "scripts", "run.sh"));
+  });
+
+  assert.ok("value" in copied);
+  for (const target of targets) {
+    const script = join(target, "alpha", "scripts", "run.sh");
+    assert.notEqual(statSync(script).mode & 0o111, 0, script);
+    assert.equal(statSync(join(target, "alpha", "SKILL.md")).mode & 0o111, 0);
+    assert.deepEqual(readFileSync(script), copied.value);
+  }
+});
+
+test("a skill folder holding a special file is refused", (t) => {
+  const machine = scratch(t);
+  const skill = join(machine.tmp, "skill");
+  mkdirSync(skill);
+  writeFileSync(join(skill, "SKILL.md"), "x\n");
+  execFileSync("mkfifo", [join(skill, "pipe")]);
+
+  const listed = listFiles(skill);
+
+  assert.ok("error" in listed);
+  assert.match(listed.error, /pipe is not a regular file/);
 });

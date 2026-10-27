@@ -2,6 +2,9 @@
 // harnesses, and running it. Nothing here prompts, so a command run with no
 // terminal completes or refuses on its own.
 
+import { withTool } from "./fetch.mjs";
+import { NAME } from "./manifest.mjs";
+
 /**
  * What a command ends with: its exit code and the lines it prints.
  * @typedef {{ readonly code: number, readonly lines: readonly string[] }} Outcome
@@ -31,9 +34,6 @@ export const USAGE = [
   "  --harness claude|codex  install and remove: one harness; repeat for both (default both)",
   "  --migrate               install: first take grove plugin enables out of user settings",
 ].join("\n");
-
-/** Tool and skill names: lowercase, so always safe as one path segment. */
-export const NAME = /^[a-z][a-z0-9-]*$/;
 
 // A tag as git might name one. It never starts with "-", so git cannot read
 // it as an option, and never holds "..", which git refuses in a ref anyway.
@@ -161,7 +161,18 @@ export const parseArgs = (args) => {
 export const run = async (args, cwd, env = process.env) => {
   const parsed = parseArgs(args);
   if ("error" in parsed) return { code: 2, lines: [parsed.error, "", USAGE] };
+  // Until the skills folders, markers and lock are built, install goes as far
+  // as a validated fetch and says what it found, and the other verbs say they
+  // are not built. Neither writes anything; `cwd` matters once project scope
+  // does.
   void cwd;
-  void env;
-  return { code: 1, lines: [`kodhama ${parsed.command} is not built yet in this version.`] };
+  if (parsed.command !== "install" || parsed.tool === undefined) {
+    return { code: 1, lines: [`kodhama ${parsed.command} is not built yet in this version.`] };
+  }
+  if (parsed.migrate) return { code: 1, lines: ["--migrate is not built yet in this version."] };
+  const fetched = withTool(parsed.tool, parsed.tag, { env }, (tool) => [
+    `Fetched ${tool.tool} ${tool.tag} (${tool.commit}) from ${tool.source}, with skills ${tool.skills.map((skill) => skill.name).join(", ")}.`,
+    "Copying skills into the harnesses' folders is not built yet in this version, so nothing was written.",
+  ]);
+  return "error" in fetched ? { code: 1, lines: [fetched.error] } : { code: 1, lines: fetched.value };
 };

@@ -8,6 +8,7 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  chmodSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -139,11 +140,12 @@ export const scratch = (t) => {
       mkdirSync(dirname(join(path, rel)), { recursive: true });
       symlinkSync(target, join(path, rel));
     }
+    // The script is executable on disk, so each later `git add` keeps the
+    // bit, and in the index, for a filesystem git reads no modes from.
+    const script = "skills/alpha/scripts/run.sh";
+    if (files[script] !== null) chmodSync(join(path, script), 0o755);
     git(path, ["add", "-A"]);
-    // The exec bit as git records it, whatever the filesystem or umask says.
-    if (files["skills/alpha/scripts/run.sh"] !== null) {
-      git(path, ["update-index", "--chmod=+x", "skills/alpha/scripts/run.sh"]);
-    }
+    if (files[script] !== null) git(path, ["update-index", "--chmod=+x", script]);
     git(path, ["commit", "-q", "-m", "start"]);
     for (const version of versions) {
       writeFileSync(join(path, "VERSION"), `${version}\n`);
