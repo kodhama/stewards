@@ -11,6 +11,12 @@ export const NAME = /^[a-z][a-z0-9-]*$/;
 
 export const MANIFEST = "kodhama.json";
 
+/**
+ * The file the CLI writes into each skill folder it installs, naming the tool
+ * that owns it. A tool may not ship one, or its copy would pass as owned.
+ */
+export const MARKER = ".kodhama-skill.json";
+
 const KEYS = ["name", "skills", "helper"];
 
 /**

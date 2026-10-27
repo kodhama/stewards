@@ -271,6 +271,7 @@ test("a tool whose kodhama.json or skills break the contract exits 1, writing no
     ],
     ["badname", { files: { "skills/Bad_Name/SKILL.md": "Bad.\n" } }, /Bad_Name is not a skill name/],
     ["symlink", { links: { "skills/alpha/link.md": "SKILL.md" } }, /skills\/alpha\/link\.md is a symlink/],
+    ["marker", { files: { "skills/alpha/.kodhama-skill.json": "{}\n" } }, /skills\/alpha ships its own \.kodhama-skill\.json/],
     ["noskills", { files: { "skills/alpha/SKILL.md": null, "skills/alpha/scripts/run.sh": null, "skills/beta/SKILL.md": null, "skills/README.md": "none\n" } }, /holds no skill/],
     [
       "helper",

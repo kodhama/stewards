@@ -19,7 +19,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-import { readManifest } from "./manifest.mjs";
+import { MARKER, readManifest } from "./manifest.mjs";
 
 const GIT_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -216,6 +216,9 @@ export const withTool = (tool, wanted, { env, tmp = tmpdir() }, use) => {
       const skillDir = join(read.skillsDir, name);
       const listed = listFiles(skillDir, join(read.skillsPath, name));
       if ("error" in listed) return { error: `${tool}: ${listed.error}` };
+      if (listed.files.includes(MARKER)) {
+        return { error: `${tool}: ${join(read.skillsPath, name)} ships its own ${MARKER}, the file kodhama writes to mark a folder it installed.` };
+      }
       skills.push({ name, dir: skillDir, files: listed.files });
     }
     return { value: use({ tool, tag, commit: head.out.trim(), source, skills }) };
