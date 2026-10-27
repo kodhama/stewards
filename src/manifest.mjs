@@ -46,8 +46,8 @@ export const parseManifest = (text, tool) => {
   if (unknown.length > 0) {
     return { error: `${MANIFEST} has unknown key ${unknown.join(", ")}; it takes name and skills.` };
   }
-  // The minimum helper version (phase-1 KTD2) arrives with a later CLI; until
-  // then a tool that needs one is refused rather than half-installed.
+  // A minimum helper version arrives with a later CLI; until then a tool that
+  // needs one is refused rather than half-installed.
   if ("helper" in record) return { error: `${MANIFEST} names a helper version, which needs a later kodhama tag than this one.` };
   const { name, skills } = record;
   if (typeof name !== "string" || !NAME.test(name)) {

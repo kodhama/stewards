@@ -167,9 +167,9 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
       ]);
     }
     const adding = harnesses.filter((harness) => !entry?.harnesses.includes(harness));
-    const blocked = preflight(where, tool, adding, fetched.skills.map((skill) => skill.name));
-    if (blocked.length > 0) {
-      return refuse([...recovered, ...blocked, `kodhama installs only into empty paths or folders marked as ${tool}'s, so it wrote nothing.`]);
+    const occupied = preflight(where, tool, adding, fetched.skills.map((skill) => skill.name));
+    if (occupied.length > 0) {
+      return refuse([...recovered, ...occupied, `kodhama installs only into empty paths or folders marked as ${tool}'s, so it wrote nothing.`]);
     }
     const found = entry === undefined || adding.length > 0 ? [] : problems(where, tool, entry);
     if (found.length > 0) {
@@ -235,9 +235,9 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
       return { code: 0, lines: [...recovered, `${tool} is already at ${entry.tag}.`] };
     }
     const names = fetched.skills.map((skill) => skill.name);
-    const blocked = preflight(where, tool, entry.harnesses, names);
-    if (blocked.length > 0) {
-      return refuse([...recovered, ...blocked, `kodhama replaces only folders marked as ${tool}'s, so it wrote nothing.`]);
+    const occupied = preflight(where, tool, entry.harnesses, names);
+    if (occupied.length > 0) {
+      return refuse([...recovered, ...occupied, `kodhama replaces only folders marked as ${tool}'s, so it wrote nothing.`]);
     }
 
     // Hand edits are read before the swap moves each old copy to prev/.

@@ -21,7 +21,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { claudeHome, homeOf, jsonText, sha256, stateHome, writeAtomic } from "./lock.mjs";
+import { claudeHome, homeOf, isRecord, jsonText, sha256, stateHome, writeAtomic } from "./lock.mjs";
 import { MARKER, NAME } from "./manifest.mjs";
 
 /** @typedef {"claude" | "codex"} Harness */
@@ -93,7 +93,7 @@ export const present = (path) => {
 export const readMarker = (dir) => {
   try {
     const value = JSON.parse(readFileSync(join(dir, MARKER), "utf8"));
-    return typeof value === "object" && value !== null && !Array.isArray(value) ? value : undefined;
+    return isRecord(value) ? value : undefined;
   } catch {
     return undefined;
   }

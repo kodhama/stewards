@@ -78,7 +78,7 @@ export const writeFiles = (root, files) => {
  * @param {string} root
  * @returns {string[]}
  */
-export const listTree = (root) =>
+const listTree = (root) =>
   readdirSync(root, { withFileTypes: true })
     .flatMap((entry) => {
       const path = join(root, entry.name);
