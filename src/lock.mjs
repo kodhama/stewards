@@ -1,0 +1,198 @@
+// The lock: one JSON file per scope recording, for each installed tool, its
+// tag, commit and source, the harnesses it is installed for, and a sha256
+// and exec bit for every file of every skill. It is written keys sorted,
+// 2-space indented, through a temp file and a rename, and deleted once its
+// last tool goes.
+
+import { createHash } from "node:crypto";
+import {
+  chmodSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+
+import { MARKER } from "./manifest.mjs";
+
+/**
+ * One file as the lock records it.
+ * @typedef {{ readonly sha256: string, readonly exec: boolean }} FileHash
+ */
+
+/**
+ * A skill's files, by path relative to its folder, `/`-separated.
+ * @typedef {Readonly<Record<string, FileHash>>} SkillHashes
+ */
+
+/**
+ * @typedef {{
+ *   readonly tag: string,
+ *   readonly commit: string,
+ *   readonly source: string,
+ *   readonly harnesses: readonly ("claude" | "codex")[],
+ *   readonly skills: Readonly<Record<string, SkillHashes>>,
+ * }} Entry
+ */
+
+/** @typedef {{ readonly lock: 1, readonly tools: Readonly<Record<string, Entry>> }} Lock */
+
+/**
+ * The home folder as the environment gives it.
+ * @param {NodeJS.ProcessEnv} env
+ */
+export const homeOf = (env) => env.HOME || homedir();
+
+/**
+ * Where kodhama keeps its user-level state: `$XDG_DATA_HOME/kodhama`.
+ * @param {NodeJS.ProcessEnv} env
+ */
+export const stateHome = (env) =>
+  join(env.XDG_DATA_HOME || join(homeOf(env), ".local", "share"), "kodhama");
+
+/** @param {string | Buffer} bytes */
+export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+
+/**
+ * @param {unknown} value
+ * @returns {unknown}
+ */
+const sortKeys = (value) => {
+  if (Array.isArray(value)) return value.map(sortKeys);
+  if (typeof value !== "object" || value === null) return value;
+  const record = /** @type {Record<string, unknown>} */ (value);
+  return Object.fromEntries(
+    Object.keys(record)
+      .sort()
+      .map((key) => [key, sortKeys(record[key])]),
+  );
+};
+
+/**
+ * JSON as kodhama writes it: keys sorted, 2-space indent, trailing newline.
+ * @param {unknown} value
+ */
+export const jsonText = (value) => `${JSON.stringify(sortKeys(value), null, 2)}\n`;
+
+/**
+ * Effect: writes a file through a temp file beside it and a rename, so a
+ * reader sees the old text or the new, never half of one. `mode`, when
+ * given, is the new file's permission bits.
+ * @param {string} path
+ * @param {string} text
+ * @param {number} [mode]
+ */
+export const writeAtomic = (path, text, mode) => {
+  mkdirSync(dirname(path), { recursive: true });
+  const temp = `${path}.kodhama-${process.pid}-${Date.now()}.tmp`;
+  writeFileSync(temp, text, { flag: "wx" });
+  if (mode !== undefined) chmodSync(temp, mode);
+  renameSync(temp, path);
+};
+
+/**
+ * @param {unknown} value
+ * @returns {value is Record<string, unknown>}
+ */
+const isRecord = (value) =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/**
+ * @param {unknown} value
+ * @returns {value is Entry}
+ */
+const isEntry = (value) =>
+  isRecord(value) &&
+  typeof value.tag === "string" &&
+  typeof value.commit === "string" &&
+  typeof value.source === "string" &&
+  Array.isArray(value.harnesses) &&
+  value.harnesses.every((harness) => harness === "claude" || harness === "codex") &&
+  isRecord(value.skills) &&
+  Object.values(value.skills).every(
+    (files) =>
+      isRecord(files) &&
+      Object.values(files).every(
+        (file) => isRecord(file) && typeof file.sha256 === "string" && typeof file.exec === "boolean",
+      ),
+  );
+
+/**
+ * Effect: the lock at `path`, empty when there is none, or why it cannot be
+ * trusted. A lock kodhama did not write is refused, never guessed at.
+ * @param {string} path
+ * @returns {{ readonly lock: Lock } | { readonly error: string }}
+ */
+export const readLock = (path) => {
+  if (!existsSync(path)) return { lock: { lock: 1, tools: {} } };
+  /** @type {unknown} */
+  let value;
+  try {
+    value = JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    value = undefined;
+  }
+  return isRecord(value) && value.lock === 1 && isRecord(value.tools) && Object.values(value.tools).every(isEntry)
+    ? { lock: /** @type {Lock} */ (value) }
+    : { error: `${path} is not a lock this kodhama can read. Move it aside to start over.` };
+};
+
+/**
+ * Effect: writes the lock, or deletes it when it holds no tool.
+ * @param {string} path
+ * @param {Lock} lock
+ */
+export const writeLock = (path, lock) => {
+  if (Object.keys(lock.tools).length === 0) rmSync(path, { force: true });
+  else writeAtomic(path, jsonText(lock));
+};
+
+/**
+ * Effect: a hash of every file under a skill folder, the marker left out.
+ * A symlink or other special file someone put there gets a hash no file
+ * can have, so it shows as changed rather than being followed.
+ * @param {string} dir
+ * @returns {SkillHashes}
+ */
+export const hashTree = (dir) => {
+  /** @type {Record<string, FileHash>} */
+  const found = {};
+  /** @param {string} rel */
+  const walk = (rel) => {
+    for (const name of readdirSync(join(dir, rel)).sort()) {
+      const path = rel === "" ? name : `${rel}/${name}`;
+      if (path === MARKER) continue;
+      const stat = lstatSync(join(dir, path));
+      if (stat.isDirectory()) walk(path);
+      else if (stat.isFile()) {
+        found[path] = { sha256: sha256(readFileSync(join(dir, path))), exec: (stat.mode & 0o111) !== 0 };
+      } else found[path] = { sha256: "not a regular file", exec: false };
+    }
+  };
+  walk("");
+  return found;
+};
+
+/**
+ * How a skill folder differs from what the lock recorded, one entry per
+ * file, in path order.
+ * @param {SkillHashes} locked
+ * @param {SkillHashes} found
+ * @returns {readonly { readonly kind: "hand-edited" | "added" | "deleted" | "exec changed", readonly file: string }[]}
+ */
+export const diffTree = (locked, found) =>
+  [...new Set([...Object.keys(locked), ...Object.keys(found)])].sort().flatMap((file) => {
+    const was = locked[file];
+    const now = found[file];
+    if (was === undefined) return [{ kind: /** @type {const} */ ("added"), file }];
+    if (now === undefined) return [{ kind: /** @type {const} */ ("deleted"), file }];
+    if (was.sha256 !== now.sha256) return [{ kind: /** @type {const} */ ("hand-edited"), file }];
+    if (was.exec !== now.exec) return [{ kind: /** @type {const} */ ("exec changed"), file }];
+    return [];
+  });

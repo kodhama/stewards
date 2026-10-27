@@ -7,18 +7,23 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   chmodSync,
+  existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   readdirSync,
+  readlinkSync,
   realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { devNull, tmpdir } from "node:os";
-import { dirname, join, relative, sep } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // CI points this at the bin inside the extracted `npm pack` tarball, so the
@@ -36,6 +41,8 @@ const FOLDERS = /** @type {const} */ ([
   "tmp",
 ]);
 
+const SCRIPT = "skills/alpha/scripts/run.sh";
+
 /**
  * The default tool tree: two skills, one carrying an executable script.
  * @param {string} name
@@ -45,9 +52,26 @@ const toolTree = (name) => ({
   "kodhama.json": `${JSON.stringify({ name, skills: "skills" })}\n`,
   "README.md": `${name}\n`,
   "skills/alpha/SKILL.md": "---\nname: alpha\n---\nAlpha.\n",
-  "skills/alpha/scripts/run.sh": "#!/bin/sh\necho alpha\n",
+  [SCRIPT]: "#!/bin/sh\necho alpha\n",
   "skills/beta/SKILL.md": "---\nname: beta\n---\nBeta.\n",
 });
+
+/**
+ * Effect: writes files into a folder, making their folders; a `null` text
+ * deletes the file.
+ * @param {string} root
+ * @param {Readonly<Record<string, string | null>>} files
+ */
+export const writeFiles = (root, files) => {
+  for (const [rel, text] of Object.entries(files)) {
+    if (text === null) {
+      rmSync(join(root, rel), { force: true });
+      continue;
+    }
+    mkdirSync(dirname(join(root, rel)), { recursive: true });
+    writeFileSync(join(root, rel), text);
+  }
+};
 
 /**
  * Effect: every path under `root`, files and folders, relative and sorted.
@@ -63,6 +87,15 @@ export const listTree = (root) =>
         : [entry.name];
     })
     .sort();
+
+/**
+ * @param {string} path
+ * @returns {unknown}
+ */
+export const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
+
+/** @param {string | Buffer} bytes */
+export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 /**
  * Effect: a scratch machine, deleted when the test ends.
@@ -118,38 +151,49 @@ export const scratch = (t) => {
 
   /**
    * Effect: a tool repo at `source/<name>`, one commit and one annotated tag
-   * `v<version>` per version, in order. `change` replaces, deletes (`null`)
-   * or adds files in the default tree, and adds symlinks, before the first
-   * commit.
+   * `v<version>` per version, in order. Each version rewrites alpha's
+   * SKILL.md to name it, so two tags' copies differ. `change.files` replaces,
+   * deletes (`null`) or adds files in the default tree and `change.links`
+   * adds symlinks, before the first commit; `change.at[version]` changes
+   * files in that version's commit.
    * @param {string} name
    * @param {readonly string[]} versions
-   * @param {{ readonly files?: Readonly<Record<string, string | null>>, readonly links?: Readonly<Record<string, string>> }} [change]
+   * @param {{
+   *   readonly files?: Readonly<Record<string, string | null>>,
+   *   readonly links?: Readonly<Record<string, string>>,
+   *   readonly at?: Readonly<Record<string, Readonly<Record<string, string | null>>>>,
+   * }} [change]
    * @returns {{ readonly path: string, readonly commit: (tag: string) => string }}
    */
   const fakeTool = (name, versions, change = {}) => {
     const path = join(at.source, name);
     mkdirSync(path);
     git(path, ["init", "-q", "-b", "main"]);
-    const files = { ...toolTree(name), ...change.files };
-    for (const [rel, text] of Object.entries(files)) {
-      if (text === null) continue;
-      mkdirSync(dirname(join(path, rel)), { recursive: true });
-      writeFileSync(join(path, rel), text);
-    }
+    writeFiles(path, { ...toolTree(name), ...change.files });
     for (const [rel, target] of Object.entries(change.links ?? {})) {
       mkdirSync(dirname(join(path, rel)), { recursive: true });
       symlinkSync(target, join(path, rel));
     }
-    // The script is executable on disk, so each later `git add` keeps the
-    // bit, and in the index, for a filesystem git reads no modes from.
-    const script = "skills/alpha/scripts/run.sh";
-    if (files[script] !== null) chmodSync(join(path, script), 0o755);
-    git(path, ["add", "-A"]);
-    if (files[script] !== null) git(path, ["update-index", "--chmod=+x", script]);
+    /** Effect: stages everything, with the script executable on disk, so
+     * each `git add` keeps the bit, and in the index, for a filesystem git
+     * reads no modes from. */
+    const stage = () => {
+      const script = existsSync(join(path, SCRIPT));
+      if (script) chmodSync(join(path, SCRIPT), 0o755);
+      git(path, ["add", "-A"]);
+      if (script) git(path, ["update-index", "--chmod=+x", SCRIPT]);
+    };
+    stage();
     git(path, ["commit", "-q", "-m", "start"]);
     for (const version of versions) {
-      writeFileSync(join(path, "VERSION"), `${version}\n`);
-      git(path, ["add", "-A"]);
+      writeFiles(path, {
+        VERSION: `${version}\n`,
+        ...(existsSync(join(path, "skills/alpha/SKILL.md"))
+          ? { "skills/alpha/SKILL.md": `---\nname: alpha\n---\nAlpha ${version}.\n` }
+          : {}),
+        ...change.at?.[version],
+      });
+      stage();
       git(path, ["commit", "-q", "-m", `release ${version}`]);
       git(path, ["tag", "-a", `v${version}`, "-m", `release ${version}`]);
     }
@@ -160,14 +204,26 @@ export const scratch = (t) => {
   };
 
   /**
-   * Effect: runs the program with stdin closed and the scratch environment.
-   * @param {readonly string[]} args
-   * @param {{ readonly cwd?: string }} [options]
+   * Effect: a git repo at `home/<name>` to install into at project scope.
+   * @param {string} name
    */
-  const kodhama = (args, { cwd = at.home } = {}) =>
+  const project = (name) => {
+    const path = join(at.home, name);
+    mkdirSync(path);
+    git(path, ["init", "-q", "-b", "main"]);
+    return path;
+  };
+
+  /**
+   * Effect: runs the program with stdin closed and the scratch environment,
+   * with `env` laid over it.
+   * @param {readonly string[]} args
+   * @param {{ readonly cwd?: string, readonly env?: Readonly<Record<string, string>> }} [options]
+   */
+  const kodhama = (args, { cwd = at.home, env: over = {} } = {}) =>
     spawnSync(process.execPath, [BIN, ...args], {
       cwd,
-      env,
+      env: { ...env, ...over },
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -181,15 +237,35 @@ export const scratch = (t) => {
       (rel) => rel !== "source" && !rel.startsWith(`source${sep}`),
     );
 
+  /**
+   * Effect: what the program could have changed: each written path, with a
+   * file's bytes, mode and mtime and a symlink's target. Two equal states
+   * mean nothing was written in between.
+   */
+  const state = () =>
+    Object.fromEntries(
+      written().map((rel) => {
+        const path = join(root, rel);
+        const stat = lstatSync(path);
+        if (stat.isSymbolicLink()) return [rel, `link ${readlinkSync(path)}`];
+        if (stat.isDirectory()) return [rel, "dir"];
+        return [rel, `${stat.mode} ${stat.mtimeMs} ${sha256(readFileSync(path))}`];
+      }),
+    );
+
   return {
     root,
     ...at,
+    claudeSkills: join(at.claude, "skills"),
+    codexSkills: join(at.home, ".agents", "skills"),
+    lock: join(at.data, "kodhama", "lock.json"),
+    prev: join(at.data, "kodhama", "prev"),
     env,
     git,
     fakeTool,
+    project,
     kodhama,
     written,
-    /** @param {string} path */
-    rel: (path) => relative(root, path),
+    state,
   };
 };

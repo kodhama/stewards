@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, sep } from "node:path";
 import { test } from "node:test";
 
@@ -16,8 +16,8 @@ import {
   toolSource,
   withTool,
 } from "../src/fetch.mjs";
-import { parseManifest } from "../src/manifest.mjs";
-import { scratch } from "./helpers/scratch.mjs";
+import { MARKER, parseManifest } from "../src/manifest.mjs";
+import { readJson, scratch, sha256, writeFiles } from "./helpers/scratch.mjs";
 
 // What a scratch machine holds before the program runs: its empty folders.
 const UNTOUCHED = ["claude", "codex", "data", "home", "tmp"];
@@ -152,17 +152,6 @@ test("a usage error prints the usage and exits 2, for each way of making one", (
   assert.deepEqual(machine.written(), UNTOUCHED);
 });
 
-test("a verb not built yet says so and exits 1, writing nothing", (t) => {
-  const machine = scratch(t);
-
-  for (const args of [["update", "demo"], ["check"], ["remove", "demo"], ["install", "demo", "--migrate"]]) {
-    const outcome = machine.kodhama(args);
-    assert.equal(outcome.status, 1, JSON.stringify(args));
-    assert.match(outcome.stderr, /not built yet/, JSON.stringify(args));
-  }
-  assert.deepEqual(machine.written(), UNTOUCHED);
-});
-
 test("with no tag named, the highest stable vX.Y.Z wins, in numeric order", () => {
   const tags = ["v0.1.0", "v0.9.0", "v0.10.0", "v0.11.0-rc.1", "latest", "v1.0", "v01.0.0"];
 
@@ -212,28 +201,166 @@ test("a fetched tool carries its tag, the clone's commit and its skills, and the
   assert.deepEqual(machine.written(), UNTOUCHED);
 });
 
-test("install with no tag fetches the newest stable tag, and writes nothing yet", (t) => {
+test("a fresh install copies each skill into both harnesses, marked, and writes the lock last", (t) => {
   const machine = scratch(t);
   const tool = machine.fakeTool("demo", ["0.1.0", "0.9.0", "0.10.0", "0.11.0-rc.1"]);
+  const commit = tool.commit("v0.10.0");
 
   const outcome = machine.kodhama(["install", "demo"]);
 
-  assert.equal(outcome.status, 1, outcome.stderr);
-  assert.match(outcome.stderr, /demo v0\.10\.0/);
-  assert.ok(outcome.stderr.includes(tool.commit("v0.10.0")), outcome.stderr);
-  assert.match(outcome.stderr, /not built yet/);
-  assert.deepEqual(machine.written(), UNTOUCHED);
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.match(outcome.stdout, /Installed demo v0\.10\.0/);
+  const skillTree = ["SKILL.md", "scripts", join("scripts", "run.sh")];
+  /** @param {string} base @param {string} skills */
+  const installed = (base, skills) =>
+    ["alpha", "beta"].flatMap((skill) => [
+      join(skills, skill),
+      join(skills, skill, MARKER),
+      ...(skill === "alpha" ? skillTree : ["SKILL.md"]).map((rel) => join(skills, skill, rel)),
+    ]).map((rel) => join(base, rel));
+  assert.deepEqual(
+    machine.written(),
+    [
+      ...UNTOUCHED,
+      ...installed("claude", "skills"),
+      join("claude", "skills"),
+      join("data", "kodhama"),
+      join("data", "kodhama", "lock.json"),
+      join("home", ".agents"),
+      join("home", ".agents", "skills"),
+      ...installed(join("home", ".agents"), "skills"),
+    ].sort(),
+  );
+  for (const skills of [machine.claudeSkills, machine.codexSkills]) {
+    for (const skill of ["alpha", "beta"]) {
+      assert.deepEqual(readJson(join(skills, skill, MARKER)), { commit, skill, tag: "v0.10.0", tool: "demo" });
+    }
+    assert.notEqual(statSync(join(skills, "alpha", "scripts", "run.sh")).mode & 0o111, 0);
+    assert.equal(statSync(join(skills, "alpha", "SKILL.md")).mode & 0o111, 0);
+  }
+
+  const text = readFileSync(machine.lock, "utf8");
+  assert.equal(text, `${JSON.stringify(readJson(machine.lock), null, 2)}\n`);
+  assert.deepEqual(readJson(machine.lock), {
+    lock: 1,
+    tools: {
+      demo: {
+        commit,
+        harnesses: ["claude", "codex"],
+        skills: {
+          alpha: {
+            "SKILL.md": { exec: false, sha256: sha256(readFileSync(join(machine.claudeSkills, "alpha", "SKILL.md"))) },
+            "scripts/run.sh": { exec: true, sha256: sha256("#!/bin/sh\necho alpha\n") },
+          },
+          beta: { "SKILL.md": { exec: false, sha256: sha256("---\nname: beta\n---\nBeta.\n") } },
+        },
+        source: `file://${tool.path}`,
+        tag: "v0.10.0",
+      },
+    },
+  });
+  assert.ok(text.indexOf('"commit"') < text.indexOf('"harnesses"'), "keys are sorted");
 });
 
-test("install demo#0.1.0 fetches that older tag", (t) => {
+test("install demo#0.1.0 installs that older tag", (t) => {
   const machine = scratch(t);
   const tool = machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
 
   const outcome = machine.kodhama(["install", "demo#0.1.0"]);
 
-  assert.match(outcome.stderr, /demo v0\.1\.0/);
-  assert.ok(outcome.stderr.includes(tool.commit("v0.1.0")), outcome.stderr);
+  assert.equal(outcome.status, 0, outcome.stderr);
+  const locked = /** @type {any} */ (readJson(machine.lock)).tools.demo;
+  assert.equal(locked.tag, "v0.1.0");
+  assert.equal(locked.commit, tool.commit("v0.1.0"));
+  assert.match(readFileSync(join(machine.codexSkills, "alpha", "SKILL.md"), "utf8"), /Alpha 0\.1\.0/);
+});
+
+test("a project-scope install writes the repo's skills folders and its own lock, and no user state", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const repo = machine.project("work");
+  mkdirSync(join(repo, "src"));
+
+  const outcome = machine.kodhama(["install", "demo", "--scope", "project"], { cwd: join(repo, "src") });
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  for (const skills of [join(repo, ".claude", "skills"), join(repo, ".agents", "skills")]) {
+    assert.deepEqual(readdirSync(skills).sort(), ["alpha", "beta"]);
+  }
+  assert.equal(/** @type {any} */ (readJson(join(repo, ".kodhama", "cli", "lock.json"))).tools.demo.tag, "v0.1.0");
+  assert.deepEqual(readdirSync(join(repo, ".kodhama")), ["cli"]);
+  assert.deepEqual(readdirSync(join(repo, ".kodhama", "cli")), ["lock.json"]);
+  assert.ok(!existsSync(machine.lock));
+  assert.ok(!existsSync(machine.claudeSkills));
+  assert.ok(!existsSync(machine.codexSkills));
+});
+
+test("project scope outside a git repo refuses", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+
+  const outcome = machine.kodhama(["install", "demo", "--scope", "project"]);
+
+  assert.equal(outcome.status, 1);
+  assert.match(outcome.stderr, /not inside a git repo/);
   assert.deepEqual(machine.written(), UNTOUCHED);
+});
+
+test("a second install of the same tag says already installed and changes no byte or mtime", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  assert.equal(machine.kodhama(["install", "demo"]).status, 0);
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.match(outcome.stdout, /already installed/);
+  assert.deepEqual(machine.state(), before);
+});
+
+test("an unmarked or foreign folder at a target refuses the install, and nothing is written", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  writeFiles(machine.codexSkills, { "alpha/SKILL.md": "my own alpha\n" });
+  writeFiles(machine.claudeSkills, { [`beta/${MARKER}`]: `${JSON.stringify({ tool: "other" })}\n`, "beta/SKILL.md": "other's\n" });
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 1);
+  assert.ok(outcome.stderr.includes(join(machine.codexSkills, "alpha")), outcome.stderr);
+  assert.ok(outcome.stderr.includes(join(machine.claudeSkills, "beta")), outcome.stderr);
+  assert.match(outcome.stderr, /marked as other's/);
+  assert.deepEqual(machine.state(), before);
+});
+
+test("install at another tag than the lock's points at update", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0"]).status, 0);
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 1);
+  assert.match(outcome.stderr, /installed at v0\.1\.0.*kodhama update demo/s);
+  assert.deepEqual(machine.state(), before);
+});
+
+test("install with a new --harness at the same tag adds that harness's copies", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+
+  assert.equal(machine.kodhama(["install", "demo", "--harness", "claude"]).status, 0);
+  assert.ok(!existsSync(machine.codexSkills));
+  assert.deepEqual(/** @type {any} */ (readJson(machine.lock)).tools.demo.harnesses, ["claude"]);
+
+  const outcome = machine.kodhama(["install", "demo", "--harness", "codex"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.deepEqual(readdirSync(machine.codexSkills).sort(), ["alpha", "beta"]);
+  assert.deepEqual(/** @type {any} */ (readJson(machine.lock)).tools.demo.harnesses, ["claude", "codex"]);
 });
 
 test("a missing tag, a tool with no tags and a tool not in the source each exit 1, writing nothing", (t) => {
@@ -249,7 +376,6 @@ test("a missing tag, a tool with no tags and a tool not in the source each exit 
     const outcome = machine.kodhama(args);
     assert.equal(outcome.status, 1, JSON.stringify(args));
     assert.match(outcome.stderr, said, outcome.stderr);
-    assert.doesNotMatch(outcome.stderr, /not built yet/);
   }
   assert.deepEqual(machine.written(), UNTOUCHED);
 });
@@ -285,7 +411,6 @@ test("a tool whose kodhama.json or skills break the contract exits 1, writing no
     const outcome = machine.kodhama(["install", name]);
     assert.equal(outcome.status, 1, `${name}: ${outcome.stderr}`);
     assert.match(outcome.stderr, said, `${name}: ${outcome.stderr}`);
-    assert.doesNotMatch(outcome.stderr, /not built yet/, name);
   }
   assert.deepEqual(machine.written(), UNTOUCHED);
 });

@@ -2,8 +2,12 @@
 // harnesses, and running it. Nothing here prompts, so a command run with no
 // terminal completes or refuses on its own.
 
-import { withTool } from "./fetch.mjs";
+import { execFileSync } from "node:child_process";
+import { realpathSync } from "node:fs";
+
 import { NAME } from "./manifest.mjs";
+import { HARNESSES, places } from "./targets.mjs";
+import { check, install, remove, update } from "./verbs.mjs";
 
 /**
  * What a command ends with: its exit code and the lines it prints.
@@ -39,7 +43,6 @@ export const USAGE = [
 // it as an option, and never holds "..", which git refuses in a ref anyway.
 const TAG = /^(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._+/-]*$/;
 
-const HARNESSES = /** @type {const} */ (["claude", "codex"]);
 const SCOPES = /** @type {const} */ (["user", "project"]);
 
 /**
@@ -150,6 +153,27 @@ export const parseArgs = (args) => {
 };
 
 /**
+ * Effect: the real path of the git repo that holds `cwd`, or `undefined`
+ * when there is none.
+ * @param {string} cwd
+ * @param {NodeJS.ProcessEnv} env
+ * @returns {string | undefined}
+ */
+const repoRoot = (cwd, env) => {
+  try {
+    const root = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      cwd,
+      env,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return realpathSync(root);
+  } catch {
+    return undefined;
+  }
+};
+
+/**
  * Effect: runs a command line. `cwd` is where project scope looks for its
  * git repo, and `env` is where the harness homes and the tool source come
  * from.
@@ -161,18 +185,17 @@ export const parseArgs = (args) => {
 export const run = async (args, cwd, env = process.env) => {
   const parsed = parseArgs(args);
   if ("error" in parsed) return { code: 2, lines: [parsed.error, "", USAGE] };
-  // Until the skills folders, markers and lock are built, install goes as far
-  // as a validated fetch and says what it found, and the other verbs say they
-  // are not built. Neither writes anything; `cwd` matters once project scope
-  // does.
-  void cwd;
-  if (parsed.command !== "install" || parsed.tool === undefined) {
-    return { code: 1, lines: [`kodhama ${parsed.command} is not built yet in this version.`] };
+  const root = parsed.scope === "project" ? repoRoot(cwd, env) : undefined;
+  if (parsed.scope === "project" && root === undefined) {
+    return { code: 1, lines: [`${cwd} is not inside a git repo. Project scope installs into one.`] };
   }
   if (parsed.migrate) return { code: 1, lines: ["--migrate is not built yet in this version."] };
-  const fetched = withTool(parsed.tool, parsed.tag, { env }, (tool) => [
-    `Fetched ${tool.tool} ${tool.tag} (${tool.commit}) from ${tool.source}, with skills ${tool.skills.map((skill) => skill.name).join(", ")}.`,
-    "Copying skills into the harnesses' folders is not built yet in this version, so nothing was written.",
-  ]);
-  return "error" in fetched ? { code: 1, lines: [fetched.error] } : { code: 1, lines: fetched.value };
+  const context = { env, where: places(parsed.scope, env, root) };
+  const { command, tool } = parsed;
+  if (command === "check") return check(parsed, context);
+  // Every verb but check needs a tool, which the parser has made sure of.
+  if (tool === undefined) throw new Error(`${command} needs a tool`);
+  if (command === "install") return install({ ...parsed, tool }, context);
+  if (command === "update") return update({ ...parsed, tool }, context);
+  return remove({ ...parsed, tool }, context);
 };

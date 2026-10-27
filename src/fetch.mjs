@@ -175,12 +175,12 @@ export const copyFiles = (from, to, files) => {
  * @template T
  * @param {string} tool
  * @param {string | undefined} wanted the tag asked for, or none for the newest
- * @param {{ readonly env: NodeJS.ProcessEnv, readonly tmp?: string }} options
+ * @param {{ readonly env: NodeJS.ProcessEnv, readonly tmp?: string, readonly source?: string }} options
+ *   `source` overrides where the repo is, as `update` does with the lock's
  * @param {(fetched: Fetched) => T} use
  * @returns {{ readonly value: T } | { readonly error: string }}
  */
-export const withTool = (tool, wanted, { env, tmp = tmpdir() }, use) => {
-  const source = toolSource(tool, env);
+export const withTool = (tool, wanted, { env, tmp = tmpdir(), source = toolSource(tool, env) }, use) => {
   const listed = git(["ls-remote", "--tags", "--refs", source], env);
   if (!listed.ok) return { error: `kodhama could not list the tags of ${tool} at ${source}: ${listed.out}` };
   const tags = listed.out

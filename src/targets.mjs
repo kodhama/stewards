@@ -1,0 +1,227 @@
+// Where skills go and how they get there. Each harness has a skills folder
+// per scope; each installed skill folder carries a marker naming its tool;
+// a skill is replaced by two renames through a stage folder beside the
+// skills folder, so a reader of the skill path sees the old copy, nothing for
+// one rename, or the new copy, never half of one. The copy it replaces moves
+// to prev/, one generation per harness and skill.
+
+import { createHash } from "node:crypto";
+import {
+  chmodSync,
+  copyFileSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  readlinkSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  rmdirSync,
+  symlinkSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
+
+import { homeOf, jsonText, stateHome, writeAtomic } from "./lock.mjs";
+import { MARKER, NAME } from "./manifest.mjs";
+
+/** @typedef {"claude" | "codex"} Harness */
+
+/**
+ * The paths one scope works on: its lock, each harness's skills folder, and
+ * the prev/ slot for each harness and skill.
+ * @typedef {{
+ *   readonly lock: string,
+ *   readonly skills: (harness: Harness) => string,
+ *   readonly prev: (harness: Harness, skill: string) => string,
+ * }} Places
+ */
+
+export const HARNESSES = /** @type {const} */ (["claude", "codex"]);
+
+const STAGE = ".kodhama-stage";
+
+/**
+ * The paths for a scope. User scope uses the harness homes from the
+ * environment; project scope uses the repo at `root`, with its prev/ slots
+ * keyed by the repo's real path so two projects never share one.
+ * @param {"user" | "project"} scope
+ * @param {NodeJS.ProcessEnv} env
+ * @param {string | undefined} root the project's git root, at project scope
+ * @returns {Places}
+ */
+export const places = (scope, env, root) => {
+  const home = homeOf(env);
+  const state = stateHome(env);
+  if (scope === "project") {
+    if (root === undefined) throw new Error("project scope needs a repo root");
+    const key = createHash("sha256").update(realpathSync(root)).digest("hex").slice(0, 12);
+    return {
+      lock: join(root, ".kodhama", "cli", "lock.json"),
+      skills: (harness) => join(root, harness === "claude" ? ".claude" : ".agents", "skills"),
+      prev: (harness, skill) => join(state, "prev", "projects", key, harness, skill),
+    };
+  }
+  return {
+    lock: join(state, "lock.json"),
+    skills: (harness) =>
+      harness === "claude"
+        ? join(env.CLAUDE_CONFIG_DIR || join(home, ".claude"), "skills")
+        : join(home, ".agents", "skills"),
+    prev: (harness, skill) => join(state, "prev", harness, skill),
+  };
+};
+
+/**
+ * Effect: whether anything, even a broken symlink, is at a path.
+ * @param {string} path
+ */
+export const present = (path) => {
+  try {
+    lstatSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Effect: the marker in a skill folder, or `undefined` when there is none
+ * or it is not a JSON object.
+ * @param {string} dir
+ * @returns {Record<string, unknown> | undefined}
+ */
+export const readMarker = (dir) => {
+  try {
+    const value = JSON.parse(readFileSync(join(dir, MARKER), "utf8"));
+    return typeof value === "object" && value !== null && !Array.isArray(value) ? value : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Effect: who a target path belongs to, as far as `tool` is concerned:
+ * nothing is there, a folder marked as the tool's, or something it must not
+ * touch, with why.
+ * @param {string} path
+ * @param {string} tool
+ * @returns {{ readonly state: "absent" | "ours" } | { readonly state: "theirs", readonly why: string }}
+ */
+export const ownerOf = (path, tool) => {
+  if (!present(path)) return { state: "absent" };
+  if (!lstatSync(path).isDirectory()) return { state: "theirs", why: "is not a folder" };
+  const marker = readMarker(path);
+  if (marker === undefined) return { state: "theirs", why: "has no kodhama marker" };
+  if (marker.tool !== tool) return { state: "theirs", why: `is marked as ${String(marker.tool)}'s` };
+  return { state: "ours" };
+};
+
+/**
+ * Effect: writes a skill folder's marker.
+ * @param {string} dir
+ * @param {{ readonly tool: string, readonly skill: string, readonly tag: string, readonly commit: string }} marker
+ */
+export const writeMarker = (dir, marker) => writeAtomic(join(dir, MARKER), jsonText(marker));
+
+/**
+ * Effect: copies a tree as it is, folders, files and symlinks, for a move
+ * between filesystems.
+ * @param {string} from
+ * @param {string} to
+ */
+const copyTree = (from, to) => {
+  const stat = lstatSync(from);
+  if (stat.isSymbolicLink()) symlinkSync(readlinkSync(from), to);
+  else if (stat.isDirectory()) {
+    mkdirSync(to);
+    for (const name of readdirSync(from)) copyTree(join(from, name), join(to, name));
+    chmodSync(to, stat.mode & 0o7777);
+  } else {
+    copyFileSync(from, to);
+    chmodSync(to, stat.mode & 0o777);
+  }
+};
+
+/**
+ * Effect: moves a folder to `to`, replacing what is there, by rename, or by
+ * copy and delete when the two sit on different filesystems.
+ * @param {string} from
+ * @param {string} to
+ */
+export const moveTo = (from, to) => {
+  rmSync(to, { recursive: true, force: true });
+  mkdirSync(dirname(to), { recursive: true });
+  try {
+    renameSync(from, to);
+  } catch (error) {
+    if (/** @type {NodeJS.ErrnoException} */ (error).code !== "EXDEV") throw error;
+    copyTree(from, to);
+    rmSync(from, { recursive: true, force: true });
+  }
+};
+
+/**
+ * Effect: deletes a folder if it is empty.
+ * @param {string} dir
+ */
+const pruneEmpty = (dir) => {
+  if (present(dir) && readdirSync(dir).length === 0) rmdirSync(dir);
+};
+
+/**
+ * Effect: finishes what a crashed run left in a skills folder's stage. A
+ * `<skill>.old` goes back into place when the live path is empty, or to
+ * prev/ when it is not; only then are half-built new copies deleted.
+ * @param {string} skills the skills folder
+ * @param {(skill: string) => string} prev the prev/ slot for a skill
+ * @returns {readonly string[]} a line per folder put back or moved
+ */
+export const recover = (skills, prev) => {
+  const stage = join(dirname(skills), STAGE);
+  if (!present(stage)) return [];
+  const lines = [];
+  for (const name of readdirSync(stage).sort()) {
+    const skill = name.slice(0, -".old".length);
+    if (!name.endsWith(".old") || !NAME.test(skill)) continue;
+    const live = join(skills, skill);
+    if (present(live)) {
+      moveTo(join(stage, name), prev(skill));
+      lines.push(`Moved ${join(stage, name)}, left by an interrupted run, to ${prev(skill)}.`);
+    } else {
+      mkdirSync(skills, { recursive: true });
+      renameSync(join(stage, name), live);
+      lines.push(`Put ${live} back from ${join(stage, name)}, left by an interrupted run.`);
+    }
+  }
+  for (const name of readdirSync(stage)) rmSync(join(stage, name), { recursive: true, force: true });
+  pruneEmpty(stage);
+  return lines;
+};
+
+/**
+ * Effect: builds a skill's new copy in the stage and swaps it in: the live
+ * folder, if any, is renamed aside, the new copy renamed into place, and the
+ * old copy moved to prev/.
+ * @param {string} skills the skills folder
+ * @param {string} skill
+ * @param {(dir: string) => void} build writes the new copy into `dir`
+ * @param {string} prev the skill's prev/ slot
+ * @returns {boolean} whether an old copy went to prev/
+ */
+export const swapIn = (skills, skill, build, prev) => {
+  const stage = join(dirname(skills), STAGE);
+  const fresh = join(stage, skill);
+  const old = join(stage, `${skill}.old`);
+  const live = join(skills, skill);
+  mkdirSync(stage, { recursive: true });
+  rmSync(fresh, { recursive: true, force: true });
+  build(fresh);
+  mkdirSync(skills, { recursive: true });
+  const replaced = present(live);
+  if (replaced) renameSync(live, old);
+  renameSync(fresh, live);
+  if (replaced) moveTo(old, prev);
+  pruneEmpty(stage);
+  return replaced;
+};

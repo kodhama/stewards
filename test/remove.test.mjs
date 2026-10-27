@@ -1,0 +1,62 @@
+// `remove`: moving a tool's installed skills out to prev/, only where the
+// folder is marked as the tool's and in the lock, and never deleting one.
+
+import assert from "node:assert/strict";
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { test } from "node:test";
+
+import { readJson, scratch } from "./helpers/scratch.mjs";
+
+test("remove moves only marked folders to prev/, names the rest, and deletes the empty lock", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  assert.equal(machine.kodhama(["install", "demo"]).status, 0);
+  const unmarked = join(machine.codexSkills, "alpha");
+  rmSync(join(unmarked, ".kodhama-skill.json"));
+  writeFileSync(join(machine.claudeSkills, "beta", "SKILL.md"), "edited beta\n");
+  const kept = readFileSync(join(unmarked, "SKILL.md"));
+
+  const outcome = machine.kodhama(["remove", "demo"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.ok(outcome.stdout.includes(unmarked), outcome.stdout);
+  assert.ok(outcome.stdout.includes(`hand-edited ${join(machine.claudeSkills, "beta", "SKILL.md")}`), outcome.stdout);
+  assert.deepEqual(readdirSync(machine.claudeSkills), []);
+  assert.deepEqual(readdirSync(machine.codexSkills), ["alpha"]);
+  assert.deepEqual(readFileSync(join(unmarked, "SKILL.md")), kept);
+  assert.deepEqual(readdirSync(join(machine.prev, "claude")).sort(), ["alpha", "beta"]);
+  assert.deepEqual(readdirSync(join(machine.prev, "codex")), ["beta"]);
+  assert.equal(readFileSync(join(machine.prev, "claude", "beta", "SKILL.md"), "utf8"), "edited beta\n");
+  assert.ok(!existsSync(machine.lock));
+});
+
+test("remove --harness codex leaves the Claude copies and the lock's claude entry", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  machine.fakeTool("other", ["1.0.0"], { files: { "skills/alpha/SKILL.md": null, "skills/alpha/scripts/run.sh": null, "skills/beta/SKILL.md": null, "skills/omega/SKILL.md": "Omega.\n" } });
+  assert.equal(machine.kodhama(["install", "demo"]).status, 0);
+  assert.equal(machine.kodhama(["install", "other"]).status, 0);
+
+  const outcome = machine.kodhama(["remove", "demo", "--harness", "codex"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.deepEqual(readdirSync(machine.claudeSkills).sort(), ["alpha", "beta", "omega"]);
+  assert.deepEqual(readdirSync(machine.codexSkills), ["omega"]);
+  const tools = /** @type {any} */ (readJson(machine.lock)).tools;
+  assert.deepEqual(tools.demo.harnesses, ["claude"]);
+  assert.deepEqual(tools.other.harnesses, ["claude", "codex"]);
+  assert.equal(machine.kodhama(["check"]).status, 0);
+
+  assert.equal(machine.kodhama(["remove", "demo"]).status, 0);
+  assert.deepEqual(Object.keys(/** @type {any} */ (readJson(machine.lock)).tools), ["other"]);
+});
+
+test("remove of a tool that is not installed refuses", (t) => {
+  const machine = scratch(t);
+
+  const outcome = machine.kodhama(["remove", "demo"]);
+
+  assert.equal(outcome.status, 1);
+  assert.match(outcome.stderr, /demo is not installed/);
+});
