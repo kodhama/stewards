@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { copyFiles, isNewer, toolSource, versionOf, withTool } from "./fetch.mjs";
 import { diffTree, hashTree, readLock, writeLock } from "./lock.mjs";
 import { applyMigration, findEnables, guardRefusal, planMigration } from "./migrate.mjs";
-import { HARNESSES, moveTo, ownerOf, places, present, readMarker, recover, swapIn, withRunLock, writeMarker } from "./targets.mjs";
+import { HARNESSES, moveTo, ownerOf, places, present, readMarker, realOf, recover, swapIn, withRunLock, writeMarker } from "./targets.mjs";
 
 /** @typedef {import("./cli.mjs").Outcome} Outcome */
 /** @typedef {import("./lock.mjs").Entry} Entry */
@@ -357,10 +357,16 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
       }
 
       // Hand edits are read before the swap moves each old copy to prev/.
+      // A folder two harnesses share is swapped once, by the first, so only
+      // its prev/ slot is named.
+      const seen = new Set();
       const edits = entry.harnesses.flatMap((harness) =>
         names.flatMap((skill) => {
           const live = join(where.skills(harness), skill);
           const locked = entry.skills[skill];
+          const real = realOf(live);
+          if (seen.has(real)) return [];
+          seen.add(real);
           return locked !== undefined && ownerOf(live, tool).state === "ours" && !isPlaced(live, fetched, skill)
             ? [{ key: `${harness}/${skill}`, lines: handEdits(live, locked, where.prev(harness, skill)) }]
             : [];
@@ -466,8 +472,17 @@ export const remove = ({ tool, harnesses }, { where }) =>
     const recovered = recoverAll(where, leaving);
     const stuck = interrupted(where, tool, entry, leaving);
     if (stuck.length > 0) return refuse([...recovered, ...finishFirst(tool, stuck)]);
-    const lines = Object.keys(entry.skills).flatMap((skill) => moveOut(where, tool, entry, leaving, skill));
     const staying = entry.harnesses.filter((harness) => !leaving.includes(harness));
+    // A skills folder a staying harness also resolves to is still in use:
+    // the leaving harness only leaves the lock.
+    const sharer = (/** @type {Harness} */ harness) =>
+      staying.find((other) => realOf(where.skills(other)) === realOf(where.skills(harness)));
+    const lines = leaving.flatMap((harness) => {
+      const other = sharer(harness);
+      return other === undefined
+        ? Object.keys(entry.skills).flatMap((skill) => moveOut(where, tool, entry, [harness], skill))
+        : [`Left ${where.skills(harness)} as it is: it is the same folder as ${where.skills(other)}, which ${other} still uses.`];
+    });
     const { [tool]: _gone, ...others } = read.lock.tools;
     writeLock(where.lock, {
       lock: 1,

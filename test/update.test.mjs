@@ -393,3 +393,22 @@ test("after an update fails partway, install does not recommend remove", (t) => 
   assert.ok(outcome.stderr.includes("kodhama update demo#v1.2.0"), outcome.stderr);
   editsSurvive("install");
 });
+
+test("with one skills folder shared by both harnesses, update names the prev/ slot it actually wrote", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  mkdirSync(join(machine.home, ".agents"));
+  mkdirSync(machine.claudeSkills);
+  symlinkSync(machine.claudeSkills, machine.codexSkills);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0"]).status, 0);
+  writeFileSync(join(machine.claudeSkills, "alpha", "SKILL.md"), "my edit\n");
+
+  const outcome = machine.kodhama(["update", "demo"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  const kept = join(machine.prev, "claude", "alpha");
+  assert.equal(text(join(kept, "SKILL.md")), "my edit\n");
+  assert.ok(outcome.stdout.includes(`the copy with it is in ${kept}.`), outcome.stdout);
+  assert.ok(!outcome.stdout.includes(join(machine.prev, "codex")), outcome.stdout);
+  assert.equal(outcome.stdout.match(/hand-edited/g)?.length, 1, outcome.stdout);
+});

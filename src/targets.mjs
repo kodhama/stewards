@@ -113,6 +113,20 @@ export const present = (path) => {
 };
 
 /**
+ * Effect: the real path of a folder, through any symlink, or the path as
+ * given when it does not resolve, so two harnesses whose skills folders are
+ * one folder can be told apart from two that are not.
+ * @param {string} path
+ */
+export const realOf = (path) => {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+};
+
+/**
  * Effect: the marker in a skill folder, or `undefined` when there is none
  * or it is not a JSON object.
  * @param {string} dir

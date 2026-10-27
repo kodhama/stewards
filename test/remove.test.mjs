@@ -2,7 +2,7 @@
 // folder is marked as the tool's and in the lock, and never deleting one.
 
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -59,4 +59,23 @@ test("remove of a tool that is not installed refuses", (t) => {
 
   assert.equal(outcome.status, 1);
   assert.match(outcome.stderr, /demo is not installed/);
+});
+
+test("remove --harness codex leaves a skills folder Claude shares through a symlink, and drops only codex from the lock", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  mkdirSync(join(machine.home, ".agents"));
+  mkdirSync(machine.claudeSkills);
+  symlinkSync(machine.claudeSkills, machine.codexSkills);
+  assert.equal(machine.kodhama(["install", "demo"]).status, 0);
+
+  const outcome = machine.kodhama(["remove", "demo", "--harness", "codex"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.ok(outcome.stdout.includes(machine.claudeSkills), outcome.stdout);
+  assert.deepEqual(readdirSync(machine.claudeSkills).sort(), ["alpha", "beta"]);
+  assert.ok(!existsSync(join(machine.prev, "codex")));
+  assert.deepEqual(/** @type {any} */ (readJson(machine.lock)).tools.demo.harnesses, ["claude"]);
+  const checked = machine.kodhama(["check"]);
+  assert.equal(checked.status, 0, checked.stderr);
 });
