@@ -159,17 +159,32 @@ const problems = (where, tool, entry) =>
  * @param {readonly Harness[]} harnesses
  * @returns {readonly { readonly live: string, readonly prev: string, readonly tag: string, readonly commit: string }[]}
  */
-const interrupted = (where, tool, entry, harnesses) =>
-  harnesses.flatMap((harness) =>
+const interrupted = (where, tool, entry, harnesses) => {
+  // A folder two harnesses share was swapped once, by the first in lock
+  // order, so only that harness's prev/ slot holds its old copy.
+  /** @type {Map<string, Harness>} */
+  const swapper = new Map();
+  for (const harness of entry.harnesses) {
+    for (const skill of Object.keys(entry.skills)) {
+      const real = realOf(join(where.skills(harness), skill));
+      if (!swapper.has(real)) swapper.set(real, harness);
+    }
+  }
+  const seen = new Set();
+  return harnesses.flatMap((harness) =>
     Object.keys(entry.skills).flatMap((skill) => {
       const live = join(where.skills(harness), skill);
+      const real = realOf(live);
+      if (seen.has(real)) return [];
+      seen.add(real);
       if (ownerOf(live, tool).state !== "ours") return [];
       const marker = readMarker(live);
       return marker?.tag === entry.tag && marker.commit === entry.commit
         ? []
-        : [{ live, prev: where.prev(harness, skill), tag: String(marker?.tag), commit: String(marker?.commit) }];
+        : [{ live, prev: where.prev(swapper.get(real) ?? harness, skill), tag: String(marker?.tag), commit: String(marker?.commit) }];
     }),
   );
+};
 
 /**
  * Lines naming each folder an interrupted update left, where the copy it

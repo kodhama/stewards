@@ -528,3 +528,33 @@ test("every move into an occupied prev/ slot warns what the slot held: update, r
     recovered.stdout,
   );
 });
+
+test("with one skills folder shared by both harnesses, the interrupted-update refusal names only the prev/ slots written", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the first run with");
+    return;
+  }
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  mkdirSync(join(machine.home, ".agents"));
+  mkdirSync(machine.claudeSkills);
+  symlinkSync(machine.claudeSkills, machine.codexSkills);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0"]).status, 0);
+  writeFileSync(join(machine.claudeSkills, "alpha", "SKILL.md"), "alpha edit\n");
+  const blocker = join(machine.prev, "claude", "beta", "ro");
+  mkdirSync(blocker, { recursive: true });
+  writeFileSync(join(blocker, "f"), "x\n");
+  chmodSync(blocker, 0o555);
+  const failed = machine.kodhama(["update", "demo"]);
+  chmodSync(blocker, 0o755);
+  assert.equal(failed.status, 1, failed.stdout);
+
+  for (const args of [["remove", "demo"], ["remove", "demo", "--harness", "codex"]]) {
+    const outcome = machine.kodhama(args);
+
+    assert.equal(outcome.status, 1, outcome.stdout);
+    assert.ok(outcome.stderr.includes(join(machine.prev, "claude", "alpha")), `${args.join(" ")}: ${outcome.stderr}`);
+    assert.ok(!outcome.stderr.includes(join(machine.prev, "codex")), `${args.join(" ")}: ${outcome.stderr}`);
+    assert.equal(text(join(machine.prev, "claude", "alpha", "SKILL.md")), "alpha edit\n");
+  }
+});
