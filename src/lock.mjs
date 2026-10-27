@@ -97,7 +97,9 @@ export const jsonText = (value) => `${JSON.stringify(sortKeys(value), null, 2)}\
 export const writeAtomic = (path, text, mode) => {
   mkdirSync(dirname(path), { recursive: true });
   const temp = `${path}.kodhama-${process.pid}-${Date.now()}.tmp`;
-  writeFileSync(temp, text, { flag: "wx" });
+  // Created with the target's mode, so a private file is never readable by
+  // others, even for a moment; the chmod then undoes any umask narrowing.
+  writeFileSync(temp, text, { flag: "wx", mode: mode ?? 0o666 });
   if (mode !== undefined) chmodSync(temp, mode);
   renameSync(temp, path);
 };
