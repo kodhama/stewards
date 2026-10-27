@@ -216,15 +216,21 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
         };
       }
 
-      const skills = placeSkills(where, fetched, adding);
-      const all = HARNESSES.filter((harness) => adding.includes(harness) || entry?.harnesses.includes(harness));
-      writeLock(where.lock, {
-        lock: 1,
-        tools: {
-          ...read.lock.tools,
-          [tool]: { tag: fetched.tag, commit: fetched.commit, source: fetched.source, harnesses: all, skills },
-        },
-      });
+      try {
+        const skills = placeSkills(where, fetched, adding);
+        const all = HARNESSES.filter((harness) => adding.includes(harness) || entry?.harnesses.includes(harness));
+        writeLock(where.lock, {
+          lock: 1,
+          tools: {
+            ...read.lock.tools,
+            [tool]: { tag: fetched.tag, commit: fetched.commit, source: fetched.source, harnesses: all, skills },
+          },
+        });
+      } catch (error) {
+        // The configs are already edited, so the receipt must not be lost.
+        if (migrated.lines.length === 0) throw error;
+        return refuse([...recovered, ...migrated.lines, `kodhama stopped after --migrate: ${String(error)}`]);
+      }
       return {
         code: 0,
         lines: [

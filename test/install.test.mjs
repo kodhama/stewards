@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join, sep } from "node:path";
 import { test } from "node:test";
 
@@ -927,4 +927,25 @@ test("--migrate keeps the comment and blank lines just above the next table with
 
   assert.equal(outcome.status, 0, outcome.stderr);
   assert.equal(readFileSync(join(machine.codex, "config.toml"), "utf8"), kept);
+});
+
+test("a copy that fails after --migrate still names the receipt", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the copy with");
+    return;
+  }
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  writeFiles(machine.claude, { "settings.json": SETTINGS_WITH_GROVE });
+  const agents = join(machine.home, ".agents");
+  mkdirSync(agents);
+  chmodSync(agents, 0o555);
+
+  const outcome = machine.kodhama(["install", "grove", "--migrate", "--harness", "codex"]);
+  chmodSync(agents, 0o755);
+
+  assert.equal(outcome.status, 1);
+  const receipts = join(machine.data, "kodhama", "receipts");
+  const [name] = readdirSync(receipts);
+  assert.ok(outcome.stderr.includes(join(receipts, name)), outcome.stderr);
 });
