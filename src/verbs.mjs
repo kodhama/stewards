@@ -288,8 +288,8 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           `Installed ${tool} ${fetched.tag} (${fetched.commit}) for ${adding.join(", ")}: ${fetched.skills.map((skill) => skill.name).join(", ")}.`,
         ],
       };
-  });
-  return "error" in done ? refuse([done.error]) : done.value;
+    });
+    return "error" in done ? refuse([done.error]) : done.value;
   })();
 };
 
@@ -487,6 +487,6 @@ export const remove = ({ tool, harnesses }, { where }) =>
     writeLock(where.lock, {
       lock: 1,
       tools: staying.length === 0 ? others : { ...others, [tool]: { ...entry, harnesses: staying } },
-  });
-  return { code: 0, lines: [...recovered, ...lines, `Removed ${tool} for ${leaving.join(", ")}.`] };
+    });
+    return { code: 0, lines: [...recovered, ...lines, `Removed ${tool} for ${leaving.join(", ")}.`] };
   });
