@@ -197,7 +197,7 @@ export const copyFiles = (from, to, files) => {
  * @param {string} tool
  * @param {string | undefined} wanted the tag asked for, or none for the newest
  * @param {{ readonly env: NodeJS.ProcessEnv, readonly tmp?: string, readonly source?: string }} options
- *   `source` overrides where the repo is, as `update` does with the lock's
+ *   `source` overrides where the repo is
  * @param {(fetched: Fetched) => T} use
  * @returns {{ readonly value: T } | { readonly error: string }}
  */

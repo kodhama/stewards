@@ -268,3 +268,30 @@ test("a .moved leftover from a cross-filesystem move is deleted, and the prev/ c
   assert.ok(!existsSync(leftover));
   assert.equal(text(join(machine.prev, "claude", "alpha", "SKILL.md")), "the full previous copy\n");
 });
+
+test("update fetches from the source install would use, and refuses a lock that names another", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", ["0.1.0"]);
+  const repo = machine.project("work");
+  assert.equal(machine.kodhama(["install", "demo", "--scope", "project"], { cwd: repo }).status, 0);
+  // Another repo, with a newer tag carrying a skill the real demo never had.
+  const other = join(machine.root, "other", "demo");
+  machine.git(machine.root, ["clone", "-q", tool.path, other]);
+  writeFiles(other, { "skills/planted/SKILL.md": "Not demo's.\n" });
+  machine.git(other, ["add", "-A"]);
+  machine.git(other, ["commit", "-q", "-m", "planted"]);
+  machine.git(other, ["tag", "-a", "v0.2.0", "-m", "planted"]);
+  const lockPath = join(repo, ".kodhama", "cli", "lock.json");
+  const lock = /** @type {any} */ (readJson(lockPath));
+  lock.tools.demo.source = `file://${other}`;
+  writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["update", "demo", "--scope", "project"], { cwd: repo });
+
+  assert.equal(outcome.status, 1);
+  assert.ok(outcome.stderr.includes(`file://${other}`), outcome.stderr);
+  assert.ok(outcome.stderr.includes(`file://${tool.path}`), outcome.stderr);
+  assert.ok(!existsSync(join(repo, ".claude", "skills", "planted")));
+  assert.deepEqual(machine.state(), before);
+});

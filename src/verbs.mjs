@@ -5,7 +5,7 @@
 
 import { join } from "node:path";
 
-import { copyFiles, isNewer, versionOf, withTool } from "./fetch.mjs";
+import { copyFiles, isNewer, toolSource, versionOf, withTool } from "./fetch.mjs";
 import { diffTree, hashTree, readLock, writeLock } from "./lock.mjs";
 import { applyMigration, findEnables, guardRefusal, planMigration } from "./migrate.mjs";
 import { HARNESSES, moveTo, ownerOf, present, readMarker, recover, swapIn, withRunLock, writeMarker } from "./targets.mjs";
@@ -247,8 +247,8 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
 };
 
 /**
- * Effect: `update <tool>[#<tag>]`, on the harnesses in the lock and from the
- * lock's source.
+ * Effect: `update <tool>[#<tag>]`, on the harnesses in the lock, from the
+ * source install would use.
  * @param {{ readonly tool: string, readonly tag: string | undefined }} asked
  * @param {Context} context
  * @returns {Outcome}
@@ -266,8 +266,17 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
     if ("error" in read) return refuse([read.error]);
     const entry = read.lock.tools[tool];
     if (entry === undefined) return refuse([`${tool} is not installed here; kodhama install ${tool} installs it.`]);
+    // The lock's source is a record, not an instruction: a lock a repo
+    // commits must not choose where the code comes from.
+    const source = toolSource(tool, env);
+    if (entry.source !== source) {
+      return refuse([
+        `The lock says ${tool} came from ${entry.source}, but kodhama fetches it from ${source}.`,
+        `To move ${tool} to ${source}, run kodhama remove ${tool}, then install it again.`,
+      ]);
+    }
 
-    const done = withTool(tool, tag, { env, source: entry.source }, (fetched) => {
+    const done = withTool(tool, tag, { env }, (fetched) => {
       const installed = versionOf(entry.tag);
       const newest = versionOf(fetched.tag);
       if (tag === undefined && installed !== undefined && newest !== undefined && isNewer(installed, newest)) {
