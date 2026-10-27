@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { join, sep } from "node:path";
 import { test } from "node:test";
 
@@ -728,4 +728,33 @@ test("--migrate edits a symlinked settings.json through its link, and keeps the 
   assert.equal(receipt.files[0].resolved, real);
   assert.equal(statSync(receipts).mode & 0o777, 0o700);
   assert.equal(statSync(join(receipts, name)).mode & 0o777, 0o600);
+});
+
+test("a fresh run lock held by another run refuses install, and check does not wait on it", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const held = join(machine.data, "kodhama", "run.lock");
+  mkdirSync(held, { recursive: true });
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 1);
+  assert.ok(outcome.stderr.includes(`another kodhama run holds ${held}`), outcome.stderr);
+  assert.ok(existsSync(held), "the other run's lock is left alone");
+  assert.ok(!existsSync(machine.codexSkills));
+  assert.equal(machine.kodhama(["check"]).status, 0);
+});
+
+test("a run lock older than ten minutes is stale and taken over", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const held = join(machine.data, "kodhama", "run.lock");
+  mkdirSync(held, { recursive: true });
+  const old = new Date(Date.now() - 11 * 60 * 1000);
+  utimesSync(held, old, old);
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.ok(!existsSync(held), "the run lock is released");
 });

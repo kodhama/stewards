@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { copyFiles, withTool } from "./fetch.mjs";
 import { diffTree, hashTree, readLock, writeLock } from "./lock.mjs";
 import { applyMigration, findEnables, guardRefusal, planMigration } from "./migrate.mjs";
-import { HARNESSES, moveTo, ownerOf, present, readMarker, recover, swapIn, writeMarker } from "./targets.mjs";
+import { HARNESSES, moveTo, ownerOf, present, readMarker, recover, swapIn, withRunLock, writeMarker } from "./targets.mjs";
 
 /** @typedef {import("./cli.mjs").Outcome} Outcome */
 /** @typedef {import("./lock.mjs").Entry} Entry */
@@ -154,59 +154,61 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
     `Run kodhama install ${tool} --migrate to take the user-level ones out, keeping a receipt, or turn them off by hand.`,
   );
   if (blocked !== undefined) return refuse(blocked);
-  const read = readLock(where.lock);
-  if ("error" in read) return refuse([read.error]);
-  const entry = read.lock.tools[tool];
+  return withRunLock(where.runLock, () => {
+    const read = readLock(where.lock);
+    if ("error" in read) return refuse([read.error]);
+    const entry = read.lock.tools[tool];
 
-  const done = withTool(tool, tag, { env }, (fetched) => {
-    const recovered = recoverAll(where);
-    if (entry !== undefined && entry.tag !== fetched.tag) {
-      return refuse([
-        ...recovered,
-        `${tool} is installed at ${entry.tag}. To move it to ${fetched.tag}, run kodhama update ${tool}#${fetched.tag}.`,
-      ]);
-    }
-    const adding = harnesses.filter((harness) => !entry?.harnesses.includes(harness));
-    const occupied = preflight(where, tool, adding, fetched.skills.map((skill) => skill.name));
-    if (occupied.length > 0) {
-      return refuse([...recovered, ...occupied, `kodhama installs only into empty paths or folders marked as ${tool}'s, so it wrote nothing.`]);
-    }
-    const found = entry === undefined || adding.length > 0 ? [] : problems(where, tool, entry);
-    if (found.length > 0) {
-      return refuse([
-        ...recovered,
-        ...found,
-        `${tool} ${entry?.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`,
-      ]);
-    }
-    const migrated = migrate && hits.length > 0 ? migrateOut(tool, env) : { lines: [] };
-    if ("error" in migrated) return refuse([...recovered, migrated.error]);
-    if (entry !== undefined && adding.length === 0) {
+    const done = withTool(tool, tag, { env }, (fetched) => {
+      const recovered = recoverAll(where);
+      if (entry !== undefined && entry.tag !== fetched.tag) {
+        return refuse([
+          ...recovered,
+          `${tool} is installed at ${entry.tag}. To move it to ${fetched.tag}, run kodhama update ${tool}#${fetched.tag}.`,
+        ]);
+      }
+      const adding = harnesses.filter((harness) => !entry?.harnesses.includes(harness));
+      const occupied = preflight(where, tool, adding, fetched.skills.map((skill) => skill.name));
+      if (occupied.length > 0) {
+        return refuse([...recovered, ...occupied, `kodhama installs only into empty paths or folders marked as ${tool}'s, so it wrote nothing.`]);
+      }
+      const found = entry === undefined || adding.length > 0 ? [] : problems(where, tool, entry);
+      if (found.length > 0) {
+        return refuse([
+          ...recovered,
+          ...found,
+          `${tool} ${entry?.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`,
+        ]);
+      }
+      const migrated = migrate && hits.length > 0 ? migrateOut(tool, env) : { lines: [] };
+      if ("error" in migrated) return refuse([...recovered, migrated.error]);
+      if (entry !== undefined && adding.length === 0) {
+        return {
+          code: 0,
+          lines: [...recovered, ...migrated.lines, `${tool} ${entry.tag} is already installed for ${entry.harnesses.join(", ")}.`],
+        };
+      }
+
+      const skills = placeSkills(where, fetched, adding);
+      const all = HARNESSES.filter((harness) => adding.includes(harness) || entry?.harnesses.includes(harness));
+      writeLock(where.lock, {
+        lock: 1,
+        tools: {
+          ...read.lock.tools,
+          [tool]: { tag: fetched.tag, commit: fetched.commit, source: fetched.source, harnesses: all, skills },
+        },
+      });
       return {
         code: 0,
-        lines: [...recovered, ...migrated.lines, `${tool} ${entry.tag} is already installed for ${entry.harnesses.join(", ")}.`],
+        lines: [
+          ...recovered,
+          ...migrated.lines,
+          `Installed ${tool} ${fetched.tag} (${fetched.commit}) for ${adding.join(", ")}: ${fetched.skills.map((skill) => skill.name).join(", ")}.`,
+        ],
       };
-    }
-
-    const skills = placeSkills(where, fetched, adding);
-    const all = HARNESSES.filter((harness) => adding.includes(harness) || entry?.harnesses.includes(harness));
-    writeLock(where.lock, {
-      lock: 1,
-      tools: {
-        ...read.lock.tools,
-        [tool]: { tag: fetched.tag, commit: fetched.commit, source: fetched.source, harnesses: all, skills },
-      },
-    });
-    return {
-      code: 0,
-      lines: [
-        ...recovered,
-        ...migrated.lines,
-        `Installed ${tool} ${fetched.tag} (${fetched.commit}) for ${adding.join(", ")}: ${fetched.skills.map((skill) => skill.name).join(", ")}.`,
-      ],
-    };
   });
   return "error" in done ? refuse([done.error]) : done.value;
+  });
 };
 
 /**
@@ -224,46 +226,48 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
     `Turn them off, or take the user-level ones out with kodhama install ${tool} --migrate at the installed tag, then update again.`,
   );
   if (blocked !== undefined) return refuse(blocked);
-  const read = readLock(where.lock);
-  if ("error" in read) return refuse([read.error]);
-  const entry = read.lock.tools[tool];
-  if (entry === undefined) return refuse([`${tool} is not installed here; kodhama install ${tool} installs it.`]);
+  return withRunLock(where.runLock, () => {
+    const read = readLock(where.lock);
+    if ("error" in read) return refuse([read.error]);
+    const entry = read.lock.tools[tool];
+    if (entry === undefined) return refuse([`${tool} is not installed here; kodhama install ${tool} installs it.`]);
 
-  const done = withTool(tool, tag, { env, source: entry.source }, (fetched) => {
-    const recovered = recoverAll(where);
-    if (fetched.tag === entry.tag && fetched.commit === entry.commit) {
-      return { code: 0, lines: [...recovered, `${tool} is already at ${entry.tag}.`] };
-    }
-    const names = fetched.skills.map((skill) => skill.name);
-    const occupied = preflight(where, tool, entry.harnesses, names);
-    if (occupied.length > 0) {
-      return refuse([...recovered, ...occupied, `kodhama replaces only folders marked as ${tool}'s, so it wrote nothing.`]);
-    }
+    const done = withTool(tool, tag, { env, source: entry.source }, (fetched) => {
+      const recovered = recoverAll(where);
+      if (fetched.tag === entry.tag && fetched.commit === entry.commit) {
+        return { code: 0, lines: [...recovered, `${tool} is already at ${entry.tag}.`] };
+      }
+      const names = fetched.skills.map((skill) => skill.name);
+      const occupied = preflight(where, tool, entry.harnesses, names);
+      if (occupied.length > 0) {
+        return refuse([...recovered, ...occupied, `kodhama replaces only folders marked as ${tool}'s, so it wrote nothing.`]);
+      }
 
-    // Hand edits are read before the swap moves each old copy to prev/.
-    const edits = entry.harnesses.flatMap((harness) =>
-      names.flatMap((skill) => {
-        const live = join(where.skills(harness), skill);
-        const locked = entry.skills[skill];
-        return locked !== undefined && ownerOf(live, tool).state === "ours"
-          ? handEdits(live, locked, where.prev(harness, skill))
-          : [];
-      }),
-    );
-    const skills = placeSkills(where, fetched, entry.harnesses);
-    const dropped = Object.keys(entry.skills)
-      .filter((skill) => !names.includes(skill))
-      .flatMap((skill) => moveOut(where, tool, entry, entry.harnesses, skill));
-    writeLock(where.lock, {
-      lock: 1,
-      tools: { ...read.lock.tools, [tool]: { ...entry, tag: fetched.tag, commit: fetched.commit, skills } },
-    });
-    return {
-      code: 0,
-      lines: [...recovered, `Updated ${tool} from ${entry.tag} to ${fetched.tag} (${fetched.commit}).`, ...edits, ...dropped],
-    };
+      // Hand edits are read before the swap moves each old copy to prev/.
+      const edits = entry.harnesses.flatMap((harness) =>
+        names.flatMap((skill) => {
+          const live = join(where.skills(harness), skill);
+          const locked = entry.skills[skill];
+          return locked !== undefined && ownerOf(live, tool).state === "ours"
+            ? handEdits(live, locked, where.prev(harness, skill))
+            : [];
+        }),
+      );
+      const skills = placeSkills(where, fetched, entry.harnesses);
+      const dropped = Object.keys(entry.skills)
+        .filter((skill) => !names.includes(skill))
+        .flatMap((skill) => moveOut(where, tool, entry, entry.harnesses, skill));
+      writeLock(where.lock, {
+        lock: 1,
+        tools: { ...read.lock.tools, [tool]: { ...entry, tag: fetched.tag, commit: fetched.commit, skills } },
+      });
+      return {
+        code: 0,
+        lines: [...recovered, `Updated ${tool} from ${entry.tag} to ${fetched.tag} (${fetched.commit}).`, ...edits, ...dropped],
+      };
   });
   return "error" in done ? refuse([done.error]) : done.value;
+  });
 };
 
 /**
@@ -316,21 +320,22 @@ export const check = ({ tool }, { where }) => {
  * @param {Context} context
  * @returns {Outcome}
  */
-export const remove = ({ tool, harnesses }, { where }) => {
-  const read = readLock(where.lock);
-  if ("error" in read) return refuse([read.error]);
-  const entry = read.lock.tools[tool];
-  if (entry === undefined) return refuse([`${tool} is not installed here.`]);
-  const leaving = entry.harnesses.filter((harness) => harnesses.includes(harness));
-  if (leaving.length === 0) return refuse([`${tool} is not installed for ${harnesses.join(", ")} here.`]);
+export const remove = ({ tool, harnesses }, { where }) =>
+  withRunLock(where.runLock, () => {
+    const read = readLock(where.lock);
+    if ("error" in read) return refuse([read.error]);
+    const entry = read.lock.tools[tool];
+    if (entry === undefined) return refuse([`${tool} is not installed here.`]);
+    const leaving = entry.harnesses.filter((harness) => harnesses.includes(harness));
+    if (leaving.length === 0) return refuse([`${tool} is not installed for ${harnesses.join(", ")} here.`]);
 
-  const recovered = recoverAll(where);
-  const lines = Object.keys(entry.skills).flatMap((skill) => moveOut(where, tool, entry, leaving, skill));
-  const staying = entry.harnesses.filter((harness) => !leaving.includes(harness));
-  const { [tool]: _gone, ...others } = read.lock.tools;
-  writeLock(where.lock, {
-    lock: 1,
-    tools: staying.length === 0 ? others : { ...others, [tool]: { ...entry, harnesses: staying } },
+    const recovered = recoverAll(where);
+    const lines = Object.keys(entry.skills).flatMap((skill) => moveOut(where, tool, entry, leaving, skill));
+    const staying = entry.harnesses.filter((harness) => !leaving.includes(harness));
+    const { [tool]: _gone, ...others } = read.lock.tools;
+    writeLock(where.lock, {
+      lock: 1,
+      tools: staying.length === 0 ? others : { ...others, [tool]: { ...entry, harnesses: staying } },
   });
   return { code: 0, lines: [...recovered, ...lines, `Removed ${tool} for ${leaving.join(", ")}.`] };
-};
+  });

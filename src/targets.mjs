@@ -17,6 +17,7 @@ import {
   renameSync,
   rmSync,
   rmdirSync,
+  statSync,
   symlinkSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
@@ -27,10 +28,11 @@ import { MARKER, NAME } from "./manifest.mjs";
 /** @typedef {"claude" | "codex"} Harness */
 
 /**
- * The paths one scope works on: its lock, each harness's skills folder, and
- * the prev/ slot for each harness and skill.
+ * The paths one scope works on: its lock, the run lock beside it, each
+ * harness's skills folder, and the prev/ slot for each harness and skill.
  * @typedef {{
  *   readonly lock: string,
+ *   readonly runLock: string,
  *   readonly skills: (harness: Harness) => string,
  *   readonly prev: (harness: Harness, skill: string) => string,
  * }} Places
@@ -57,12 +59,14 @@ export const places = (scope, env, root) => {
     const key = sha256(realpathSync(root)).slice(0, 12);
     return {
       lock: join(root, ".kodhama", "cli", "lock.json"),
+      runLock: join(root, ".kodhama", "cli", "run.lock"),
       skills: (harness) => join(root, harness === "claude" ? ".claude" : ".agents", "skills"),
       prev: (harness, skill) => join(state, "prev", "projects", key, harness, skill),
     };
   }
   return {
     lock: join(state, "lock.json"),
+    runLock: join(state, "run.lock"),
     skills: (harness) =>
       harness === "claude"
         ? join(claudeHome(env), "skills")
@@ -223,4 +227,61 @@ export const swapIn = (skills, skill, build, prev) => {
   if (replaced) moveTo(old, prev);
   pruneEmpty(stage);
   return replaced;
+};
+
+// A run lock older than this is taken to be left by a run that died.
+const STALE_MS = 10 * 60 * 1000;
+
+/**
+ * Effect: takes the run lock, a folder made with exclusive create, or
+ * reports it held. A stale one is taken over.
+ * @param {string} path
+ */
+const takeRunLock = (path) => {
+  try {
+    mkdirSync(path);
+    return true;
+  } catch (error) {
+    if (/** @type {NodeJS.ErrnoException} */ (error).code !== "EEXIST") throw error;
+  }
+  if (Date.now() - statSync(path).mtimeMs <= STALE_MS) return false;
+  rmSync(path, { recursive: true, force: true });
+  try {
+    mkdirSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Effect: runs `run` while holding the scope's run lock, so two runs never
+ * recover the same stage or rewrite the same lock at once. The run lock is
+ * released however `run` ends, and folders made only to hold it are
+ * deleted again when they are left empty.
+ * @template T
+ * @param {string} path
+ * @param {() => T} run
+ * @returns {T | { readonly code: 1, readonly lines: readonly string[] }}
+ */
+export const withRunLock = (path, run) => {
+  const made = mkdirSync(dirname(path), { recursive: true });
+  try {
+    if (!takeRunLock(path)) {
+      return {
+        code: 1,
+        lines: [`another kodhama run holds ${path}. If none is running, delete it; it also goes stale after 10 minutes.`],
+      };
+    }
+    try {
+      return run();
+    } finally {
+      rmSync(path, { recursive: true, force: true });
+    }
+  } finally {
+    for (let dir = dirname(path); made !== undefined && dir.startsWith(made); dir = dirname(dir)) {
+      if (readdirSync(dir).length > 0) break;
+      rmdirSync(dir);
+    }
+  }
 };
