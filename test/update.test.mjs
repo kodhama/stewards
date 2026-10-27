@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 
 import { readJson, scratch, sha256, writeFiles } from "./helpers/scratch.mjs";
@@ -117,9 +117,9 @@ test("the next run recovers a crashed swap: a lone .old goes back into place, on
   const machine = scratch(t);
   machine.fakeTool("demo", ["0.1.0"]);
   assert.equal(machine.kodhama(["install", "demo"]).status, 0);
-  const codexStage = join(machine.home, ".agents", ".kodhama-stage");
-  const claudeStage = join(machine.claude, ".kodhama-stage");
-  mkdirSync(codexStage);
+  const codexStage = join(machine.home, ".agents", ".kodhama-stage", "codex");
+  const claudeStage = join(machine.claude, ".kodhama-stage", "claude");
+  mkdirSync(codexStage, { recursive: true });
   renameSync(join(machine.codexSkills, "alpha"), join(codexStage, "alpha.old"));
   writeFiles(claudeStage, { "beta.old/SKILL.md": "an older beta\n", "beta/SKILL.md": "a half-built beta\n" });
 
@@ -130,8 +130,8 @@ test("the next run recovers a crashed swap: a lone .old goes back into place, on
   assert.ok(existsSync(join(machine.codexSkills, "alpha", ".kodhama-skill.json")));
   assert.equal(text(join(machine.prev, "claude", "beta", "SKILL.md")), "an older beta\n");
   assert.match(text(join(machine.claudeSkills, "beta", "SKILL.md")), /Beta\./);
-  assert.ok(!existsSync(codexStage));
-  assert.ok(!existsSync(claudeStage));
+  assert.ok(!existsSync(dirname(codexStage)));
+  assert.ok(!existsSync(dirname(claudeStage)));
   assert.equal(machine.kodhama(["check"]).status, 0);
 });
 
@@ -191,8 +191,8 @@ test("a skills folder that is a symlink keeps its stage beside the real folder, 
   symlinkSync(join(volume, "skills"), machine.claudeSkills);
   assert.equal(machine.kodhama(["install", "demo"]).status, 0);
   assert.ok(lstatSync(machine.claudeSkills).isSymbolicLink());
-  const stage = join(volume, ".kodhama-stage");
-  mkdirSync(stage);
+  const stage = join(volume, ".kodhama-stage", "claude");
+  mkdirSync(stage, { recursive: true });
   renameSync(join(volume, "skills", "alpha"), join(stage, "alpha.old"));
 
   const outcome = machine.kodhama(["install", "demo"]);
@@ -214,4 +214,42 @@ test("update with no tag never moves down from a pre-release newer than the newe
   assert.equal(outcome.status, 0, outcome.stderr);
   assert.match(outcome.stdout, /stays at v0\.11\.0-rc\.1.*newer than v0\.10\.0/);
   assert.deepEqual(machine.state(), before);
+});
+
+test("two harnesses' skills folders in one parent keep separate stages, and a Claude run leaves Codex's alone", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const shared = join(machine.root, "shared");
+  mkdirSync(join(shared, "claude-skills"), { recursive: true });
+  mkdirSync(join(shared, "codex-skills"));
+  mkdirSync(join(machine.home, ".agents"));
+  symlinkSync(join(shared, "claude-skills"), machine.claudeSkills);
+  symlinkSync(join(shared, "codex-skills"), machine.codexSkills);
+  assert.equal(machine.kodhama(["install", "demo", "--harness", "codex"]).status, 0);
+  const planted = join(shared, ".kodhama-stage", "codex", "alpha.old");
+  writeFiles(planted, { "SKILL.md": "codex's interrupted copy\n" });
+
+  const outcome = machine.kodhama(["install", "demo", "--harness", "claude"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.equal(text(join(planted, "SKILL.md")), "codex's interrupted copy\n");
+  assert.deepEqual(readdirSync(join(shared, "claude-skills")).sort(), ["alpha", "beta"]);
+});
+
+test("a stage folder that is a symlink is refused, and what it points at is untouched", (t) => {
+  for (const link of [".kodhama-stage", join(".kodhama-stage", "claude")]) {
+    const machine = scratch(t);
+    machine.fakeTool("demo", ["0.1.0"]);
+    const victim = join(machine.root, "victim");
+    writeFiles(victim, { "precious.txt": "keep me\n", "alpha.old/SKILL.md": "not a stage\n" });
+    mkdirSync(dirname(join(machine.claude, link)), { recursive: true });
+    symlinkSync(victim, join(machine.claude, link));
+    const before = machine.state();
+
+    const outcome = machine.kodhama(["install", "demo"]);
+
+    assert.equal(outcome.status, 1, link);
+    assert.match(outcome.stderr, /not a real folder/, link);
+    assert.deepEqual(machine.state(), before, link);
+  }
 });

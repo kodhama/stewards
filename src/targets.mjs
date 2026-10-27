@@ -165,16 +165,28 @@ export const moveTo = (from, to) => {
 };
 
 /**
- * Effect: the stage folder for a skills folder: beside the folder it really
- * is, through any symlink, so its renames never cross filesystems.
+ * Effect: a harness's stage folder for a skills folder: beside the folder it
+ * really is, through any symlink, so its renames never cross filesystems,
+ * and its own, so two harnesses' skills folders in one parent never share
+ * one. A stage that is a symlink or a file is refused before anything is
+ * written through it.
  * @param {string} skills
+ * @param {Harness} harness
  */
-const stageOf = (skills) => {
+const stageOf = (skills, harness) => {
+  let parent;
   try {
-    return join(dirname(realpathSync(skills)), STAGE);
+    parent = dirname(realpathSync(skills));
   } catch {
-    return join(dirname(skills), STAGE);
+    parent = dirname(skills);
   }
+  const stage = join(parent, STAGE, harness);
+  for (const dir of [dirname(stage), stage]) {
+    if (present(dir) && !lstatSync(dir).isDirectory()) {
+      throw new Error(`${dir} is not a real folder, so kodhama will not write through it. Move it aside, then run kodhama again.`);
+    }
+  }
+  return stage;
 };
 
 /**
@@ -190,11 +202,12 @@ const pruneEmpty = (dir) => {
  * `<skill>.old` goes back into place when the live path is empty, or to
  * prev/ when it is not; only then are half-built new copies deleted.
  * @param {string} skills the skills folder
+ * @param {Harness} harness
  * @param {(skill: string) => string} prev the prev/ slot for a skill
  * @returns {readonly string[]} a line per folder put back or moved
  */
-export const recover = (skills, prev) => {
-  const stage = stageOf(skills);
+export const recover = (skills, harness, prev) => {
+  const stage = stageOf(skills, harness);
   if (!present(stage)) return [];
   const lines = [];
   for (const name of readdirSync(stage).sort()) {
@@ -212,6 +225,7 @@ export const recover = (skills, prev) => {
   }
   for (const name of readdirSync(stage)) rmSync(join(stage, name), { recursive: true, force: true });
   pruneEmpty(stage);
+  pruneEmpty(dirname(stage));
   return lines;
 };
 
@@ -220,13 +234,14 @@ export const recover = (skills, prev) => {
  * folder, if any, is renamed aside, the new copy renamed into place, and the
  * old copy moved to prev/.
  * @param {string} skills the skills folder
+ * @param {Harness} harness
  * @param {string} skill
  * @param {(dir: string) => void} build writes the new copy into `dir`
  * @param {string} prev the skill's prev/ slot
  * @returns {boolean} whether an old copy went to prev/
  */
-export const swapIn = (skills, skill, build, prev) => {
-  const stage = stageOf(skills);
+export const swapIn = (skills, harness, skill, build, prev) => {
+  const stage = stageOf(skills, harness);
   const fresh = join(stage, skill);
   const old = join(stage, `${skill}.old`);
   const live = join(skills, skill);
@@ -239,6 +254,7 @@ export const swapIn = (skills, skill, build, prev) => {
   renameSync(fresh, live);
   if (replaced) moveTo(old, prev);
   pruneEmpty(stage);
+  pruneEmpty(dirname(stage));
   return replaced;
 };
 

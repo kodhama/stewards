@@ -35,11 +35,12 @@ import { HARNESSES, moveTo, ownerOf, present, readMarker, recover, swapIn, withR
 const refuse = (lines) => ({ code: 1, lines });
 
 /**
- * Effect: recovers every harness's stage in the scope.
+ * Effect: recovers the stage of each harness the run works on.
  * @param {Places} where
+ * @param {readonly Harness[]} harnesses
  */
-const recoverAll = (where) =>
-  HARNESSES.flatMap((harness) => recover(where.skills(harness), (skill) => where.prev(harness, skill)));
+const recoverAll = (where, harnesses) =>
+  harnesses.flatMap((harness) => recover(where.skills(harness), harness, (skill) => where.prev(harness, skill)));
 
 /**
  * Effect: a line per target folder that would be written and is not the
@@ -99,6 +100,7 @@ const placeSkills = (where, fetched, harnesses) => {
       if (isPlaced(join(where.skills(harness), skill.name), fetched, skill.name)) continue;
       swapIn(
         where.skills(harness),
+        harness,
         skill.name,
         (dir) => {
           copyFiles(skill.dir, dir, skill.files);
@@ -179,7 +181,7 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
     // With no tag named, an installed tool stays at its tag: install adds
     // harnesses, and moving to another tag is update's.
     const done = withTool(tool, tag ?? entry?.tag, { env }, (fetched) => {
-      const recovered = recoverAll(where);
+      const recovered = recoverAll(where, harnesses);
       if (entry !== undefined && entry.tag !== fetched.tag) {
         return refuse([
           ...recovered,
@@ -274,7 +276,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
           lines: [`${tool} stays at ${entry.tag}, which is newer than ${fetched.tag}, the newest stable tag. Name a tag to move to it.`],
         };
       }
-      const recovered = recoverAll(where);
+      const recovered = recoverAll(where, entry.harnesses);
       if (fetched.tag === entry.tag && fetched.commit === entry.commit) {
         return { code: 0, lines: [...recovered, `${tool} is already at ${entry.tag}.`] };
       }
@@ -370,7 +372,7 @@ export const remove = ({ tool, harnesses }, { where }) =>
     const leaving = entry.harnesses.filter((harness) => harnesses.includes(harness));
     if (leaving.length === 0) return refuse([`${tool} is not installed for ${harnesses.join(", ")} here.`]);
 
-    const recovered = recoverAll(where);
+    const recovered = recoverAll(where, leaving);
     const lines = Object.keys(entry.skills).flatMap((skill) => moveOut(where, tool, entry, leaving, skill));
     const staying = entry.harnesses.filter((harness) => !leaving.includes(harness));
     const { [tool]: _gone, ...others } = read.lock.tools;
