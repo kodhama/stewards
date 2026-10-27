@@ -491,3 +491,40 @@ test("after an update fails partway and its tag then moves, update prints the wa
   assert.equal(text(join(safe, "beta.md")), "beta edit\n");
   assert.equal(machine.kodhama(["check"]).status, 0);
 });
+
+test("every move into an occupied prev/ slot warns what the slot held: update, remove, install and recovery", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", ["0.1.0", "0.2.0", "0.3.0"]);
+  const slot = join(machine.prev, "claude", "alpha");
+  const held = (/** @type {string} */ tag) => `${slot} held demo ${tag} (${tool.commit(tag)}), which this run replaced.`;
+  assert.equal(machine.kodhama(["install", "demo#0.1.0", "--harness", "claude"]).status, 0);
+  const first = machine.kodhama(["update", "demo#0.2.0"]);
+  assert.equal(first.status, 0, first.stderr);
+  assert.ok(!first.stdout.includes("which this run replaced"), first.stdout);
+
+  const updated = machine.kodhama(["update", "demo#0.3.0"]);
+  assert.equal(updated.status, 0, updated.stderr);
+  assert.ok(updated.stdout.includes(held("v0.1.0")), updated.stdout);
+
+  const removed = machine.kodhama(["remove", "demo"]);
+  assert.equal(removed.status, 0, removed.stderr);
+  assert.ok(removed.stdout.includes(held("v0.2.0")), removed.stdout);
+
+  // install over marked folders the lock no longer knows moves them to prev/.
+  assert.equal(machine.kodhama(["install", "demo#0.1.0", "--harness", "claude"]).status, 0);
+  writeFiles(machine.data, { "kodhama/lock.json": null });
+  const installed = machine.kodhama(["install", "demo#0.2.0", "--harness", "claude"]);
+  assert.equal(installed.status, 0, installed.stderr);
+  assert.ok(installed.stdout.includes(held("v0.3.0")), installed.stdout);
+
+  // A crashed run's .old beside a live copy goes to prev/ too; this slot
+  // holds a folder with no marker.
+  writeFiles(join(machine.claude, ".kodhama-stage", "claude"), { "beta.old/SKILL.md": "an older beta\n" });
+  writeFiles(join(machine.prev, "claude", "beta"), { ".kodhama-skill.json": null, "SKILL.md": "something\n" });
+  const recovered = machine.kodhama(["install", "demo#0.2.0", "--harness", "claude"]);
+  assert.equal(recovered.status, 0, recovered.stderr);
+  assert.ok(
+    recovered.stdout.includes(`${join(machine.prev, "claude", "beta")} held a copy with no kodhama marker it can read, which this run replaced.`),
+    recovered.stdout,
+  );
+});

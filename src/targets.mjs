@@ -262,18 +262,65 @@ const pruneEmpty = (dir) => {
 };
 
 /**
+ * What a caller learns while a copy moves: `report` gets a line to print,
+ * `aside` the stage path a live folder was renamed to before the new copy
+ * took its place.
+ * @typedef {{ readonly report?: (line: string) => void, readonly aside?: (old: string) => void }} Hooks
+ */
+
+/**
+ * Effect: a line saying what a prev/ slot holds, when something is there:
+ * the tool, tag and commit its marker names, where the marker is one
+ * kodhama writes.
+ * @param {string} prev
+ * @returns {string | undefined}
+ */
+const slotHeld = (prev) => {
+  if (!present(prev)) return undefined;
+  const marker = readMarker(prev);
+  const named =
+    marker !== undefined &&
+    typeof marker.tool === "string" &&
+    NAME.test(marker.tool) &&
+    typeof marker.tag === "string" &&
+    TAG.test(marker.tag) &&
+    typeof marker.commit === "string" &&
+    COMMIT.test(marker.commit)
+      ? `${marker.tool} ${marker.tag} (${marker.commit})`
+      : "a copy with no kodhama marker it can read";
+  return `${prev} held ${named}, which this run replaced.`;
+};
+
+/**
+ * Effect: moves a copy into its prev/ slot. prev/ keeps one generation, so
+ * whatever the slot held is replaced, and said so first, before the slot is
+ * cleared.
+ * @param {string} from
+ * @param {string} prev
+ * @param {string} aside as `moveTo` takes it
+ * @param {Hooks} hooks
+ */
+const intoPrev = (from, prev, aside, { report }) => {
+  const held = slotHeld(prev);
+  if (held !== undefined) report?.(held);
+  moveTo(from, prev, aside);
+};
+
+/**
  * Effect: finishes what a crashed run left in a skills folder's stage. A
  * `<skill>.old` goes back into place when the live path is empty, or to
  * prev/ when it is not; only then are half-built new copies deleted.
  * @param {string} skills the skills folder
  * @param {Harness} harness
  * @param {(skill: string) => string} prev the prev/ slot for a skill
- * @returns {readonly string[]} a line per folder put back or moved
+ * @returns {readonly string[]} a line per folder put back or moved, and per
+ *   prev/ slot whose copy that replaced
  */
 export const recover = (skills, harness, prev) => {
   keepAlive();
   const stage = stageOf(skills, harness);
   if (!present(stage)) return [];
+  /** @type {string[]} */
   const lines = [];
   for (const name of readdirSync(stage).sort()) {
     const skill = name.slice(0, -".old".length);
@@ -281,7 +328,7 @@ export const recover = (skills, harness, prev) => {
     const live = join(skills, skill);
     keepAlive();
     if (present(live)) {
-      moveTo(join(stage, name), prev(skill), join(stage, `${name}.moved`));
+      intoPrev(join(stage, name), prev(skill), join(stage, `${name}.moved`), { report: (line) => lines.push(line) });
       lines.push(`Moved ${join(stage, name)}, left by an interrupted run, to ${prev(skill)}.`);
     } else {
       mkdirSync(skills, { recursive: true });
@@ -305,9 +352,10 @@ export const recover = (skills, harness, prev) => {
  * @param {string} skill
  * @param {(dir: string) => void} build writes the new copy into `dir`
  * @param {string} prev the skill's prev/ slot
+ * @param {Hooks} [hooks]
  * @returns {boolean} whether an old copy went to prev/
  */
-export const swapIn = (skills, harness, skill, build, prev) => {
+export const swapIn = (skills, harness, skill, build, prev, hooks = {}) => {
   keepAlive();
   const stage = stageOf(skills, harness);
   const fresh = join(stage, skill);
@@ -326,7 +374,7 @@ export const swapIn = (skills, harness, skill, build, prev) => {
   renameSync(fresh, live);
   if (replaced) {
     keepAlive();
-    moveTo(old, prev, `${old}.moved`);
+    intoPrev(old, prev, `${old}.moved`, hooks);
   }
   pruneEmpty(stage);
   pruneEmpty(dirname(stage));
@@ -342,11 +390,12 @@ export const swapIn = (skills, harness, skill, build, prev) => {
  * @param {Harness} harness
  * @param {string} skill
  * @param {string} prev the skill's prev/ slot
+ * @param {Hooks} [hooks]
  */
-export const moveToPrev = (skills, harness, skill, prev) => {
+export const moveToPrev = (skills, harness, skill, prev, hooks = {}) => {
   keepAlive();
   const stage = stageOf(skills, harness);
-  moveTo(join(skills, skill), prev, join(stage, `${skill}.moved`));
+  intoPrev(join(skills, skill), prev, join(stage, `${skill}.moved`), hooks);
   pruneEmpty(stage);
   pruneEmpty(dirname(stage));
 };

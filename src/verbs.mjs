@@ -86,18 +86,26 @@ const isPlaced = (live, fetched, skill) => {
 };
 
 /**
+ * How far a run that places skills got, filled in as it goes, so a caller
+ * can say so even when it fails: each `<harness>/<skill>` swapped, and a
+ * line per prev/ slot whose copy it replaced.
+ * @typedef {{ readonly swapped: Set<string>, readonly notes: string[] }} Progress
+ */
+
+/** @returns {Progress} */
+const progress = () => ({ swapped: new Set(), notes: [] });
+
+/**
  * Effect: copies every fetched skill into each harness, marked, through the
  * stage; old copies go to prev/. A folder an interrupted run already swapped
  * is left as it is, so the prev/ copy it made, hand edits and all, is not
- * replaced by the new copy. Each harness and skill swapped is added to
- * `swapped` as it is done, so a caller can tell how far a failed run got.
- * Returns the lock's record of the skills.
+ * replaced by the new copy. Returns the lock's record of the skills.
  * @param {Places} where
  * @param {Fetched} fetched
  * @param {readonly Harness[]} harnesses
- * @param {Set<string>} [swapped] `<harness>/<skill>` keys
+ * @param {Progress} [done]
  */
-const placeSkills = (where, fetched, harnesses, swapped = new Set()) => {
+const placeSkills = (where, fetched, harnesses, done = progress()) => {
   for (const harness of harnesses) {
     for (const skill of fetched.skills) {
       if (isPlaced(join(where.skills(harness), skill.name), fetched, skill.name)) continue;
@@ -110,8 +118,9 @@ const placeSkills = (where, fetched, harnesses, swapped = new Set()) => {
           writeMarker(dir, { tool: fetched.tool, skill: skill.name, tag: fetched.tag, commit: fetched.commit });
         },
         where.prev(harness, skill.name),
+        { report: (line) => done.notes.push(line) },
       );
-      swapped.add(`${harness}/${skill.name}`);
+      done.swapped.add(`${harness}/${skill.name}`);
     }
   }
   return Object.fromEntries(fetched.skills.map((skill) => [skill.name, hashTree(skill.dir)]));
@@ -285,8 +294,9 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
         };
       }
 
+      const done = progress();
       try {
-        const skills = placeSkills(where, fetched, adding);
+        const skills = placeSkills(where, fetched, adding, done);
         const all = HARNESSES.filter((harness) => adding.includes(harness) || entry?.harnesses.includes(harness));
         writeLock(where.lock, {
           lock: 1,
@@ -303,6 +313,7 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           ...recovered,
           ...migrated.lines,
           migrated.lines.length > 0 ? `kodhama stopped after --migrate: ${why}` : `kodhama stopped: ${why}`,
+          ...done.notes,
         ]);
       }
       return {
@@ -311,6 +322,7 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           ...recovered,
           ...migrated.lines,
           `Installed ${tool} ${fetched.tag} (${fetched.commit}) for ${adding.join(", ")}: ${fetched.skills.map((skill) => skill.name).join(", ")}.`,
+          ...done.notes,
         ],
       };
     });
@@ -390,14 +402,13 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
             : [];
         }),
       );
-      /** @type {Set<string>} */
-      const swapped = new Set();
+      const done = progress();
       /** @type {string[]} */
       const dropped = [];
       try {
-        const skills = placeSkills(where, fetched, entry.harnesses, swapped);
+        const skills = placeSkills(where, fetched, entry.harnesses, done);
         for (const skill of Object.keys(entry.skills).filter((skill) => !names.includes(skill))) {
-          for (const harness of entry.harnesses) dropped.push(...moveOut(where, tool, entry, [harness], skill));
+          for (const harness of entry.harnesses) moveOut(where, tool, entry, harness, skill, dropped);
         }
         writeLock(where.lock, {
           lock: 1,
@@ -409,7 +420,8 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
         return refuse([
           ...recovered,
           `kodhama stopped partway through updating ${tool} to ${fetched.tag}: ${error instanceof Error ? error.message : String(error)}`,
-          ...edits.filter(({ key }) => swapped.has(key)).flatMap(({ lines }) => lines),
+          ...edits.filter(({ key }) => done.swapped.has(key)).flatMap(({ lines }) => lines),
+          ...done.notes,
           ...dropped,
           `To finish, run kodhama update ${tool}#${fetched.tag}.`,
         ]);
@@ -420,6 +432,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
           ...recovered,
           `Updated ${tool} from ${entry.tag} to ${fetched.tag} (${fetched.commit}).`,
           ...edits.flatMap(({ lines }) => lines),
+          ...done.notes,
           ...dropped,
         ],
       };
@@ -429,26 +442,30 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
 };
 
 /**
- * Effect: moves one skill's folders out to prev/ in each harness, where the
- * folder is marked as the tool's, naming hand edits and each folder left
+ * Effect: moves one skill's folder out to prev/ in a harness, where the
+ * folder is marked as the tool's, adding to `lines` as it goes: the prev/
+ * copy it replaced, the move, and hand edits, or why it left the folder
  * alone.
  * @param {Places} where
  * @param {string} tool
  * @param {Entry} entry
- * @param {readonly Harness[]} harnesses
+ * @param {Harness} harness
  * @param {string} skill
+ * @param {string[]} lines
  */
-const moveOut = (where, tool, entry, harnesses, skill) =>
-  harnesses.flatMap((harness) => {
-    const live = join(where.skills(harness), skill);
-    const prev = where.prev(harness, skill);
-    const owner = ownerOf(live, tool);
-    if (owner.state === "absent") return [];
-    if (owner.state === "theirs") return [`Left ${live} alone: it ${owner.why}.`];
-    const edits = handEdits(live, entry.skills[skill] ?? {}, prev);
-    moveToPrev(where.skills(harness), harness, skill, prev);
-    return [`Moved ${live} to ${prev}.`, ...edits];
-  });
+const moveOut = (where, tool, entry, harness, skill, lines) => {
+  const live = join(where.skills(harness), skill);
+  const prev = where.prev(harness, skill);
+  const owner = ownerOf(live, tool);
+  if (owner.state === "absent") return;
+  if (owner.state === "theirs") {
+    lines.push(`Left ${live} alone: it ${owner.why}.`);
+    return;
+  }
+  const edits = handEdits(live, entry.skills[skill] ?? {}, prev);
+  moveToPrev(where.skills(harness), harness, skill, prev, { report: (line) => lines.push(line) });
+  lines.push(`Moved ${live} to ${prev}.`, ...edits);
+};
 
 /**
  * Effect: `check [<tool>]`. Reads only the lock and the skills folders.
@@ -506,7 +523,7 @@ export const remove = ({ tool, harnesses }, { where }) =>
           lines.push(`Left ${where.skills(harness)} as it is: it is the same folder as ${where.skills(other)}, which ${other} still uses.`);
           continue;
         }
-        for (const skill of Object.keys(entry.skills)) lines.push(...moveOut(where, tool, entry, [harness], skill));
+        for (const skill of Object.keys(entry.skills)) moveOut(where, tool, entry, harness, skill, lines);
       }
       const { [tool]: _gone, ...others } = read.lock.tools;
       writeLock(where.lock, {
