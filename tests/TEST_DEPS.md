@@ -6,6 +6,7 @@ depends_on:
   - kodhama-0021-separate-adoption-posture-from-support
   - kodhama-0030-install-door-serves-trellis-only
   - kodhama-0032-the-hub-keeps-only-decisions
+  - kodhama-0033-hub-and-spoke-topology  # in kodhama/kodhama; keeps 0030 D1's catalog and the door the tests guard
   - trellis/decision-0063
 owner: agent
 ---

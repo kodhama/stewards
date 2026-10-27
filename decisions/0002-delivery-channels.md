@@ -3,7 +3,7 @@ id: kodhama-0002-delivery-channels
 type: decision
 status: approved  # ratified by PR #1 merge (2026-07-07); names read through kodhama-0003-family-naming
 depends_on: [kodhama-0001-family-delivery]
-superseded_in_part_by: [kodhama-0009-org-topology-spirit-stewards-trees]  # 2026-07-15 — §Decision 2's host-repo clause only ("in kodhama/kodhama"); the one-marketplace principle and the "kodhama" name stand
+superseded_in_part_by: [kodhama-0009-org-topology-spirit-stewards-trees, kodhama-0033-hub-and-spoke-topology]  # 2026-07-15 — §Decision 2's host-repo clause only ("in kodhama/kodhama"); the one-marketplace principle and the "kodhama" name stand; 0033 (2026-10-27) — §Decision 1's org-wide-CLI rejection and the matrix's espalier/grove row
 owner: agent
 updated: 2026-07-07
 provenance: maintainer review session 2026-07-07 — re-examination of family delivery prompted by espalier's interim vendoring UX; ratifies 0001's core and answers its marketplace open question
@@ -71,6 +71,20 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 > org marketplace was "now the only door", and 0030 closes that door for
 > grove and wisp without opening a replacement. `kodhama-0030` §Cost 1 records
 > the gap.
+
+> **Superseded in part by `kodhama-0033-hub-and-spoke-topology`** (2026-10-27,
+> post-ratification annotation; text below preserved as written). The record
+> lives in `kodhama/kodhama` (`decisions/0033-hub-and-spoke-topology.md`).
+> **§Decision 1's rejection of an org-wide CLI is superseded.** It rejected the
+> idea because "it recreates release-cadence coupling and reintroduces a
+> binary for products that don't need one", and 0033 D8 answers both grounds.
+> The kodhama CLI bundles nothing. It fetches each tool from its own repository
+> at that tool's own tag, and the only thing it installs is the cluster helper,
+> a command grove now needs. **The channel matrix's espalier (grove) row**
+> ("org marketplace + composed overlay — never a binary, no npx") is replaced
+> by 0033 D7: grove installs through that CLI, run with `npx` from GitHub.
+> **The one-door principle, the marketplace name `kodhama`, and the trellis
+> and espial rows stand.** 0033 D6 renames this repository `kodhama/cli`.
 
 **Context (maintainer, 2026-07-07).** Espalier's current delivery
 ("vendor the charters by hand", espalier README §Adopting) reads as
