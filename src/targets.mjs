@@ -24,7 +24,7 @@ import {
 } from "node:fs";
 import { dirname, join, sep } from "node:path";
 
-import { claudeHome, heldRunLocks, homeOf, isRecord, jsonText, keepAlive, sha256, stateHome, writeAtomic } from "./lock.mjs";
+import { RUN_LOCK_OWNER, claudeHome, heldRunLocks, homeOf, isRecord, jsonText, keepAlive, sha256, stateHome, writeAtomic } from "./lock.mjs";
 import { MARKER, NAME } from "./manifest.mjs";
 
 /** @typedef {"claude" | "codex"} Harness */
@@ -305,16 +305,13 @@ export const swapIn = (skills, harness, skill, build, prev) => {
 // A run lock older than this is taken to be left by a run that died.
 const STALE_MS = 10 * 60 * 1000;
 
-// The file in a run lock naming the run that holds it.
-const OWNER = "owner";
-
 /**
  * Effect: the token of the run holding a run lock, if it can be read.
  * @param {string} path
  */
 const tokenOf = (path) => {
   try {
-    return readFileSync(join(path, OWNER), "utf8");
+    return readFileSync(join(path, RUN_LOCK_OWNER), "utf8");
   } catch {
     return undefined;
   }
@@ -333,7 +330,7 @@ const claim = (path, token) => {
     if (/** @type {NodeJS.ErrnoException} */ (error).code === "EEXIST") return false;
     throw error;
   }
-  writeFileSync(join(path, OWNER), token);
+  writeFileSync(join(path, RUN_LOCK_OWNER), token);
   return true;
 };
 
@@ -416,7 +413,7 @@ export const withRunLock = (path, run) => {
     }
     trapSignals();
     releases.add(release);
-    heldRunLocks.add(path);
+    heldRunLocks.set(path, token);
     try {
       return run();
     } finally {

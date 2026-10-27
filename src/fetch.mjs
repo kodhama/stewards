@@ -19,7 +19,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-import { isSource } from "./lock.mjs";
+import { isSource, keepAlive } from "./lock.mjs";
 import { MARKER, readManifest } from "./manifest.mjs";
 
 const GIT_TIMEOUT_MS = 5 * 60 * 1000;
@@ -120,6 +120,9 @@ export const pickTag = (tags, wanted) => {
  * @returns {{ readonly ok: true, readonly out: string } | { readonly ok: false, readonly out: string }}
  */
 export const git = (args, env, cwd) => {
+  // Each call may take up to its time limit, so the run lock is checked and
+  // refreshed before every one.
+  keepAlive();
   try {
     return {
       ok: true,

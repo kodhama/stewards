@@ -170,18 +170,36 @@ export const readLock = (path) => {
     : { error: `${path} is not a lock this kodhama can read. Move it aside to start over.` };
 };
 
-/**
- * The run locks this process holds. Each is touched before every phase of a
- * run (recovery after the fetch, each swap, the lock write), so a long run
- * never looks stale to another.
- * @type {Set<string>}
- */
-export const heldRunLocks = new Set();
+/** The file in a run lock naming the run that holds it. */
+export const RUN_LOCK_OWNER = "owner";
 
-/** Effect: marks every run lock this process holds as alive now. */
+/**
+ * The run locks this process holds, each with the token it wrote. Each is
+ * checked and touched before every phase of a run (each git call of the
+ * fetch, recovery, each swap, the lock write), so a long run never looks
+ * stale to another, and a run that lost its lock stops before it writes.
+ * @type {Map<string, string>}
+ */
+export const heldRunLocks = new Map();
+
+/**
+ * Effect: checks that every run lock this process holds still names it,
+ * and marks each as alive now. A lock another run took over stops this one.
+ */
 export const keepAlive = () => {
   const now = new Date();
-  for (const path of heldRunLocks) utimesSync(path, now, now);
+  for (const [path, token] of heldRunLocks) {
+    let owner;
+    try {
+      owner = readFileSync(join(path, RUN_LOCK_OWNER), "utf8");
+    } catch {
+      owner = undefined;
+    }
+    if (owner !== token) {
+      throw new Error(`another kodhama run took over ${path} while this one ran, so this one stopped here. Run kodhama again once no other run is going.`);
+    }
+    utimesSync(path, now, now);
+  }
 };
 
 /**

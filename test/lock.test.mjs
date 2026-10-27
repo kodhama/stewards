@@ -3,7 +3,8 @@
 // out of its folder, makes the whole lock unreadable, so no verb acts on it.
 
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { chmodSync, existsSync, mkdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -101,4 +102,60 @@ test("a held run lock is refreshed before each phase, so a long run never looks 
 
   assert.ok(Date.now() - /** @type {number} */ (refreshed) < 60 * 1000);
   assert.ok(!existsSync(path));
+});
+
+/**
+ * Effect: a folder holding a `git` that, for each step whose name is among
+ * its arguments, first runs that step's shell hook, then the real git.
+ * Returns the PATH that puts it first.
+ * @param {ReturnType<typeof scratch>} machine
+ * @param {Readonly<Record<string, string>>} hooks
+ */
+const gitWith = (machine, hooks) => {
+  const real = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
+  const dir = join(machine.root, "hooked-git");
+  const cases = Object.entries(hooks).map(([step, hook]) => `case " $* " in *" ${step} "*) ${hook} ;; esac\n`);
+  writeFiles(dir, { git: `#!/bin/sh\n${cases.join("")}exec "${real}" "$@"\n` });
+  chmodSync(join(dir, "git"), 0o755);
+  return { PATH: `${dir}:${machine.env.PATH}` };
+};
+
+test("the run lock is refreshed between the fetch's git calls, so a slow fetch never looks stale", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const held = join(machine.data, "kodhama", "run.lock");
+  const recent = join(machine.root, "ten-minutes-ago");
+  writeFileSync(recent, "");
+  const then = new Date(Date.now() - 10 * 60 * 1000);
+  utimesSync(recent, then, then);
+  const seen = join(machine.root, "seen");
+  // fetch ages the lock past stale; checkout, the next git call, records
+  // whether it was refreshed in between.
+  const path = gitWith(machine, {
+    fetch: `touch -t 200001010000 "${held}"`,
+    checkout: `if [ "${held}" -nt "${recent}" ]; then echo fresh > "${seen}"; else echo stale > "${seen}"; fi`,
+  });
+
+  const outcome = machine.kodhama(["install", "demo"], { env: path });
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.equal(readFileSync(seen, "utf8"), "fresh\n");
+});
+
+test("a run whose lock another run took over during the fetch stops before it swaps or writes the lock", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const held = join(machine.data, "kodhama", "run.lock");
+  // The last git call of the fetch: the lock now names another run.
+  const path = gitWith(machine, { "rev-parse": `printf 'another run\\n' > "${held}/owner"` });
+
+  const outcome = machine.kodhama(["install", "demo"], { env: path });
+
+  assert.equal(outcome.status, 1, outcome.stdout);
+  assert.match(outcome.stderr, /took over/);
+  assert.ok(outcome.stderr.includes(held), outcome.stderr);
+  assert.ok(!existsSync(machine.claudeSkills));
+  assert.ok(!existsSync(machine.codexSkills));
+  assert.ok(!existsSync(machine.lock));
+  assert.equal(readFileSync(join(held, "owner"), "utf8"), "another run\n");
 });
