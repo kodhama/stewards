@@ -495,16 +495,31 @@ export const remove = ({ tool, harnesses }, { where }) =>
     // the leaving harness only leaves the lock.
     const sharer = (/** @type {Harness} */ harness) =>
       staying.find((other) => realOf(where.skills(other)) === realOf(where.skills(harness)));
-    const lines = leaving.flatMap((harness) => {
-      const other = sharer(harness);
-      return other === undefined
-        ? Object.keys(entry.skills).flatMap((skill) => moveOut(where, tool, entry, [harness], skill))
-        : [`Left ${where.skills(harness)} as it is: it is the same folder as ${where.skills(other)}, which ${other} still uses.`];
-    });
-    const { [tool]: _gone, ...others } = read.lock.tools;
-    writeLock(where.lock, {
-      lock: 1,
-      tools: staying.length === 0 ? others : { ...others, [tool]: { ...entry, harnesses: staying } },
-    });
+    // Each folder's lines are kept as it moves, so a failure on a later one
+    // still names where the earlier ones, hand edits and all, went.
+    /** @type {string[]} */
+    const lines = [];
+    try {
+      for (const harness of leaving) {
+        const other = sharer(harness);
+        if (other !== undefined) {
+          lines.push(`Left ${where.skills(harness)} as it is: it is the same folder as ${where.skills(other)}, which ${other} still uses.`);
+          continue;
+        }
+        for (const skill of Object.keys(entry.skills)) lines.push(...moveOut(where, tool, entry, [harness], skill));
+      }
+      const { [tool]: _gone, ...others } = read.lock.tools;
+      writeLock(where.lock, {
+        lock: 1,
+        tools: staying.length === 0 ? others : { ...others, [tool]: { ...entry, harnesses: staying } },
+      });
+    } catch (error) {
+      return refuse([
+        ...recovered,
+        `kodhama stopped partway through removing ${tool}: ${error instanceof Error ? error.message : String(error)}`,
+        ...lines,
+        `To finish, run kodhama remove ${tool}${staying.length > 0 ? leaving.map((harness) => ` --harness ${harness}`).join("") : ""} again.`,
+      ]);
+    }
     return { code: 0, lines: [...recovered, ...lines, `Removed ${tool} for ${leaving.join(", ")}.`] };
   });

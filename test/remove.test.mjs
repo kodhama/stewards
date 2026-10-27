@@ -2,7 +2,7 @@
 // folder is marked as the tool's and in the lock, and never deleting one.
 
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { test } from "node:test";
@@ -131,4 +131,30 @@ syncBuiltinESMExports();
   assert.ok(!existsSync(join(machine.claude, ".kodhama-stage")));
   assert.deepEqual(readdirSync(machine.claudeSkills), []);
   assert.ok(!existsSync(machine.lock));
+});
+
+test("a remove that fails on a later skill still names each folder it already moved, and its hand edits", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root clears the read-only folder this test fails the move with");
+    return;
+  }
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  assert.equal(machine.kodhama(["install", "demo", "--harness", "claude"]).status, 0);
+  writeFileSync(join(machine.claudeSkills, "alpha", "SKILL.md"), "alpha edit\n");
+  // beta's prev/ slot cannot be cleared, so its move fails after alpha's.
+  const blocker = join(machine.prev, "claude", "beta", "ro");
+  mkdirSync(blocker, { recursive: true });
+  writeFileSync(join(blocker, "f"), "x\n");
+  chmodSync(blocker, 0o555);
+
+  const outcome = machine.kodhama(["remove", "demo"]);
+  chmodSync(blocker, 0o755);
+
+  assert.equal(outcome.status, 1, outcome.stdout);
+  const prev = join(machine.prev, "claude", "alpha");
+  assert.ok(outcome.stderr.includes(`Moved ${join(machine.claudeSkills, "alpha")} to ${prev}.`), outcome.stderr);
+  assert.ok(outcome.stderr.includes(`hand-edited ${join(machine.claudeSkills, "alpha", "SKILL.md")}; the copy with it is in ${prev}.`), outcome.stderr);
+  assert.match(outcome.stderr, /stopped partway through removing demo/);
+  assert.equal(readFileSync(join(prev, "SKILL.md"), "utf8"), "alpha edit\n");
 });
