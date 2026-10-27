@@ -370,7 +370,10 @@ export const swapIn = (skills, harness, skill, build, prev, hooks = {}) => {
   // took it over, never clear a prev/ slot that run may have just filled.
   keepAlive();
   const replaced = present(live);
-  if (replaced) renameSync(live, old);
+  if (replaced) {
+    renameSync(live, old);
+    hooks.aside?.(old);
+  }
   renameSync(fresh, live);
   if (replaced) {
     keepAlive();

@@ -66,10 +66,17 @@ const preflight = (where, tool, harnesses, skills) =>
  * @param {import("./lock.mjs").SkillHashes} locked
  * @param {string} prev where it went
  */
-const handEdits = (live, locked, prev) =>
-  diffTree(locked, hashTree(live)).map(
-    ({ kind, file }) => `${kind} ${join(live, file)}; the copy with it is in ${prev}.`,
-  );
+const handEdits = (live, locked, prev) => editLines(live, diffTree(locked, hashTree(live)), prev);
+
+/**
+ * Lines naming each file of a skill folder that differs, and where the copy
+ * holding the difference now is.
+ * @param {string} live the folder as it was
+ * @param {ReturnType<typeof diffTree>} diff
+ * @param {string} where
+ */
+const editLines = (live, diff, where) =>
+  diff.map(({ kind, file }) => `${kind} ${join(live, file)}; the copy with it is in ${where}.`);
 
 /**
  * Effect: whether a skill folder already holds the fetched copy, marked at
@@ -87,13 +94,15 @@ const isPlaced = (live, fetched, skill) => {
 
 /**
  * How far a run that places skills got, filled in as it goes, so a caller
- * can say so even when it fails: each `<harness>/<skill>` swapped, and a
- * line per prev/ slot whose copy it replaced.
- * @typedef {{ readonly swapped: Set<string>, readonly notes: string[] }} Progress
+ * can say so even when it fails: each `<harness>/<skill>` swapped, each
+ * whose live folder was renamed into the stage, with where, and a line per
+ * prev/ slot whose copy it replaced. A key in `aside` but not `swapped` is
+ * a swap that stopped with its old copy still in the stage.
+ * @typedef {{ readonly swapped: Set<string>, readonly aside: Map<string, string>, readonly notes: string[] }} Progress
  */
 
 /** @returns {Progress} */
-const progress = () => ({ swapped: new Set(), notes: [] });
+const progress = () => ({ swapped: new Set(), aside: new Map(), notes: [] });
 
 /**
  * Effect: copies every fetched skill into each harness, marked, through the
@@ -118,7 +127,7 @@ const placeSkills = (where, fetched, harnesses, done = progress()) => {
           writeMarker(dir, { tool: fetched.tool, skill: skill.name, tag: fetched.tag, commit: fetched.commit });
         },
         where.prev(harness, skill.name),
-        { report: (line) => done.notes.push(line) },
+        { report: (line) => done.notes.push(line), aside: (old) => done.aside.set(`${harness}/${skill.name}`, old) },
       );
       done.swapped.add(`${harness}/${skill.name}`);
     }
@@ -413,7 +422,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
           if (seen.has(real)) return [];
           seen.add(real);
           return locked !== undefined && ownerOf(live, tool).state === "ours" && !isPlaced(live, fetched, skill)
-            ? [{ key: `${harness}/${skill}`, lines: handEdits(live, locked, where.prev(harness, skill)) }]
+            ? [{ key: `${harness}/${skill}`, live, prev: where.prev(harness, skill), diff: diffTree(locked, hashTree(live)) }]
             : [];
         }),
       );
@@ -435,7 +444,16 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
         return refuse([
           ...recovered,
           `kodhama stopped partway through updating ${tool} to ${fetched.tag}: ${error instanceof Error ? error.message : String(error)}`,
-          ...edits.filter(({ key }) => done.swapped.has(key)).flatMap(({ lines }) => lines),
+          ...edits.filter(({ key }) => done.swapped.has(key)).flatMap(({ live, diff, prev }) => editLines(live, diff, prev)),
+          // A swap that stopped after renaming the live folder aside left
+          // the old copy in the stage, where the next run's recovery moves
+          // it to prev/.
+          ...edits
+            .filter(({ key }) => done.aside.has(key) && !done.swapped.has(key))
+            .flatMap(({ key, live, diff, prev }) => {
+              const old = /** @type {string} */ (done.aside.get(key));
+              return [`${live}'s old copy is in ${old}; the next kodhama run moves it to ${prev}.`, ...editLines(live, diff, old)];
+            }),
           ...done.notes,
           ...dropped,
           `To finish, run kodhama update ${tool}#${fetched.tag}.`,
@@ -446,7 +464,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
         lines: [
           ...recovered,
           `Updated ${tool} from ${entry.tag} to ${fetched.tag} (${fetched.commit}).`,
-          ...edits.flatMap(({ lines }) => lines),
+          ...edits.flatMap(({ live, diff, prev }) => editLines(live, diff, prev)),
           ...done.notes,
           ...dropped,
         ],

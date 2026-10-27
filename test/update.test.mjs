@@ -558,3 +558,33 @@ test("with one skills folder shared by both harnesses, the interrupted-update re
     assert.equal(text(join(machine.prev, "claude", "alpha", "SKILL.md")), "alpha edit\n");
   }
 });
+
+test("an update whose swap fails after renaming the live folder aside names where that old copy is, and recovery then moves it to prev/", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root clears the read-only folder this test fails the swap with");
+    return;
+  }
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0", "--harness", "claude"]).status, 0);
+  writeFileSync(join(machine.claudeSkills, "beta", "SKILL.md"), "beta edit\n");
+  // beta's swap renames the live folder aside, then cannot clear its prev/ slot.
+  const blocker = join(machine.prev, "claude", "beta", "ro");
+  mkdirSync(blocker, { recursive: true });
+  writeFileSync(join(blocker, "f"), "x\n");
+  chmodSync(blocker, 0o555);
+
+  const failed = machine.kodhama(["update", "demo"]);
+  chmodSync(blocker, 0o755);
+
+  assert.equal(failed.status, 1, failed.stdout);
+  const old = join(machine.claude, ".kodhama-stage", "claude", "beta.old");
+  const prev = join(machine.prev, "claude", "beta");
+  assert.equal(text(join(old, "SKILL.md")), "beta edit\n");
+  assert.ok(failed.stderr.includes(`${join(machine.claudeSkills, "beta")}'s old copy is in ${old}; the next kodhama run moves it to ${prev}.`), failed.stderr);
+  assert.ok(failed.stderr.includes(`hand-edited ${join(machine.claudeSkills, "beta", "SKILL.md")}; the copy with it is in ${old}.`), failed.stderr);
+
+  const finished = machine.kodhama(["update", "demo#0.2.0"]);
+  assert.equal(finished.status, 0, finished.stderr);
+  assert.equal(text(join(prev, "SKILL.md")), "beta edit\n");
+});
