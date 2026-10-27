@@ -53,20 +53,45 @@ const patterns = (tool) => ({
  */
 
 /**
+ * How far a value line opens (or closes) arrays and inline tables, counting
+ * no bracket inside a quoted string or after a comment.
+ * @param {string} line
+ */
+const bracketDepth = (line) => {
+  let depth = 0;
+  /** @type {string | undefined} */
+  let quote;
+  for (let at = 0; at < line.length; at += 1) {
+    const char = line[at];
+    if (quote !== undefined) {
+      if (quote === '"' && char === "\\") at += 1;
+      else if (char === quote) quote = undefined;
+    } else if (char === "#") break;
+    else if (char === '"' || char === "'") quote = char;
+    else if (char === "[" || char === "{") depth += 1;
+    else if (char === "]" || char === "}") depth -= 1;
+  }
+  return depth;
+};
+
+/**
  * config.toml split into lines, each with the recognised table it sits in,
- * if any. A table runs from its header to just before the next line whose
- * first non-space character is `[`.
+ * if any, and the bracket depth after it. A table runs from its header to
+ * just before the next line whose first non-space character is `[` while no
+ * multi-line value is open; inside one, such a line is part of the value.
  * @param {string} text
  * @param {string} tool
- * @returns {readonly { readonly line: string, readonly at: number, readonly text: string, readonly header: boolean, readonly table: Table | undefined }[]}
+ * @returns {readonly { readonly line: string, readonly at: number, readonly text: string, readonly header: boolean, readonly table: Table | undefined, readonly depth: number }[]}
  */
 const tomlRows = (text, tool) => {
   const { plugin, marketplace } = patterns(tool);
   /** @type {Table | undefined} */
   let table;
+  let depth = 0;
   return text.split(/(?<=\n)/).map((line, at) => {
     const trimmed = line.trim();
-    const header = trimmed.startsWith("[");
+    const header = depth === 0 && trimmed.startsWith("[");
+    if (!header) depth += bracketDepth(trimmed);
     if (header) {
       const asPlugin = plugin.exec(trimmed);
       const recognised = asPlugin ?? marketplace.exec(trimmed);
@@ -78,7 +103,7 @@ const tomlRows = (text, tool) => {
               enables: asPlugin !== null && asPlugin[2] === undefined,
             };
     }
-    return { line, at, text: trimmed, header, table };
+    return { line, at, text: trimmed, header, table, depth };
   });
 };
 
@@ -113,7 +138,7 @@ const hitsIn = ({ path, kind, user }, tool) => {
   const { mention } = patterns(tool);
   return tomlRows(text, tool).flatMap(({ at, text: line, header, table }) => {
     if (isComment(line)) return [];
-    if (table?.enables && !header && /^enabled\s*=\s*true\s*(?:#.*)?$/.test(line)) {
+    if (table?.enables && !header && /^(?:enabled|"enabled"|'enabled')\s*=\s*true\s*(?:#.*)?$/.test(line)) {
       return [{ path, key: `[${table.key}] enabled`, user, editable: true }];
     }
     if (table === undefined && mention.test(line)) {
@@ -211,7 +236,8 @@ export const planMigration = (tool, env) => {
     /** @type {{ key: string, text: string }[]} */
     const removed = [];
     let after = "";
-    for (const { line, at, text, header, table } of tomlRows(before, tool)) {
+    const rows = tomlRows(before, tool);
+    for (const { line, at, text, header, table } of rows) {
       if (table === undefined) {
         if (!isComment(text) && (mention.test(text) || market.test(text))) {
           return { error: `${config} line ${at + 1} mentions ${tool} in a form kodhama does not edit; edit it by hand.` };
@@ -221,6 +247,9 @@ export const planMigration = (tool, env) => {
       else removed[removed.length - 1] = { key: table.key, text: removed[removed.length - 1].text + line };
     }
     const multiline = removed.find((item) => item.text.includes('"""') || item.text.includes("'''"));
+    if (removed.length > 0 && (rows.at(-1)?.depth ?? 0) !== 0) {
+      return { error: `${config} ends inside an open array or inline table, so kodhama cannot tell where a table ends; edit it by hand.` };
+    }
     if (multiline !== undefined) {
       return { error: `${config}: the [${multiline.key}] table holds a multi-line string, which kodhama does not cut; edit it by hand.` };
     }

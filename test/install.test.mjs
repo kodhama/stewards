@@ -633,6 +633,7 @@ test("--migrate refuses TOML it does not recognise or cannot cut cleanly, leavin
     'plugins."grove@grove".enabled = true\n',
     `[plugins."grove@grove"]\nenabled = true\nnote = """\nmany lines\n"""\n`,
     `[plugins."grove@grove"]\nenabled = true\n\n[other]\nplugins = { "grove@grove" = { enabled = true } }\n`,
+    `[plugins."grove@grove"]\nenabled = true\nargs = [\n  "never closed",\n`,
   ]) {
     writeFiles(machine.codex, { "config.toml": toml });
     const before = machine.state();
@@ -677,4 +678,32 @@ test("update refuses while grove is enabled, before fetching", (t) => {
   assert.equal(outcome.status, 1);
   assert.match(outcome.stderr, /enabledPlugins\["grove@kodhama"\]/);
   assert.deepEqual(machine.state(), before);
+});
+
+test("a multi-line array in grove's table cannot hide its enabled = true, and --migrate cuts the whole table", (t) => {
+  const machine = scratch(t);
+  const config = join(machine.codex, "config.toml");
+  // Nested arrays on lines of their own start with "[", and one holds a "]"
+  // inside a string, so a header test that ignores either misreads the file.
+  const table = `[plugins."grove@grove"]\nargs = [\n  ["a]", "b"],\n  [ "c" ], # a ] in a comment\n]\nenabled = true\n\n`;
+  writeFiles(machine.codex, { "config.toml": `${TOML_HEAD}\n${table}${TOML_TAIL}` });
+
+  const blocked = machine.kodhama(["install", "grove"]);
+  assert.equal(blocked.status, 1);
+  assert.ok(blocked.stderr.includes(`${config}: [plugins."grove@grove"] enabled`), blocked.stderr);
+
+  machine.fakeTool("grove", ["0.3.0"]);
+  const migrated = machine.kodhama(["install", "grove", "--migrate"]);
+  assert.equal(migrated.status, 0, migrated.stderr);
+  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n${TOML_TAIL}`);
+});
+
+test(`a quoted "enabled" key in grove's table blocks too`, (t) => {
+  const machine = scratch(t);
+  writeFiles(machine.codex, { "config.toml": '[plugins."grove@grove"]\n"enabled" = true\n' });
+
+  const outcome = machine.kodhama(["install", "grove"]);
+
+  assert.equal(outcome.status, 1);
+  assert.match(outcome.stderr, /\[plugins\."grove@grove"\] enabled/);
 });
