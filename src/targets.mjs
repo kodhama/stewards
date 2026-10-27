@@ -182,7 +182,11 @@ export const moveTo = (from, to) => {
   } catch (error) {
     if (/** @type {NodeJS.ErrnoException} */ (error).code !== "EXDEV") throw error;
     copyTree(from, to);
-    rmSync(from, { recursive: true, force: true });
+    // Renamed aside before it is deleted, so a crash mid-delete leaves a
+    // `.moved` leftover that recovery deletes, never a half copy it would
+    // move over the full one.
+    renameSync(from, `${from}.moved`);
+    rmSync(`${from}.moved`, { recursive: true, force: true });
   }
 };
 

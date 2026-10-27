@@ -253,3 +253,18 @@ test("a stage folder that is a symlink is refused, and what it points at is unto
     assert.deepEqual(machine.state(), before, link);
   }
 });
+
+test("a .moved leftover from a cross-filesystem move is deleted, and the prev/ copy it came from stays", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  assert.equal(machine.kodhama(["install", "demo"]).status, 0);
+  writeFiles(join(machine.prev, "claude", "alpha"), { "SKILL.md": "the full previous copy\n" });
+  const leftover = join(machine.claude, ".kodhama-stage", "claude", "alpha.old.moved");
+  writeFiles(leftover, { "SKILL.md": "half deleted\n" });
+
+  const outcome = machine.kodhama(["install", "demo"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.ok(!existsSync(leftover));
+  assert.equal(text(join(machine.prev, "claude", "alpha", "SKILL.md")), "the full previous copy\n");
+});
