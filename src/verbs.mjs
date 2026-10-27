@@ -7,6 +7,7 @@ import { join } from "node:path";
 
 import { copyFiles, withTool } from "./fetch.mjs";
 import { diffTree, hashTree, readLock, writeLock } from "./lock.mjs";
+import { applyMigration, findEnables, guardRefusal, planMigration } from "./migrate.mjs";
 import { HARNESSES, moveTo, ownerOf, readMarker, recover, swapIn, writeMarker } from "./targets.mjs";
 
 /** @typedef {import("./cli.mjs").Outcome} Outcome */
@@ -17,8 +18,14 @@ import { HARNESSES, moveTo, ownerOf, readMarker, recover, swapIn, writeMarker } 
 /** @typedef {import("./fetch.mjs").Fetched} Fetched */
 
 /**
- * What a verb runs with: the environment, and the paths of its scope.
- * @typedef {{ readonly env: NodeJS.ProcessEnv, readonly where: Places }} Context
+ * What a verb runs with: the environment, the scope and, at project scope,
+ * the repo's root, and the paths of the scope.
+ * @typedef {{
+ *   readonly env: NodeJS.ProcessEnv,
+ *   readonly scope: "user" | "project",
+ *   readonly root: string | undefined,
+ *   readonly where: Places,
+ * }} Context
  */
 
 /**
@@ -111,12 +118,43 @@ const problems = (where, tool, entry) =>
   );
 
 /**
- * Effect: `install <tool>[#<tag>]`.
- * @param {{ readonly tool: string, readonly tag: string | undefined, readonly harnesses: readonly Harness[] }} asked
+ * Effect: takes the tool's enables and marketplace out of the user-level
+ * files, after writing the receipt, and says what it did.
+ * @param {string} tool
+ * @param {NodeJS.ProcessEnv} env
+ * @returns {{ readonly lines: readonly string[] } | { readonly error: string }}
+ */
+const migrateOut = (tool, env) => {
+  const plan = planMigration(tool, env);
+  if ("error" in plan) return { error: `${plan.error} --migrate changed nothing.` };
+  const receipt = applyMigration(tool, plan.edits, env);
+  return {
+    lines: [
+      ...plan.edits.flatMap(({ path, removed }) => removed.map(({ key }) => `Took ${key} out of ${path}.`)),
+      `The receipt, with each file as it was, is ${receipt}.`,
+      // Claude's own plugin registry is not a documented file, so kodhama
+      // leaves it to Claude's command.
+      ...(plan.hadClaudeEnable ? [`Next, run: claude plugin marketplace remove ${tool}`] : []),
+    ],
+  };
+};
+
+/**
+ * Effect: `install <tool>[#<tag>]`, taking the tool's plugin enables out of
+ * the user files first when `--migrate` asks.
+ * @param {{ readonly tool: string, readonly tag: string | undefined, readonly harnesses: readonly Harness[], readonly migrate: boolean }} asked
  * @param {Context} context
  * @returns {Outcome}
  */
-export const install = ({ tool, tag, harnesses }, { env, where }) => {
+export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, where }) => {
+  const hits = findEnables(tool, scope, env, root);
+  const blocked = guardRefusal(
+    tool,
+    hits,
+    migrate,
+    `Run kodhama install ${tool} --migrate to take the user-level ones out, keeping a receipt, or turn them off by hand.`,
+  );
+  if (blocked !== undefined) return refuse(blocked);
   const read = readLock(where.lock);
   if ("error" in read) return refuse([read.error]);
   const entry = read.lock.tools[tool];
@@ -130,19 +168,25 @@ export const install = ({ tool, tag, harnesses }, { env, where }) => {
       ]);
     }
     const adding = harnesses.filter((harness) => !entry?.harnesses.includes(harness));
-    if (entry !== undefined && adding.length === 0) {
-      const found = problems(where, tool, entry);
-      return found.length === 0
-        ? { code: 0, lines: [...recovered, `${tool} ${entry.tag} is already installed for ${entry.harnesses.join(", ")}.`] }
-        : refuse([
-            ...recovered,
-            ...found,
-            `${tool} ${entry.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`,
-          ]);
-    }
     const blocked = preflight(where, tool, adding, fetched.skills.map((skill) => skill.name));
     if (blocked.length > 0) {
       return refuse([...recovered, ...blocked, `kodhama installs only into empty paths or folders marked as ${tool}'s, so it wrote nothing.`]);
+    }
+    const found = entry === undefined || adding.length > 0 ? [] : problems(where, tool, entry);
+    if (found.length > 0) {
+      return refuse([
+        ...recovered,
+        ...found,
+        `${tool} ${entry?.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`,
+      ]);
+    }
+    const migrated = migrate && hits.length > 0 ? migrateOut(tool, env) : { lines: [] };
+    if ("error" in migrated) return refuse([...recovered, migrated.error]);
+    if (entry !== undefined && adding.length === 0) {
+      return {
+        code: 0,
+        lines: [...recovered, ...migrated.lines, `${tool} ${entry.tag} is already installed for ${entry.harnesses.join(", ")}.`],
+      };
     }
 
     const skills = placeSkills(where, fetched, adding);
@@ -158,6 +202,7 @@ export const install = ({ tool, tag, harnesses }, { env, where }) => {
       code: 0,
       lines: [
         ...recovered,
+        ...migrated.lines,
         `Installed ${tool} ${fetched.tag} (${fetched.commit}) for ${adding.join(", ")}: ${fetched.skills.map((skill) => skill.name).join(", ")}.`,
       ],
     };
@@ -172,7 +217,14 @@ export const install = ({ tool, tag, harnesses }, { env, where }) => {
  * @param {Context} context
  * @returns {Outcome}
  */
-export const update = ({ tool, tag }, { env, where }) => {
+export const update = ({ tool, tag }, { env, scope, root, where }) => {
+  const blocked = guardRefusal(
+    tool,
+    findEnables(tool, scope, env, root),
+    false,
+    `Turn them off, or take the user-level ones out with kodhama install ${tool} --migrate at the installed tag, then update again.`,
+  );
+  if (blocked !== undefined) return refuse(blocked);
   const read = readLock(where.lock);
   if ("error" in read) return refuse([read.error]);
   const entry = read.lock.tools[tool];

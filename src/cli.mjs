@@ -189,8 +189,7 @@ export const run = async (args, cwd, env = process.env) => {
   if (parsed.scope === "project" && root === undefined) {
     return { code: 1, lines: [`${cwd} is not inside a git repo. Project scope installs into one.`] };
   }
-  if (parsed.migrate) return { code: 1, lines: ["--migrate is not built yet in this version."] };
-  const context = { env, where: places(parsed.scope, env, root) };
+  const context = { env, scope: parsed.scope, root, where: places(parsed.scope, env, root) };
   const { command, tool } = parsed;
   if (command === "check") return check(parsed, context);
   // Every verb but check needs a tool, which the parser has made sure of.

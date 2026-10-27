@@ -470,3 +470,211 @@ test("a skill folder holding a special file is refused", (t) => {
   assert.ok("error" in listed);
   assert.match(listed.error, /pipe is not a regular file/);
 });
+
+// The grove guard and --migrate. Each guard test has no grove repo in the
+// source unless it needs one, so a run that fetched would fail on the fetch
+// and say so, not on the guard.
+
+const SETTINGS_WITH_GROVE = `{
+  "enabledPlugins": {
+    "grove@grove": true,
+    "trellis@kodhama": true
+  },
+  "extraKnownMarketplaces": {
+    "grove": { "source": { "source": "github", "repo": "kodhama/grove" } },
+    "kodhama": { "source": { "source": "github", "repo": "kodhama/stewards" } }
+  },
+  "statusLine": "a \\u2014 dash"
+}
+`;
+
+const TOML_HEAD = `model = "o3"
+
+[plugins."trellis@kodhama"]
+enabled = true
+
+[marketplaces.kodhama]
+source = "https://github.com/kodhama/stewards"
+`;
+
+const TOML_GROVE = `[plugins."grove@grove"]
+enabled = true
+
+[plugins."grove@grove".settings]
+mode = "full"
+
+[marketplaces.grove]
+source = "https://github.com/kodhama/grove"
+
+`;
+
+const TOML_TAIL = `[projects."/x/grove"]
+trust_level = "trusted"
+`;
+
+test("a Claude grove enable blocks install grove before any fetch, naming the file and key", (t) => {
+  const machine = scratch(t);
+  writeFiles(machine.claude, { "settings.json": '{"enabledPlugins": {"grove@grove": true}}\n' });
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["install", "grove"]);
+
+  assert.equal(outcome.status, 1);
+  assert.ok(outcome.stderr.includes(`${join(machine.claude, "settings.json")}: enabledPlugins["grove@grove"]`), outcome.stderr);
+  assert.match(outcome.stderr, /--migrate/);
+  assert.doesNotMatch(outcome.stderr, /could not list/);
+  assert.deepEqual(machine.state(), before);
+});
+
+test("a Codex grove plugin table with enabled = true blocks the same way", (t) => {
+  const machine = scratch(t);
+  writeFiles(machine.codex, { "config.toml": `${TOML_HEAD}\n[plugins."grove@grove"]\nenabled = true # on\n` });
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["install", "grove"]);
+
+  assert.equal(outcome.status, 1);
+  assert.ok(outcome.stderr.includes(`${join(machine.codex, "config.toml")}: [plugins."grove@grove"] enabled`), outcome.stderr);
+  assert.doesNotMatch(outcome.stderr, /could not list/);
+  assert.deepEqual(machine.state(), before);
+});
+
+test("disabled grove entries do not block", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  writeFiles(machine.claude, { "settings.json": '{"enabledPlugins": {"grove@grove": false}}\n' });
+  writeFiles(machine.codex, { "config.toml": '[plugins."grove@grove"]\nenabled = false\n' });
+
+  const outcome = machine.kodhama(["install", "grove"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+});
+
+test("a dotted grove key in config.toml blocks a plain install, to be edited by hand", (t) => {
+  const machine = scratch(t);
+  writeFiles(machine.codex, { "config.toml": 'plugins."grove@grove".enabled = true\n' });
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["install", "grove"]);
+
+  assert.equal(outcome.status, 1);
+  assert.match(outcome.stderr, /config\.toml: line 1/);
+  assert.match(outcome.stderr, /by hand/);
+  assert.doesNotMatch(outcome.stderr, /could not list/);
+  assert.deepEqual(machine.state(), before);
+});
+
+test("install --migrate takes out only grove's enables and marketplace, records a receipt first, then installs", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  const settings = join(machine.claude, "settings.json");
+  const config = join(machine.codex, "config.toml");
+  const tomlBefore = `${TOML_HEAD}\n${TOML_GROVE}${TOML_TAIL}`;
+  writeFiles(machine.claude, { "settings.json": SETTINGS_WITH_GROVE });
+  writeFiles(machine.codex, { "config.toml": tomlBefore });
+
+  const outcome = machine.kodhama(["install", "grove", "--migrate"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n${TOML_TAIL}`);
+  const before = /** @type {any} */ (JSON.parse(SETTINGS_WITH_GROVE));
+  delete before.enabledPlugins["grove@grove"];
+  delete before.extraKnownMarketplaces.grove;
+  assert.deepEqual(readJson(settings), before);
+  assert.match(outcome.stdout, /claude plugin marketplace remove grove/);
+
+  const receipts = join(machine.data, "kodhama", "receipts");
+  const [name, ...more] = readdirSync(receipts);
+  assert.deepEqual(more, []);
+  assert.match(name, /^migrate-grove-\d{8}T\d{6}Z\.json$/);
+  const receipt = /** @type {any} */ (readJson(join(receipts, name)));
+  assert.equal(receipt.receipt, 1);
+  assert.equal(receipt.kind, "migrate");
+  assert.equal(receipt.tool, "grove");
+  assert.deepEqual(
+    receipt.files.map((/** @type {any} */ file) => [file.path, file.original, file.sha256_before, file.sha256_after]),
+    [
+      [settings, SETTINGS_WITH_GROVE, sha256(SETTINGS_WITH_GROVE), sha256(readFileSync(settings))],
+      [config, tomlBefore, sha256(tomlBefore), sha256(readFileSync(config))],
+    ],
+  );
+  assert.deepEqual(
+    receipt.files[1].removed.map((/** @type {any} */ item) => item.key),
+    ['plugins."grove@grove"', 'plugins."grove@grove".settings', "marketplaces.grove"],
+  );
+  assert.equal(receipt.files[1].removed.map((/** @type {any} */ item) => item.text).join(""), TOML_GROVE);
+  assert.deepEqual(
+    receipt.files[0].removed,
+    [
+      { key: 'enabledPlugins["grove@grove"]', text: "true" },
+      { key: "extraKnownMarketplaces.grove", text: JSON.stringify(JSON.parse(SETTINGS_WITH_GROVE).extraKnownMarketplaces.grove) },
+    ],
+  );
+  assert.equal(/** @type {any} */ (readJson(machine.lock)).tools.grove.tag, "v0.3.0");
+});
+
+test("install --migrate with a missing tag writes no receipt and edits nothing", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  writeFiles(machine.claude, { "settings.json": SETTINGS_WITH_GROVE });
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["install", "grove#v9.9.9", "--migrate"]);
+
+  assert.equal(outcome.status, 1);
+  assert.match(outcome.stderr, /no tag v9\.9\.9/);
+  assert.deepEqual(machine.state(), before);
+});
+
+test("--migrate refuses TOML it does not recognise or cannot cut cleanly, leaving config and receipts alone", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  for (const toml of [
+    'plugins."grove@grove".enabled = true\n',
+    `[plugins."grove@grove"]\nenabled = true\nnote = """\nmany lines\n"""\n`,
+    `[plugins."grove@grove"]\nenabled = true\n\n[other]\nplugins = { "grove@grove" = { enabled = true } }\n`,
+  ]) {
+    writeFiles(machine.codex, { "config.toml": toml });
+    const before = machine.state();
+
+    const outcome = machine.kodhama(["install", "grove", "--migrate"]);
+
+    assert.equal(outcome.status, 1, toml);
+    assert.match(outcome.stderr, /by hand/, toml);
+    assert.deepEqual(machine.state(), before, toml);
+  }
+});
+
+test("a project-file grove enable refuses a project-scope install, even with --migrate", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  for (const [rel, text] of [
+    [join(".claude", "settings.local.json"), '{"enabledPlugins": {"grove@grove": true}}\n'],
+    [join(".codex", "config.toml"), '[plugins."grove@grove"]\nenabled = true\n'],
+  ]) {
+    const repo = machine.project(`work-${rel.split(sep)[0].slice(1)}`);
+    writeFiles(repo, { [rel]: text });
+    const before = machine.state();
+
+    for (const args of [["install", "grove", "--scope", "project"], ["install", "grove", "--scope", "project", "--migrate"]]) {
+      const outcome = machine.kodhama(args, { cwd: repo });
+      assert.equal(outcome.status, 1, rel);
+      assert.ok(outcome.stderr.includes(join(repo, rel)), outcome.stderr);
+      assert.deepEqual(machine.state(), before, rel);
+    }
+  }
+});
+
+test("update refuses while grove is enabled, before fetching", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0", "0.4.0"]);
+  assert.equal(machine.kodhama(["install", "grove#0.3.0"]).status, 0);
+  writeFiles(machine.claude, { "settings.json": '{"enabledPlugins": {"grove@kodhama": true}}\n' });
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["update", "grove"]);
+
+  assert.equal(outcome.status, 1);
+  assert.match(outcome.stderr, /enabledPlugins\["grove@kodhama"\]/);
+  assert.deepEqual(machine.state(), before);
+});
