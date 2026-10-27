@@ -112,9 +112,9 @@ const progress = () => ({ swapped: new Set(), aside: new Map(), notes: [] });
  * @param {Places} where
  * @param {Fetched} fetched
  * @param {readonly Harness[]} harnesses
- * @param {Progress} [done]
+ * @param {Progress} [placed]
  */
-const placeSkills = (where, fetched, harnesses, done = progress()) => {
+const placeSkills = (where, fetched, harnesses, placed = progress()) => {
   for (const harness of harnesses) {
     for (const skill of fetched.skills) {
       if (isPlaced(join(where.skills(harness), skill.name), fetched, skill.name)) continue;
@@ -127,9 +127,9 @@ const placeSkills = (where, fetched, harnesses, done = progress()) => {
           writeMarker(dir, { tool: fetched.tool, skill: skill.name, tag: fetched.tag, commit: fetched.commit });
         },
         where.prev(harness, skill.name),
-        { report: (line) => done.notes.push(line), aside: (old) => done.aside.set(`${harness}/${skill.name}`, old) },
+        { report: (line) => placed.notes.push(line), aside: (old) => placed.aside.set(`${harness}/${skill.name}`, old) },
       );
-      done.swapped.add(`${harness}/${skill.name}`);
+      placed.swapped.add(`${harness}/${skill.name}`);
     }
   }
   return Object.fromEntries(fetched.skills.map((skill) => [skill.name, hashTree(skill.dir)]));
@@ -333,11 +333,11 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           }),
         ),
       );
-      const done = progress();
+      const placed = progress();
       /** Lines for each old copy the swaps so far moved to prev/. */
-      const movedOut = () => [...olds].filter(([key]) => done.swapped.has(key) && done.aside.has(key)).map(([, line]) => line);
+      const movedOut = () => [...olds].filter(([key]) => placed.swapped.has(key) && placed.aside.has(key)).map(([, line]) => line);
       try {
-        const skills = placeSkills(where, fetched, adding, done);
+        const skills = placeSkills(where, fetched, adding, placed);
         const all = HARNESSES.filter((harness) => adding.includes(harness) || entry?.harnesses.includes(harness));
         writeLock(where.lock, {
           lock: 1,
@@ -355,7 +355,7 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           ...migrated.lines,
           migrated.lines.length > 0 ? `kodhama stopped after --migrate: ${why}` : `kodhama stopped: ${why}`,
           ...movedOut(),
-          ...done.notes,
+          ...placed.notes,
         ]);
       }
       return {
@@ -365,7 +365,7 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           ...migrated.lines,
           `Installed ${tool} ${fetched.tag} (${fetched.commit}) for ${adding.join(", ")}: ${fetched.skills.map((skill) => skill.name).join(", ")}.`,
           ...movedOut(),
-          ...done.notes,
+          ...placed.notes,
         ],
       };
     });
@@ -445,11 +445,11 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
             : [];
         }),
       );
-      const done = progress();
+      const placed = progress();
       /** @type {string[]} */
       const dropped = [];
       try {
-        const skills = placeSkills(where, fetched, entry.harnesses, done);
+        const skills = placeSkills(where, fetched, entry.harnesses, placed);
         for (const skill of Object.keys(entry.skills).filter((skill) => !names.includes(skill))) {
           for (const harness of entry.harnesses) moveOut(where, tool, entry, harness, skill, dropped);
         }
@@ -463,17 +463,17 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
         return refuse([
           ...recovered,
           `kodhama stopped partway through updating ${tool} to ${fetched.tag}: ${error instanceof Error ? error.message : String(error)}`,
-          ...edits.filter(({ key }) => done.swapped.has(key)).flatMap(({ live, diff, prev }) => editLines(live, diff, prev)),
+          ...edits.filter(({ key }) => placed.swapped.has(key)).flatMap(({ live, diff, prev }) => editLines(live, diff, prev)),
           // A swap that stopped after renaming the live folder aside left
           // the old copy in the stage, where the next run's recovery moves
           // it to prev/.
           ...edits
-            .filter(({ key }) => done.aside.has(key) && !done.swapped.has(key))
+            .filter(({ key }) => placed.aside.has(key) && !placed.swapped.has(key))
             .flatMap(({ key, live, diff, prev }) => {
-              const old = /** @type {string} */ (done.aside.get(key));
+              const old = /** @type {string} */ (placed.aside.get(key));
               return [`${live}'s old copy is in ${old}; the next kodhama run moves it to ${prev}.`, ...editLines(live, diff, old)];
             }),
-          ...done.notes,
+          ...placed.notes,
           ...dropped,
           `To finish, run kodhama update ${tool}#${fetched.tag}.`,
         ]);
@@ -484,7 +484,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
           ...recovered,
           `Updated ${tool} from ${entry.tag} to ${fetched.tag} (${fetched.commit}).`,
           ...edits.flatMap(({ live, diff, prev }) => editLines(live, diff, prev)),
-          ...done.notes,
+          ...placed.notes,
           ...dropped,
         ],
       };
