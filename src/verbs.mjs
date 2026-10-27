@@ -3,7 +3,7 @@
 // fetches or writes; remove never deletes a skill folder, only moves it to
 // prev/. Every writing verb first finishes what a crashed run left staged.
 
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 import { copyFiles, isNewer, toolSource, versionOf, withTool } from "./fetch.mjs";
 import { diffTree, hashTree, readLock, writeLock } from "./lock.mjs";
@@ -435,6 +435,19 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
       if (elsewhere.length > 0) {
         return refuse([...recovered, ...finishFirst(tool, elsewhere, { tag: fetched.tag, commit: fetched.commit })]);
       }
+      // A folder the interrupted update already swapped is skipped below, so
+      // its prev/ copy is named now; a killed run never printed it. The
+      // lock's hashes tell its hand edits only while its marker is the lock's.
+      const finishing = stuck.flatMap(({ live, prev }) => {
+        if (!present(prev)) return [];
+        const skill = basename(live);
+        const marker = readMarker(prev);
+        const locked = marker?.tool === tool && marker.skill === skill && marker.tag === entry.tag && marker.commit === entry.commit;
+        return [
+          `${prev} holds the copy this update replaced${locked ? ` (${tool} ${entry.tag} per its marker)` : ""}; hand edits, if any, are there.`,
+          ...(locked ? editLines(live, diffTree(entry.skills[skill], hashTree(prev)), prev) : []),
+        ];
+      });
       if (fetched.tag === entry.tag && fetched.commit === entry.commit) {
         return { code: 0, lines: [...recovered, `${tool} is already at ${entry.tag}.`] };
       }
@@ -477,6 +490,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
         // where before anything else runs.
         return refuse([
           ...recovered,
+          ...finishing,
           `kodhama stopped partway through updating ${tool} to ${fetched.tag}: ${error instanceof Error ? error.message : String(error)}`,
           ...edits.filter(({ key }) => placed.swapped.has(key)).flatMap(({ live, diff, prev }) => editLines(live, diff, prev)),
           // A swap that stopped after renaming the live folder aside left
@@ -498,6 +512,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
         lines: [
           ...recovered,
           `Updated ${tool} from ${entry.tag} to ${fetched.tag} (${fetched.commit}).`,
+          ...finishing,
           ...edits.flatMap(({ live, diff, prev }) => editLines(live, diff, prev)),
           ...placed.notes,
           ...dropped,

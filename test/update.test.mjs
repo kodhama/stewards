@@ -3,8 +3,9 @@
 // stage folder recovered by the next run.
 
 import assert from "node:assert/strict";
-import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { test } from "node:test";
 
 import { readJson, scratch, sha256, writeFiles } from "./helpers/scratch.mjs";
@@ -587,4 +588,49 @@ test("an update whose swap fails after renaming the live folder aside names wher
   const finished = machine.kodhama(["update", "demo#0.2.0"]);
   assert.equal(finished.status, 0, finished.stderr);
   assert.equal(text(join(prev, "SKILL.md")), "beta edit\n");
+});
+
+test("an update finished after a SIGKILL names each prev/ slot holding a copy it replaced, and its hand edits", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0"]).status, 0);
+  const live = join(machine.claudeSkills, "alpha");
+  const prev = join(machine.prev, "claude", "alpha");
+  writeFileSync(join(live, "SKILL.md"), "my edit\n");
+  // A hook loaded ahead of the program sends it SIGKILL the moment alpha's
+  // old copy lands in prev/, so nothing it buffered is ever printed.
+  const hook = join(machine.root, "kill-hook.mjs");
+  writeFileSync(
+    hook,
+    [
+      'import fs from "node:fs";',
+      'import { syncBuiltinESMExports } from "node:module";',
+      "const rename = fs.renameSync;",
+      "fs.renameSync = (from, to) => {",
+      "  rename(from, to);",
+      "  if (String(to) === process.env.KILL_AFTER_RENAME_TO) process.kill(process.pid, \"SIGKILL\");",
+      "};",
+      "syncBuiltinESMExports();",
+      "",
+    ].join("\n"),
+  );
+  const killed = machine.kodhama(["update", "demo"], {
+    env: { NODE_OPTIONS: `--import=${pathToFileURL(hook).href}`, KILL_AFTER_RENAME_TO: prev },
+  });
+  assert.equal(killed.signal, "SIGKILL", killed.stderr);
+  assert.equal(killed.stdout + killed.stderr, "");
+  assert.equal(text(join(prev, "SKILL.md")), "my edit\n");
+  // The killed run's lock is left behind; it goes stale as it would in time.
+  const held = join(machine.data, "kodhama", "run.lock");
+  const old = new Date(Date.now() - 11 * 60 * 1000);
+  for (const name of readdirSync(held)) utimesSync(join(held, name), old, old);
+  utimesSync(held, old, old);
+
+  const finished = machine.kodhama(["update", "demo"]);
+
+  assert.equal(finished.status, 0, finished.stderr);
+  assert.ok(finished.stdout.includes(`${prev} holds the copy this update replaced (demo v0.1.0 per its marker); hand edits, if any, are there.`), finished.stdout);
+  assert.ok(finished.stdout.includes(`hand-edited ${join(live, "SKILL.md")}; the copy with it is in ${prev}.`), finished.stdout);
+  assert.equal(text(join(prev, "SKILL.md")), "my edit\n");
+  assert.equal(machine.kodhama(["check"]).status, 0);
 });
