@@ -579,7 +579,7 @@ test("install --migrate takes out only grove's enables and marketplace, records 
   const outcome = machine.kodhama(["install", "grove", "--migrate"]);
 
   assert.equal(outcome.status, 0, outcome.stderr);
-  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n${TOML_TAIL}`);
+  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n\n${TOML_TAIL}`);
   const before = /** @type {any} */ (JSON.parse(SETTINGS_WITH_GROVE));
   delete before.enabledPlugins["grove@grove"];
   delete before.extraKnownMarketplaces.grove;
@@ -605,7 +605,7 @@ test("install --migrate takes out only grove's enables and marketplace, records 
     receipt.files[1].removed.map((/** @type {any} */ item) => item.key),
     ['plugins."grove@grove"', 'plugins."grove@grove".settings', "marketplaces.grove"],
   );
-  assert.equal(receipt.files[1].removed.map((/** @type {any} */ item) => item.text).join(""), TOML_GROVE);
+  assert.equal(receipt.files[1].removed.map((/** @type {any} */ item) => item.text).join(""), TOML_GROVE.slice(0, -1));
   assert.deepEqual(
     receipt.files[0].removed,
     [
@@ -698,7 +698,7 @@ test("a multi-line array in grove's table cannot hide its enabled = true, and --
   machine.fakeTool("grove", ["0.3.0"]);
   const migrated = machine.kodhama(["install", "grove", "--migrate"]);
   assert.equal(migrated.status, 0, migrated.stderr);
-  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n${TOML_TAIL}`);
+  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n\n${TOML_TAIL}`);
 });
 
 test(`a quoted "enabled" key in grove's table blocks too`, (t) => {
@@ -867,7 +867,7 @@ test("a grove table shown inside a multi-line string fools neither the guard nor
 
   const migrated = machine.kodhama(["install", "grove", "--harness", "codex", "--migrate"]);
   assert.equal(migrated.status, 0, migrated.stderr);
-  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n${AGENTS}\n${TOML_TAIL}`);
+  assert.equal(readFileSync(config, "utf8"), `${TOML_HEAD}\n${AGENTS}\n\n${TOML_TAIL}`);
 });
 
 test("a branch named like the tag never stands in for it", (t) => {
@@ -915,4 +915,16 @@ test("GIT_DIR and GIT_WORK_TREE from the caller never point the temp fetch at th
   assert.equal(machine.git(outer, ["rev-parse", "HEAD"]), head);
   assert.equal(machine.git(outer, ["status", "--porcelain", "--untracked-files=all"]), "");
   assert.equal(readFileSync(join(outer, "README.md"), "utf8"), "the caller's work\n");
+});
+
+test("--migrate keeps the comment and blank lines just above the next table with that table", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  const kept = `\n# The kodhama marketplace: keep.\n[marketplaces.kodhama]\nsource = "https://github.com/kodhama/stewards"\n`;
+  writeFiles(machine.codex, { "config.toml": `[plugins."grove@grove"]\nenabled = true\n# grove's own note\nmode = "full"\n${kept}` });
+
+  const outcome = machine.kodhama(["install", "grove", "--migrate"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.equal(readFileSync(join(machine.codex, "config.toml"), "utf8"), kept);
 });

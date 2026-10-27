@@ -267,15 +267,31 @@ export const planMigration = (tool, env) => {
     const removed = [];
     let after = "";
     const rows = tomlRows(before, tool);
+    // Comment and blank lines at the end of a removed table are held back:
+    // they belong to the header after them, kept or removed with it.
+    let held = "";
+    /** @param {string} text */
+    const cut = (text) => {
+      removed[removed.length - 1] = { ...removed[removed.length - 1], text: removed[removed.length - 1].text + text };
+    };
     for (const { line, at, text, header, quoted, table } of rows) {
       if (table === undefined) {
         if (!quoted && !isComment(text) && (mention.test(text) || market.test(text))) {
           return { error: `${config} line ${at + 1} mentions ${tool} in a form kodhama does not edit; edit it by hand.` };
         }
-        after += line;
-      } else if (header) removed.push({ key: table.key, text: line });
-      else removed[removed.length - 1] = { key: table.key, text: removed[removed.length - 1].text + line };
+        after += held + line;
+        held = "";
+      } else if (header) {
+        if (held !== "") cut(held);
+        held = "";
+        removed.push({ key: table.key, text: line });
+      } else if (!quoted && isComment(text)) held += line;
+      else {
+        cut(held + line);
+        held = "";
+      }
     }
+    if (held !== "") cut(held);
     const multiline = removed.find((item) => item.text.includes('"""') || item.text.includes("'''"));
     const last = rows.at(-1);
     if (removed.length > 0 && ((last?.depth ?? 0) !== 0 || last?.open !== undefined)) {
