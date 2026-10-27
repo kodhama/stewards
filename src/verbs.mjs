@@ -226,6 +226,12 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
     // harnesses, and moving to another tag is update's.
     const done = withTool(tool, tag ?? entry?.tag, { env }, (fetched) => {
       const recovered = recoverAll(where, harnesses);
+      // An update that stopped partway is checked first, whatever install
+      // was asked to do: adding a harness whose skills folder is one the
+      // lock's harnesses already use would swap that update's copies back
+      // and leave the prev/ copies it made open to the next update.
+      const stuck = entry === undefined ? [] : interrupted(where, tool, entry, entry.harnesses);
+      if (stuck.length > 0) return refuse([...recovered, ...finishFirst(tool, stuck)]);
       if (entry !== undefined && entry.tag !== fetched.tag) {
         return refuse([
           ...recovered,
@@ -245,13 +251,10 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
       }
       const found = entry === undefined || adding.length > 0 ? [] : problems(where, tool, entry);
       if (entry !== undefined && found.length > 0) {
-        const stuck = interrupted(where, tool, entry, entry.harnesses);
         return refuse([
           ...recovered,
           ...found,
-          ...(stuck.length > 0
-            ? finishFirst(tool, stuck)
-            : [`${tool} ${entry.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`]),
+          `${tool} ${entry.tag} is installed but differs from its lock. kodhama remove ${tool} moves it to prev/, and install puts it back fresh.`,
         ]);
       }
       // What --migrate removes is every entry for the tool, enabled or not,

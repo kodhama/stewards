@@ -412,3 +412,36 @@ test("with one skills folder shared by both harnesses, update names the prev/ sl
   assert.ok(!outcome.stdout.includes(join(machine.prev, "codex")), outcome.stdout);
   assert.equal(outcome.stdout.match(/hand-edited/g)?.length, 1, outcome.stdout);
 });
+
+test("with one skills folder shared through a symlink, install --harness codex after a Claude update failed partway refuses, and the hand edit survives", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the first run with");
+    return;
+  }
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["1.1.0", "1.2.0"]);
+  mkdirSync(join(machine.home, ".agents"));
+  mkdirSync(machine.claudeSkills);
+  symlinkSync(machine.claudeSkills, machine.codexSkills);
+  assert.equal(machine.kodhama(["install", "demo#1.1.0", "--harness", "claude"]).status, 0);
+  writeFileSync(join(machine.claudeSkills, "alpha", "SKILL.md"), "alpha edit\n");
+  // The update swaps alpha, then stops at beta: its prev/ slot cannot be cleared.
+  const blocker = join(machine.prev, "claude", "beta", "ro");
+  mkdirSync(blocker, { recursive: true });
+  writeFileSync(join(blocker, "f"), "x\n");
+  chmodSync(blocker, 0o555);
+  const failed = machine.kodhama(["update", "demo#1.2.0"]);
+  chmodSync(blocker, 0o755);
+  assert.equal(failed.status, 1, failed.stdout);
+  const kept = join(machine.prev, "claude", "alpha", "SKILL.md");
+  assert.equal(text(kept), "alpha edit\n");
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["install", "demo", "--harness", "codex"]);
+
+  assert.equal(outcome.status, 1, outcome.stdout);
+  assert.ok(outcome.stderr.includes("kodhama update demo#v1.2.0"), outcome.stderr);
+  assert.match(text(join(machine.claudeSkills, "alpha", "SKILL.md")), /Alpha 1\.2\.0/);
+  assert.equal(text(kept), "alpha edit\n");
+  assert.deepEqual(machine.state(), before);
+});
