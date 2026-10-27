@@ -318,7 +318,24 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
         };
       }
 
+      // A folder marked as the tool's at another tag, such as one a lost
+      // lock no longer names, is replaced, and its copy goes to prev/. Its
+      // tag is read now, before the swap. The lock's hashes are for the
+      // lock's tag, never that one, so they cannot tell its hand edits.
+      const olds = new Map(
+        adding.flatMap((harness) =>
+          fetched.skills.flatMap(({ name }) => {
+            const live = join(where.skills(harness), name);
+            const marker = ownerOf(live, tool).state === "ours" ? readMarker(live) : undefined;
+            return marker === undefined || isPlaced(live, fetched, name)
+              ? []
+              : [[`${harness}/${name}`, `Moved ${live}, which was at ${String(marker.tag)} (${String(marker.commit)}), to ${where.prev(harness, name)}.`]];
+          }),
+        ),
+      );
       const done = progress();
+      /** Lines for each old copy the swaps so far moved to prev/. */
+      const movedOut = () => [...olds].filter(([key]) => done.swapped.has(key) && done.aside.has(key)).map(([, line]) => line);
       try {
         const skills = placeSkills(where, fetched, adding, done);
         const all = HARNESSES.filter((harness) => adding.includes(harness) || entry?.harnesses.includes(harness));
@@ -337,6 +354,7 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           ...recovered,
           ...migrated.lines,
           migrated.lines.length > 0 ? `kodhama stopped after --migrate: ${why}` : `kodhama stopped: ${why}`,
+          ...movedOut(),
           ...done.notes,
         ]);
       }
@@ -346,6 +364,7 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
           ...recovered,
           ...migrated.lines,
           `Installed ${tool} ${fetched.tag} (${fetched.commit}) for ${adding.join(", ")}: ${fetched.skills.map((skill) => skill.name).join(", ")}.`,
+          ...movedOut(),
           ...done.notes,
         ],
       };

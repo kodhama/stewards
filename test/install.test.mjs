@@ -1097,3 +1097,20 @@ test("an install that fails partway still names what recovery moved first", (t) 
   assert.ok(outcome.stderr.includes(recovered), outcome.stderr);
   assert.match(outcome.stderr, /kodhama stopped/);
 });
+
+test("an install that replaces a folder marked at another tag says it moved that copy to prev/", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0", "--harness", "claude"]).status, 0);
+  writeFiles(machine.claudeSkills, { "alpha/SKILL.md": "alpha edit\n" });
+  writeFiles(machine.data, { "kodhama/lock.json": null });
+
+  const outcome = machine.kodhama(["install", "demo", "--harness", "claude"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  for (const skill of ["alpha", "beta"]) {
+    const line = `Moved ${join(machine.claudeSkills, skill)}, which was at v0.1.0 (${tool.commit("v0.1.0")}), to ${join(machine.prev, "claude", skill)}.`;
+    assert.ok(outcome.stdout.includes(line), outcome.stdout);
+  }
+  assert.equal(readFileSync(join(machine.prev, "claude", "alpha", "SKILL.md"), "utf8"), "alpha edit\n");
+});
