@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, sep } from "node:path";
 import { test } from "node:test";
 
@@ -706,4 +706,26 @@ test(`a quoted "enabled" key in grove's table blocks too`, (t) => {
 
   assert.equal(outcome.status, 1);
   assert.match(outcome.stderr, /\[plugins\."grove@grove"\] enabled/);
+});
+
+test("--migrate edits a symlinked settings.json through its link, and keeps the receipt private", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  const settings = join(machine.claude, "settings.json");
+  const real = join(machine.home, "dotfiles", "claude-settings.json");
+  writeFiles(machine.home, { "dotfiles/claude-settings.json": SETTINGS_WITH_GROVE });
+  symlinkSync(real, settings);
+
+  const outcome = machine.kodhama(["install", "grove", "--migrate"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.ok(lstatSync(settings).isSymbolicLink(), "the link survives");
+  assert.equal(/** @type {any} */ (readJson(real)).enabledPlugins["grove@grove"], undefined);
+  const receipts = join(machine.data, "kodhama", "receipts");
+  const [name] = readdirSync(receipts);
+  const receipt = /** @type {any} */ (readJson(join(receipts, name)));
+  assert.equal(receipt.files[0].path, settings);
+  assert.equal(receipt.files[0].resolved, real);
+  assert.equal(statSync(receipts).mode & 0o777, 0o700);
+  assert.equal(statSync(join(receipts, name)).mode & 0o777, 0o600);
 });

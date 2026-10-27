@@ -6,7 +6,7 @@
 // The TOML side is line-based and refuses anything it does not recognise,
 // so it needs no parser and edits no line it was not asked to.
 
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { claudeHome, homeOf, isRecord, jsonText, sha256, stateHome, writeAtomic } from "./lock.mjs";
@@ -261,7 +261,10 @@ export const planMigration = (tool, env) => {
 /**
  * Effect: writes the receipt, with exclusive create so no earlier receipt
  * is ever overwritten, then applies each edit through a temp file, keeping
- * the file's mode. Returns the receipt's path.
+ * the file's mode. A symlinked config is written through its link, so the
+ * link survives, and the receipt names both paths. The receipt holds whole
+ * config files, which may hold secrets, so only the user can read it.
+ * Returns the receipt's path.
  * @param {string} tool
  * @param {readonly Edit[]} edits
  * @param {NodeJS.ProcessEnv} env
@@ -270,7 +273,9 @@ export const planMigration = (tool, env) => {
 export const applyMigration = (tool, edits, env) => {
   const at = new Date().toISOString().replace(/\.\d+Z$/, "Z");
   const receipt = join(stateHome(env), "receipts", `migrate-${tool}-${at.replace(/[-:]/g, "")}.json`);
-  mkdirSync(dirname(receipt), { recursive: true });
+  const resolved = edits.map(({ path }) => realpathSync(path));
+  mkdirSync(dirname(receipt), { recursive: true, mode: 0o700 });
+  chmodSync(dirname(receipt), 0o700);
   writeFileSync(
     receipt,
     jsonText({
@@ -278,16 +283,17 @@ export const applyMigration = (tool, edits, env) => {
       kind: "migrate",
       tool,
       at,
-      files: edits.map(({ path, before, after, removed }) => ({
+      files: edits.map(({ path, before, after, removed }, index) => ({
         path,
+        ...(resolved[index] === path ? {} : { resolved: resolved[index] }),
         sha256_before: sha256(before),
         sha256_after: sha256(after),
         original: before,
         removed,
       })),
     }),
-    { flag: "wx" },
+    { flag: "wx", mode: 0o600 },
   );
-  for (const { path, after } of edits) writeAtomic(path, after, statSync(path).mode & 0o7777);
+  edits.forEach(({ path, after }, index) => writeAtomic(resolved[index], after, statSync(path).mode & 0o7777));
   return receipt;
 };
