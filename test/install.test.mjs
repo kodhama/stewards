@@ -3,7 +3,7 @@
 // for GitHub.
 
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join, sep } from "node:path";
 import { test } from "node:test";
@@ -17,7 +17,7 @@ import {
   withTool,
 } from "../src/fetch.mjs";
 import { MARKER, parseManifest } from "../src/manifest.mjs";
-import { readJson, scratch, sha256, writeFiles } from "./helpers/scratch.mjs";
+import { BIN, readJson, scratch, sha256, writeFiles } from "./helpers/scratch.mjs";
 
 // What a scratch machine holds before the program runs: its empty folders.
 const UNTOUCHED = ["claude", "codex", "data", "home", "tmp"];
@@ -760,6 +760,7 @@ test("a run lock older than ten minutes is stale and taken over", (t) => {
 
   assert.equal(outcome.status, 0, outcome.stderr);
   assert.ok(!existsSync(held), "the run lock is released");
+  assert.deepEqual(readdirSync(join(machine.data, "kodhama")).filter((name) => name.startsWith("run.lock")), []);
 });
 
 test("--migrate takes out a disabled grove enable, and a grove marketplace left on its own", (t) => {
@@ -966,4 +967,44 @@ test("at project scope a folder kodhama writes into that resolves outside the re
     assert.ok(outcome.stderr.includes(`${join(repo, ".claude", "skills")} resolves outside ${repo}`), outcome.stderr);
   }
   assert.deepEqual(machine.state(), before);
+});
+
+test("a project-scope --migrate also waits on the user-scope run lock, since it edits user files", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  const repo = machine.project("work");
+  const held = join(machine.data, "kodhama", "run.lock");
+  mkdirSync(held, { recursive: true });
+
+  const outcome = machine.kodhama(["install", "grove", "--scope", "project", "--migrate"], { cwd: repo });
+
+  assert.equal(outcome.status, 1);
+  assert.ok(outcome.stderr.includes(`another kodhama run holds ${held}`), outcome.stderr);
+  assert.ok(!existsSync(join(repo, ".claude")));
+});
+
+test("SIGTERM mid-run releases the run lock and exits 143", async (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  // A git that takes its time over fetch, so the signal lands mid-run.
+  const real = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
+  const slow = join(machine.root, "slow-git");
+  writeFiles(slow, { git: `#!/bin/sh\nif [ "$1" = fetch ]; then sleep 2; fi\nexec "${real}" "$@"\n` });
+  chmodSync(join(slow, "git"), 0o755);
+  const held = join(machine.data, "kodhama", "run.lock");
+
+  const child = spawn(process.execPath, [BIN, "install", "demo"], {
+    cwd: machine.home,
+    env: { ...machine.env, PATH: `${slow}:${machine.env.PATH}` },
+    stdio: "ignore",
+  });
+  const exited = new Promise((done) => child.on("exit", (code, signal) => done({ code, signal })));
+  for (let waited = 0; !existsSync(held) && waited < 5000; waited += 20) {
+    await new Promise((done) => setTimeout(done, 20));
+  }
+  assert.ok(existsSync(held), "the run took its lock");
+  child.kill("SIGTERM");
+
+  assert.deepEqual(await exited, { code: 143, signal: null });
+  assert.ok(!existsSync(held), "the run lock is released");
 });

@@ -3,11 +3,13 @@
 // out of its folder, makes the whole lock unreadable, so no verb acts on it.
 
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
 import { withTool } from "../src/fetch.mjs";
+import { keepAlive } from "../src/lock.mjs";
+import { withRunLock } from "../src/targets.mjs";
 import { scratch, writeFiles } from "./helpers/scratch.mjs";
 
 /**
@@ -75,4 +77,28 @@ test("a lock with a tool, skill or file name that leaves its folder is refused, 
     }
     assert.deepEqual(machine.state(), before, JSON.stringify(tools));
   }
+});
+
+test("a run lock whose token is no longer ours survives our release", (t) => {
+  const machine = scratch(t);
+  const path = join(machine.data, "kodhama", "run.lock");
+
+  withRunLock(path, () => writeFileSync(join(path, "owner"), "another run\n"));
+
+  assert.ok(existsSync(join(path, "owner")));
+});
+
+test("a held run lock is refreshed before each phase, so a long run never looks stale", (t) => {
+  const machine = scratch(t);
+  const path = join(machine.data, "kodhama", "run.lock");
+  const old = new Date(Date.now() - 60 * 60 * 1000);
+
+  const refreshed = withRunLock(path, () => {
+    utimesSync(path, old, old);
+    keepAlive();
+    return statSync(path).mtimeMs;
+  });
+
+  assert.ok(Date.now() - /** @type {number} */ (refreshed) < 60 * 1000);
+  assert.ok(!existsSync(path));
 });

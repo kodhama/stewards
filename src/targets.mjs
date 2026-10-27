@@ -5,6 +5,7 @@
 // one rename, or the new copy, never half of one. The copy it replaces moves
 // to prev/, one generation per harness and skill.
 
+import { randomBytes } from "node:crypto";
 import {
   chmodSync,
   copyFileSync,
@@ -19,10 +20,11 @@ import {
   rmdirSync,
   statSync,
   symlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { dirname, join, sep } from "node:path";
 
-import { claudeHome, homeOf, isRecord, jsonText, sha256, stateHome, writeAtomic } from "./lock.mjs";
+import { claudeHome, heldRunLocks, homeOf, isRecord, jsonText, keepAlive, sha256, stateHome, writeAtomic } from "./lock.mjs";
 import { MARKER, NAME } from "./manifest.mjs";
 
 /** @typedef {"claude" | "codex"} Harness */
@@ -233,6 +235,7 @@ const pruneEmpty = (dir) => {
  * @returns {readonly string[]} a line per folder put back or moved
  */
 export const recover = (skills, harness, prev) => {
+  keepAlive();
   const stage = stageOf(skills, harness);
   if (!present(stage)) return [];
   const lines = [];
@@ -267,6 +270,7 @@ export const recover = (skills, harness, prev) => {
  * @returns {boolean} whether an old copy went to prev/
  */
 export const swapIn = (skills, harness, skill, build, prev) => {
+  keepAlive();
   const stage = stageOf(skills, harness);
   const fresh = join(stage, skill);
   const old = join(stage, `${skill}.old`);
@@ -287,33 +291,97 @@ export const swapIn = (skills, harness, skill, build, prev) => {
 // A run lock older than this is taken to be left by a run that died.
 const STALE_MS = 10 * 60 * 1000;
 
+// The file in a run lock naming the run that holds it.
+const OWNER = "owner";
+
 /**
- * Effect: takes the run lock, a folder made with exclusive create, or
- * reports it held. A stale one is taken over.
+ * Effect: the token of the run holding a run lock, if it can be read.
  * @param {string} path
  */
-const takeRunLock = (path) => {
+const tokenOf = (path) => {
   try {
-    mkdirSync(path);
-    return true;
-  } catch (error) {
-    if (/** @type {NodeJS.ErrnoException} */ (error).code !== "EEXIST") throw error;
+    return readFileSync(join(path, OWNER), "utf8");
+  } catch {
+    return undefined;
   }
-  if (Date.now() - statSync(path).mtimeMs <= STALE_MS) return false;
-  rmSync(path, { recursive: true, force: true });
+};
+
+/**
+ * Effect: makes the run lock with exclusive create and writes our token
+ * into it, or reports that it exists.
+ * @param {string} path
+ * @param {string} token
+ */
+const claim = (path, token) => {
   try {
     mkdirSync(path);
-    return true;
+  } catch (error) {
+    if (/** @type {NodeJS.ErrnoException} */ (error).code === "EEXIST") return false;
+    throw error;
+  }
+  writeFileSync(join(path, OWNER), token);
+  return true;
+};
+
+/**
+ * Effect: takes the run lock, or reports it held. A stale one is taken over
+ * by renaming it aside, which only one claimant can win; a claimant that
+ * finds it renamed a fresh lock instead puts it back and backs off.
+ * @param {string} path
+ * @param {string} token
+ */
+const takeRunLock = (path, token) => {
+  if (claim(path, token)) return true;
+  let stat;
+  try {
+    stat = statSync(path);
+  } catch {
+    return claim(path, token);
+  }
+  if (Date.now() - stat.mtimeMs <= STALE_MS) return false;
+  const seen = tokenOf(path);
+  const aside = `${path}.stale-${randomBytes(6).toString("hex")}`;
+  try {
+    renameSync(path, aside);
   } catch {
     return false;
+  }
+  if (tokenOf(aside) !== seen) {
+    try {
+      renameSync(aside, path);
+    } catch {
+      // Whoever holds it now made a fresh one; theirs stands.
+    }
+    return false;
+  }
+  rmSync(aside, { recursive: true, force: true });
+  return claim(path, token);
+};
+
+/** @type {Set<() => void>} */
+const releases = new Set();
+let trapped = false;
+
+/**
+ * Effect: on SIGINT or SIGTERM, releases every run lock still held, once,
+ * and exits 130 or 143. Recovery finishes any swap the signal cut short.
+ */
+const trapSignals = () => {
+  if (trapped) return;
+  trapped = true;
+  for (const [signal, code] of /** @type {const} */ ([["SIGINT", 130], ["SIGTERM", 143]])) {
+    process.once(signal, () => {
+      for (const release of releases) release();
+      process.exit(code);
+    });
   }
 };
 
 /**
  * Effect: runs `run` while holding the scope's run lock, so two runs never
  * recover the same stage or rewrite the same lock at once. The run lock is
- * released however `run` ends, and folders made only to hold it are
- * deleted again when they are left empty.
+ * released however `run` ends, but only while it still holds our token, and
+ * folders made only to hold it are deleted again when they are left empty.
  * @template T
  * @param {string} path
  * @param {() => T} run
@@ -321,17 +389,26 @@ const takeRunLock = (path) => {
  */
 export const withRunLock = (path, run) => {
   const made = mkdirSync(dirname(path), { recursive: true });
+  const token = `${process.pid} ${randomBytes(8).toString("hex")}\n`;
+  const release = () => {
+    if (tokenOf(path) === token) rmSync(path, { recursive: true, force: true });
+  };
   try {
-    if (!takeRunLock(path)) {
+    if (!takeRunLock(path, token)) {
       return {
         code: 1,
         lines: [`another kodhama run holds ${path}. If none is running, delete it; it also goes stale after 10 minutes.`],
       };
     }
+    trapSignals();
+    releases.add(release);
+    heldRunLocks.add(path);
     try {
       return run();
     } finally {
-      rmSync(path, { recursive: true, force: true });
+      heldRunLocks.delete(path);
+      releases.delete(release);
+      release();
     }
   } finally {
     for (let dir = dirname(path); made !== undefined && dir.startsWith(made); dir = dirname(dir)) {

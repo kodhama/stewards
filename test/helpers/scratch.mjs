@@ -28,7 +28,7 @@ import { fileURLToPath } from "node:url";
 
 // CI points this at the bin inside the extracted `npm pack` tarball, so the
 // tests run what `npx github:` installs. The program itself never reads it.
-const BIN =
+export const BIN =
   process.env.KODHAMA_BIN ??
   fileURLToPath(new URL("../../bin/kodhama.mjs", import.meta.url));
 

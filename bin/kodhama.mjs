@@ -20,3 +20,6 @@ for (const line of lines) {
   else console.error(line);
 }
 process.exitCode = code;
+// One turn of the event loop, so a SIGINT or SIGTERM that arrived while the
+// command ran is handled now (and exits 130 or 143) instead of being dropped.
+await new Promise((done) => setImmediate(done));

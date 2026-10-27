@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { copyFiles, isNewer, toolSource, versionOf, withTool } from "./fetch.mjs";
 import { diffTree, hashTree, readLock, writeLock } from "./lock.mjs";
 import { applyMigration, findEnables, guardRefusal, planMigration } from "./migrate.mjs";
-import { HARNESSES, moveTo, ownerOf, present, readMarker, recover, swapIn, withRunLock, writeMarker } from "./targets.mjs";
+import { HARNESSES, moveTo, ownerOf, places, present, readMarker, recover, swapIn, withRunLock, writeMarker } from "./targets.mjs";
 
 /** @typedef {import("./cli.mjs").Outcome} Outcome */
 /** @typedef {import("./lock.mjs").Entry} Entry */
@@ -173,7 +173,10 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
     `Run kodhama install ${tool} --migrate to take the user-level ones out, keeping a receipt, or turn them off by hand.`,
   );
   if (blocked !== undefined) return refuse(blocked);
-  return withRunLock(where.runLock, () => {
+  // --migrate edits user files, so at project scope it holds the user-scope
+  // run lock too, user first.
+  const runLocks = migrate && scope === "project" ? [places("user", env, undefined).runLock, where.runLock] : [where.runLock];
+  return runLocks.reduceRight((inner, path) => () => withRunLock(path, inner), () => {
     const read = readLock(where.lock);
     if ("error" in read) return refuse([read.error]);
     const entry = read.lock.tools[tool];
@@ -243,7 +246,7 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
       };
   });
   return "error" in done ? refuse([done.error]) : done.value;
-  });
+  })();
 };
 
 /**

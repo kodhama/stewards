@@ -14,6 +14,7 @@ import {
   readdirSync,
   renameSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
@@ -170,11 +171,26 @@ export const readLock = (path) => {
 };
 
 /**
+ * The run locks this process holds. Each is touched before every phase of a
+ * run (recovery after the fetch, each swap, the lock write), so a long run
+ * never looks stale to another.
+ * @type {Set<string>}
+ */
+export const heldRunLocks = new Set();
+
+/** Effect: marks every run lock this process holds as alive now. */
+export const keepAlive = () => {
+  const now = new Date();
+  for (const path of heldRunLocks) utimesSync(path, now, now);
+};
+
+/**
  * Effect: writes the lock, or deletes it when it holds no tool.
  * @param {string} path
  * @param {Lock} lock
  */
 export const writeLock = (path, lock) => {
+  keepAlive();
   if (Object.keys(lock.tools).length === 0) rmSync(path, { force: true });
   else writeAtomic(path, jsonText(lock));
 };
