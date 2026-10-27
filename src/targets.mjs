@@ -265,6 +265,7 @@ export const recover = (skills, harness, prev) => {
     const skill = name.slice(0, -".old".length);
     if (!name.endsWith(".old") || !NAME.test(skill)) continue;
     const live = join(skills, skill);
+    keepAlive();
     if (present(live)) {
       moveTo(join(stage, name), prev(skill), join(stage, `${name}.moved`));
       lines.push(`Moved ${join(stage, name)}, left by an interrupted run, to ${prev(skill)}.`);
@@ -274,6 +275,7 @@ export const recover = (skills, harness, prev) => {
       lines.push(`Put ${live} back from ${join(stage, name)}, left by an interrupted run.`);
     }
   }
+  keepAlive();
   for (const name of readdirSync(stage)) rmSync(join(stage, name), { recursive: true, force: true });
   pruneEmpty(stage);
   pruneEmpty(dirname(stage));
@@ -301,10 +303,17 @@ export const swapIn = (skills, harness, skill, build, prev) => {
   rmSync(fresh, { recursive: true, force: true });
   build(fresh);
   mkdirSync(skills, { recursive: true });
+  // The run lock is checked again before each step that moves or deletes a
+  // copy: a run that lost it mid-swap must leave the stage to the run that
+  // took it over, never clear a prev/ slot that run may have just filled.
+  keepAlive();
   const replaced = present(live);
   if (replaced) renameSync(live, old);
   renameSync(fresh, live);
-  if (replaced) moveTo(old, prev, `${old}.moved`);
+  if (replaced) {
+    keepAlive();
+    moveTo(old, prev, `${old}.moved`);
+  }
   pruneEmpty(stage);
   pruneEmpty(dirname(stage));
   return replaced;
@@ -344,6 +353,19 @@ const tokenOf = (path) => {
 };
 
 /**
+ * Effect: when the run holding a run lock last marked it alive, as the time
+ * of its owner file, if it can be read.
+ * @param {string} path
+ */
+const stampOf = (path) => {
+  try {
+    return statSync(join(path, RUN_LOCK_OWNER)).mtimeMs;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
  * Effect: makes the run lock with exclusive create and writes our token
  * into it, or reports that it exists.
  * @param {string} path
@@ -363,7 +385,9 @@ const claim = (path, token) => {
 /**
  * Effect: takes the run lock, or reports it held. A stale one is taken over
  * by renaming it aside, which only one claimant can win; a claimant that
- * finds it renamed a fresh lock instead puts it back and backs off.
+ * finds it renamed a fresh lock instead puts it back and backs off: one
+ * another run took over meanwhile (another token), or one its owner
+ * refreshed after the age was read (a newer or recent owner file).
  * @param {string} path
  * @param {string} token
  */
@@ -377,13 +401,15 @@ const takeRunLock = (path, token) => {
   }
   if (Date.now() - stat.mtimeMs <= STALE_MS) return false;
   const seen = tokenOf(path);
+  const seenStamp = stampOf(path);
   const aside = `${path}.stale-${randomBytes(6).toString("hex")}`;
   try {
     renameSync(path, aside);
   } catch {
     return false;
   }
-  if (tokenOf(aside) !== seen) {
+  const stamp = stampOf(aside);
+  if (tokenOf(aside) !== seen || stamp !== seenStamp || (stamp !== undefined && Date.now() - stamp <= STALE_MS)) {
     try {
       renameSync(aside, path);
     } catch {

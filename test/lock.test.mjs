@@ -10,8 +10,8 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 
 import { withTool } from "../src/fetch.mjs";
-import { keepAlive } from "../src/lock.mjs";
-import { withRunLock } from "../src/targets.mjs";
+import { heldRunLocks, keepAlive } from "../src/lock.mjs";
+import { places, recover, swapIn, withRunLock, writeMarker } from "../src/targets.mjs";
 import { scratch, writeFiles } from "./helpers/scratch.mjs";
 
 /**
@@ -191,4 +191,107 @@ test("a run whose lock another run took over during the fetch stops before it sw
   assert.ok(!existsSync(machine.codexSkills));
   assert.ok(!existsSync(machine.lock));
   assert.equal(readFileSync(join(held, "owner"), "utf8"), "another run\n");
+});
+
+/**
+ * Effect: installs demo for Claude, hand-edits alpha, and starts a swap of
+ * alpha under the user-scope run lock. Right after the new copy is renamed
+ * into place, with the hand-edited copy still in the stage as `alpha.old`,
+ * another run takes the run lock over and runs recovery, which moves that
+ * copy to prev/. `stale` decides what that run sees: with `refreshed`, the
+ * lock looked stale when it checked, but its owner refreshed it before the
+ * rename aside. The other run is another process, so it holds none of this
+ * one's run locks. Returns the swapping run's outcome, the other run's, and
+ * the prev/ slot.
+ * @param {import("node:test").TestContext} t
+ * @param {{ readonly refreshed: boolean }} stale
+ */
+const takenOverMidSwap = (t, { refreshed }) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  assert.equal(machine.kodhama(["install", "demo", "--harness", "claude"]).status, 0);
+  writeFileSync(join(machine.claudeSkills, "alpha", "SKILL.md"), "alpha edit\n");
+  const where = places("user", machine.env, undefined);
+  const skills = where.skills("claude");
+  const live = join(skills, "alpha");
+  const prev = where.prev("claude", "alpha");
+  const { renameSync, statSync } = fs;
+  /** @type {unknown} */
+  let other;
+
+  const contend = () => {
+    const ours = new Map(heldRunLocks);
+    heldRunLocks.clear();
+    // This run was suspended past the lease, so its lock looks stale.
+    const old = new Date(Date.now() - 60 * 60 * 1000);
+    utimesSync(join(where.runLock, "owner"), old, old);
+    utimesSync(where.runLock, old, old);
+    if (refreshed) {
+      // Just after the other run reads the lock's age, this run wakes and
+      // refreshes it, as it does before each phase.
+      fs.statSync = /** @type {typeof fs.statSync} */ ((/** @type {any} */ path, /** @type {any} */ ...rest) => {
+        const stat = statSync(path, ...rest);
+        if (path === where.runLock) {
+          fs.statSync = statSync;
+          syncBuiltinESMExports();
+          for (const [held, token] of ours) heldRunLocks.set(held, token);
+          keepAlive();
+          heldRunLocks.clear();
+        }
+        return stat;
+      });
+      syncBuiltinESMExports();
+    }
+    try {
+      other = withRunLock(where.runLock, () => recover(skills, "claude", (skill) => where.prev("claude", skill)));
+    } finally {
+      fs.statSync = statSync;
+      syncBuiltinESMExports();
+      heldRunLocks.clear();
+      for (const [held, token] of ours) heldRunLocks.set(held, token);
+    }
+  };
+  fs.renameSync = (from, to) => {
+    renameSync(from, to);
+    if (to === live) {
+      fs.renameSync = renameSync;
+      syncBuiltinESMExports();
+      contend();
+    }
+  };
+  syncBuiltinESMExports();
+  /** @type {unknown} */
+  let swapping;
+  try {
+    swapping = withRunLock(where.runLock, () =>
+      swapIn(skills, "claude", "alpha", (dir) => {
+        writeFiles(dir, { "SKILL.md": "Alpha new.\n" });
+        writeMarker(dir, { tool: "demo", skill: "alpha", tag: "v0.1.0", commit: "0".repeat(40) });
+      }, prev),
+    );
+  } catch (error) {
+    swapping = error;
+  } finally {
+    fs.renameSync = renameSync;
+    fs.statSync = statSync;
+    syncBuiltinESMExports();
+  }
+  return { swapping, other, prev };
+};
+
+test("a run that finds the run lock refreshed after it judged it stale puts it back and backs off, and the swap keeps the hand edit in prev/", (t) => {
+  const { swapping, other, prev } = takenOverMidSwap(t, { refreshed: true });
+
+  assert.equal(/** @type {any} */ (other)?.code, 1, String(other));
+  assert.ok(!(swapping instanceof Error), String(swapping));
+  assert.equal(readFileSync(join(prev, "SKILL.md"), "utf8"), "alpha edit\n");
+});
+
+test("a run whose run lock is taken over mid-swap stops before it touches prev/, and the hand-edited copy stays there", (t) => {
+  const { swapping, other, prev } = takenOverMidSwap(t, { refreshed: false });
+
+  assert.ok(Array.isArray(other), `the other run took the lock and recovered: ${JSON.stringify(other)}`);
+  assert.ok(swapping instanceof Error, String(swapping));
+  assert.match(swapping.message, /took over/);
+  assert.equal(readFileSync(join(prev, "SKILL.md"), "utf8"), "alpha edit\n");
 });

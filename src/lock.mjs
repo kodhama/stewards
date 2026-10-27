@@ -184,7 +184,8 @@ export const heldRunLocks = new Map();
 
 /**
  * Effect: checks that every run lock this process holds still names it,
- * and marks each as alive now. A lock another run took over stops this one.
+ * and marks each, and its owner file, as alive now. A lock another run took
+ * over stops this one.
  */
 export const keepAlive = () => {
   const now = new Date();
@@ -198,6 +199,10 @@ export const keepAlive = () => {
     if (owner !== token) {
       throw new Error(`another kodhama run took over ${path} while this one ran, so this one stopped here. Run kodhama again once no other run is going.`);
     }
+    // The owner file too: a run taking over a stale lock renames the folder
+    // aside, which may change the folder's own time but never the file's, so
+    // the file's time tells it whether the lock was refreshed meanwhile.
+    utimesSync(join(path, RUN_LOCK_OWNER), now, now);
     utimesSync(path, now, now);
   }
 };
