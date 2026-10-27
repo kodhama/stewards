@@ -24,6 +24,18 @@ import { MARKER, readManifest } from "./manifest.mjs";
 
 const GIT_TIMEOUT_MS = 5 * 60 * 1000;
 
+const REPO_VARIABLES = [
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_INDEX_FILE",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+  "GIT_COMMON_DIR",
+  "GIT_NAMESPACE",
+  "GIT_PREFIX",
+  "GIT_CEILING_DIRECTORIES",
+];
+
 // A stable release tag. Numbers carry no leading zero, as semver has it.
 const STABLE = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
@@ -189,7 +201,10 @@ export const copyFiles = (from, to, files) => {
  * @param {(fetched: Fetched) => T} use
  * @returns {{ readonly value: T } | { readonly error: string }}
  */
-export const withTool = (tool, wanted, { env, tmp = tmpdir(), source = toolSource(tool, env) }, use) => {
+export const withTool = (tool, wanted, { env: given, tmp = tmpdir(), source = toolSource(tool, given) }, use) => {
+  // Git reads these to find a repo; inherited, they would point the fetch
+  // at the caller's repo instead of the temp folder.
+  const env = Object.fromEntries(Object.entries(given).filter(([name]) => !REPO_VARIABLES.includes(name)));
   if (!isSource(source)) return { error: `${tool}'s source ${source} is not an https:// or file:// URL.` };
   const listed = git(["ls-remote", "--tags", "--", source], env);
   if (!listed.ok) return { error: `kodhama could not list the tags of ${tool} at ${source}: ${listed.out}` };

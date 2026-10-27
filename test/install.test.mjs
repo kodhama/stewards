@@ -897,3 +897,22 @@ test("a lightweight tag installs at the commit it names", (t) => {
   assert.equal(outcome.status, 0, outcome.stderr);
   assert.equal(/** @type {any} */ (readJson(machine.lock)).tools.demo.commit, tool.commit("refs/tags/v0.1.0"));
 });
+
+test("GIT_DIR and GIT_WORK_TREE from the caller never point the temp fetch at the caller's repo", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const outer = machine.project("outer");
+  writeFiles(outer, { "README.md": "the caller's work\n" });
+  machine.git(outer, ["add", "-A"]);
+  machine.git(outer, ["commit", "-q", "-m", "start"]);
+  const head = machine.git(outer, ["rev-parse", "HEAD"]);
+
+  const outcome = machine.kodhama(["install", "demo"], {
+    env: { GIT_DIR: join(outer, ".git"), GIT_WORK_TREE: outer, GIT_INDEX_FILE: join(outer, ".git", "index") },
+  });
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.equal(machine.git(outer, ["rev-parse", "HEAD"]), head);
+  assert.equal(machine.git(outer, ["status", "--porcelain", "--untracked-files=all"]), "");
+  assert.equal(readFileSync(join(outer, "README.md"), "utf8"), "the caller's work\n");
+});
