@@ -20,7 +20,7 @@ import {
   statSync,
   symlinkSync,
 } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 
 import { claudeHome, homeOf, isRecord, jsonText, sha256, stateHome, writeAtomic } from "./lock.mjs";
 import { MARKER, NAME } from "./manifest.mjs";
@@ -74,6 +74,28 @@ export const places = (scope, env, root) => {
     prev: (harness, skill) => join(state, "prev", harness, skill),
   };
 };
+
+/**
+ * Effect: each folder kodhama writes into at project scope that resolves,
+ * through a symlink, outside the repo, so a repo cannot steer a write
+ * elsewhere. One that does not exist yet is made inside it.
+ * @param {string} root the repo's real path
+ * @returns {readonly string[]}
+ */
+export const outsideRoot = (root) =>
+  [".claude", ".agents"]
+    .flatMap((harness) => [harness, join(harness, "skills"), join(harness, STAGE)])
+    .concat([".kodhama", join(".kodhama", "cli")])
+    .map((rel) => join(root, rel))
+    .filter((path) => {
+      if (!present(path)) return false;
+      try {
+        const real = realpathSync(path);
+        return real !== root && !real.startsWith(root + sep);
+      } catch {
+        return true;
+      }
+    });
 
 /**
  * Effect: whether anything, even a broken symlink, is at a path.

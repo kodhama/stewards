@@ -6,7 +6,7 @@ import { realpathSync } from "node:fs";
 
 import { git } from "./fetch.mjs";
 import { NAME } from "./manifest.mjs";
-import { HARNESSES, places } from "./targets.mjs";
+import { HARNESSES, outsideRoot, places } from "./targets.mjs";
 import { check, install, remove, update } from "./verbs.mjs";
 
 /**
@@ -184,6 +184,13 @@ export const run = async (args, cwd, env = process.env) => {
   if (command === "check") return check(parsed, context);
   // Every verb but check needs a tool, which the parser has made sure of.
   if (tool === undefined) throw new Error(`${command} needs a tool`);
+  const outside = root === undefined ? [] : outsideRoot(root);
+  if (outside.length > 0) {
+    return {
+      code: 1,
+      lines: [...outside.map((path) => `${path} resolves outside ${root}.`), "At project scope kodhama writes only inside the repo, so it wrote nothing."],
+    };
+  }
   if (command === "install") return install({ ...parsed, tool }, context);
   if (command === "update") return update({ ...parsed, tool }, context);
   return remove({ ...parsed, tool }, context);

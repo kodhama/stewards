@@ -949,3 +949,21 @@ test("a copy that fails after --migrate still names the receipt", (t) => {
   const [name] = readdirSync(receipts);
   assert.ok(outcome.stderr.includes(join(receipts, name)), outcome.stderr);
 });
+
+test("at project scope a folder kodhama writes into that resolves outside the repo refuses install and update", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0"]);
+  const repo = machine.project("work");
+  const elsewhere = join(machine.root, "elsewhere", "skills");
+  mkdirSync(elsewhere, { recursive: true });
+  mkdirSync(join(repo, ".claude"));
+  symlinkSync(elsewhere, join(repo, ".claude", "skills"));
+  const before = machine.state();
+
+  for (const verb of ["install", "update"]) {
+    const outcome = machine.kodhama([verb, "demo", "--scope", "project"], { cwd: repo });
+    assert.equal(outcome.status, 1, verb);
+    assert.ok(outcome.stderr.includes(`${join(repo, ".claude", "skills")} resolves outside ${repo}`), outcome.stderr);
+  }
+  assert.deepEqual(machine.state(), before);
+});
