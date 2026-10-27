@@ -202,3 +202,16 @@ test("a skills folder that is a symlink keeps its stage beside the real folder, 
   assert.ok(!existsSync(stage));
   assert.ok(!existsSync(join(machine.claude, ".kodhama-stage")));
 });
+
+test("update with no tag never moves down from a pre-release newer than the newest stable tag", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.10.0", "0.11.0-rc.1"]);
+  assert.equal(machine.kodhama(["install", "demo#v0.11.0-rc.1"]).status, 0);
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["update", "demo"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.match(outcome.stdout, /stays at v0\.11\.0-rc\.1.*newer than v0\.10\.0/);
+  assert.deepEqual(machine.state(), before);
+});

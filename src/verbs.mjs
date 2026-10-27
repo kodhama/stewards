@@ -5,7 +5,7 @@
 
 import { join } from "node:path";
 
-import { copyFiles, withTool } from "./fetch.mjs";
+import { copyFiles, isNewer, versionOf, withTool } from "./fetch.mjs";
 import { diffTree, hashTree, readLock, writeLock } from "./lock.mjs";
 import { applyMigration, findEnables, guardRefusal, planMigration } from "./migrate.mjs";
 import { HARNESSES, moveTo, ownerOf, present, readMarker, recover, swapIn, withRunLock, writeMarker } from "./targets.mjs";
@@ -176,7 +176,9 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
     if ("error" in read) return refuse([read.error]);
     const entry = read.lock.tools[tool];
 
-    const done = withTool(tool, tag, { env }, (fetched) => {
+    // With no tag named, an installed tool stays at its tag: install adds
+    // harnesses, and moving to another tag is update's.
+    const done = withTool(tool, tag ?? entry?.tag, { env }, (fetched) => {
       const recovered = recoverAll(where);
       if (entry !== undefined && entry.tag !== fetched.tag) {
         return refuse([
@@ -185,6 +187,12 @@ export const install = ({ tool, tag, harnesses, migrate }, { env, scope, root, w
         ]);
       }
       const adding = harnesses.filter((harness) => !entry?.harnesses.includes(harness));
+      if (entry !== undefined && adding.length > 0 && entry.commit !== fetched.commit) {
+        return refuse([
+          ...recovered,
+          `${tool} ${entry.tag} now points at ${fetched.commit}, not the ${entry.commit} installed. Run kodhama update ${tool}#${entry.tag} first, so every harness gets the same copy.`,
+        ]);
+      }
       const occupied = preflight(where, tool, adding, fetched.skills.map((skill) => skill.name));
       if (occupied.length > 0) {
         return refuse([...recovered, ...occupied, `kodhama installs only into empty paths or folders marked as ${tool}'s, so it wrote nothing.`]);
@@ -252,6 +260,14 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
     if (entry === undefined) return refuse([`${tool} is not installed here; kodhama install ${tool} installs it.`]);
 
     const done = withTool(tool, tag, { env, source: entry.source }, (fetched) => {
+      const installed = versionOf(entry.tag);
+      const newest = versionOf(fetched.tag);
+      if (tag === undefined && installed !== undefined && newest !== undefined && isNewer(installed, newest)) {
+        return {
+          code: 0,
+          lines: [`${tool} stays at ${entry.tag}, which is newer than ${fetched.tag}, the newest stable tag. Name a tag to move to it.`],
+        };
+      }
       const recovered = recoverAll(where);
       if (fetched.tag === entry.tag && fetched.commit === entry.commit) {
         return { code: 0, lines: [...recovered, `${tool} is already at ${entry.tag}.`] };

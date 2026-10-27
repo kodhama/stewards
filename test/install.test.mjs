@@ -344,7 +344,7 @@ test("install at another tag than the lock's points at update", (t) => {
   assert.equal(machine.kodhama(["install", "demo#0.1.0"]).status, 0);
   const before = machine.state();
 
-  const outcome = machine.kodhama(["install", "demo"]);
+  const outcome = machine.kodhama(["install", "demo#0.2.0"]);
 
   assert.equal(outcome.status, 1);
   assert.match(outcome.stderr, /installed at v0\.1\.0.*kodhama update demo/s);
@@ -804,4 +804,32 @@ test("settings.json that is not valid JSON blocks install, and --migrate refuses
     assert.ok(outcome.stderr.includes(`${settings}: the whole file, which is not valid JSON`), outcome.stderr);
     assert.deepEqual(machine.state(), before, args.join(" "));
   }
+});
+
+test("install with no tag that only adds a harness installs the lock's tag, not the newest", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0", "--harness", "claude"]).status, 0);
+
+  const outcome = machine.kodhama(["install", "demo", "--harness", "codex"]);
+
+  assert.equal(outcome.status, 0, outcome.stderr);
+  assert.match(readFileSync(join(machine.codexSkills, "alpha", "SKILL.md"), "utf8"), /Alpha 0\.1\.0/);
+  assert.deepEqual(/** @type {any} */ (readJson(machine.lock)).tools.demo.harnesses, ["claude", "codex"]);
+});
+
+test("adding a harness when the lock's tag now points at another commit refuses and points at update", (t) => {
+  const machine = scratch(t);
+  const tool = machine.fakeTool("demo", ["0.1.0"]);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0", "--harness", "claude"]).status, 0);
+  writeFiles(tool.path, { "skills/beta/SKILL.md": "Beta, retagged.\n" });
+  machine.git(tool.path, ["commit", "-q", "-am", "retag"]);
+  machine.git(tool.path, ["tag", "-f", "-a", "v0.1.0", "-m", "retag"]);
+  const before = machine.state();
+
+  const outcome = machine.kodhama(["install", "demo#0.1.0", "--harness", "codex"]);
+
+  assert.equal(outcome.status, 1);
+  assert.match(outcome.stderr, /kodhama update demo#v0\.1\.0/);
+  assert.deepEqual(machine.state(), before);
 });

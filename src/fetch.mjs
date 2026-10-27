@@ -65,10 +65,18 @@ export const toolSource = (tool, env) =>
  * @param {readonly number[]} a
  * @param {readonly number[]} b
  */
-const isNewer = (a, b) => {
+export const isNewer = (a, b) => {
   const at = a.findIndex((part, index) => part !== b[index]);
   return at !== -1 && a[at] > b[at];
 };
+
+/**
+ * A tag's major, minor and patch, pre-release or not, or `undefined` when
+ * it is no `vX.Y.Z` tag.
+ * @param {string} tag
+ */
+export const versionOf = (tag) =>
+  /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/.exec(tag)?.slice(1).map(Number);
 
 /**
  * The tag to install: the one asked for, if the repo has it; otherwise the
