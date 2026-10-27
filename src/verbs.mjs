@@ -71,8 +71,24 @@ const handEdits = (live, locked, prev) =>
   );
 
 /**
+ * Effect: whether a skill folder already holds the fetched copy, marked at
+ * its tag and commit, as an interrupted run leaves the folders it swapped.
+ * @param {string} live
+ * @param {Fetched} fetched
+ * @param {string} skill
+ */
+const isPlaced = (live, fetched, skill) => {
+  const marker = readMarker(live);
+  return (
+    marker?.tool === fetched.tool && marker.skill === skill && marker.tag === fetched.tag && marker.commit === fetched.commit
+  );
+};
+
+/**
  * Effect: copies every fetched skill into each harness, marked, through the
- * stage; old copies go to prev/. Returns the lock's record of the skills.
+ * stage; old copies go to prev/. A folder an interrupted run already swapped
+ * is left as it is, so the prev/ copy it made, hand edits and all, is not
+ * replaced by the new copy. Returns the lock's record of the skills.
  * @param {Places} where
  * @param {Fetched} fetched
  * @param {readonly Harness[]} harnesses
@@ -80,6 +96,7 @@ const handEdits = (live, locked, prev) =>
 const placeSkills = (where, fetched, harnesses) => {
   for (const harness of harnesses) {
     for (const skill of fetched.skills) {
+      if (isPlaced(join(where.skills(harness), skill.name), fetched, skill.name)) continue;
       swapIn(
         where.skills(harness),
         skill.name,
@@ -248,7 +265,7 @@ export const update = ({ tool, tag }, { env, scope, root, where }) => {
         names.flatMap((skill) => {
           const live = join(where.skills(harness), skill);
           const locked = entry.skills[skill];
-          return locked !== undefined && ownerOf(live, tool).state === "ours"
+          return locked !== undefined && ownerOf(live, tool).state === "ours" && !isPlaced(live, fetched, skill)
             ? handEdits(live, locked, where.prev(harness, skill))
             : [];
         }),

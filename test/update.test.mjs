@@ -3,7 +3,7 @@
 // stage folder recovered by the next run.
 
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, writeFileSync, existsSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -154,4 +154,31 @@ test("two projects updated at project scope keep their old copies in separate pr
     assert.equal(text(join(machine.prev, "projects", keys[at], "codex", "beta", "SKILL.md")), `edited in ${repo}\n`);
   });
   assert.ok(!existsSync(join(machine.prev, "codex")), "project updates leave the user slots alone");
+});
+
+test("an update retried after it failed partway keeps the hand-edited copy in prev/", (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("root writes into the read-only folder this test fails the first run with");
+    return;
+  }
+  const machine = scratch(t);
+  machine.fakeTool("demo", ["0.1.0", "0.2.0"]);
+  assert.equal(machine.kodhama(["install", "demo#0.1.0"]).status, 0);
+  writeFileSync(join(machine.claudeSkills, "alpha", "SKILL.md"), "my edit\n");
+  // Claude's skills swap first; Codex's stage cannot be made, so the run
+  // stops with Claude at v0.2.0, Codex at v0.1.0 and the lock at v0.1.0.
+  const agents = join(machine.home, ".agents");
+  chmodSync(agents, 0o555);
+  const failed = machine.kodhama(["update", "demo"]);
+  chmodSync(agents, 0o755);
+  assert.equal(failed.status, 1, failed.stdout);
+  assert.match(text(join(machine.claudeSkills, "alpha", "SKILL.md")), /Alpha 0\.2\.0/);
+
+  const retried = machine.kodhama(["update", "demo"]);
+
+  assert.equal(retried.status, 0, retried.stderr);
+  assert.equal(text(join(machine.prev, "claude", "alpha", "SKILL.md")), "my edit\n");
+  assert.match(text(join(machine.codexSkills, "alpha", "SKILL.md")), /Alpha 0\.2\.0/);
+  assert.equal(/** @type {any} */ (readJson(machine.lock)).tools.demo.tag, "v0.2.0");
+  assert.equal(machine.kodhama(["check"]).status, 0);
 });
