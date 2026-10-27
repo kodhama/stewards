@@ -790,3 +790,18 @@ test("--migrate takes out a disabled grove enable, and a grove marketplace left 
     assert.match(outcome.stdout, /claude plugin marketplace remove grove/, name);
   }
 });
+
+test("settings.json that is not valid JSON blocks install, and --migrate refuses to touch it", (t) => {
+  const machine = scratch(t);
+  machine.fakeTool("grove", ["0.3.0"]);
+  const settings = join(machine.claude, "settings.json");
+  writeFiles(machine.claude, { "settings.json": '{"enabledPlugins": {"grove@grove": true},\n' });
+  const before = machine.state();
+
+  for (const args of [["install", "grove"], ["install", "grove", "--migrate"]]) {
+    const outcome = machine.kodhama(args);
+    assert.equal(outcome.status, 1, args.join(" "));
+    assert.ok(outcome.stderr.includes(`${settings}: the whole file, which is not valid JSON`), outcome.stderr);
+    assert.deepEqual(machine.state(), before, args.join(" "));
+  }
+});
