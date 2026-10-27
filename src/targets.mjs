@@ -78,9 +78,11 @@ export const places = (scope, env, root) => {
 };
 
 /**
- * Effect: each folder kodhama writes into at project scope that resolves,
- * through a symlink, outside the repo, so a repo cannot steer a write
- * elsewhere. One that does not exist yet is made inside it.
+ * Effect: a line for each folder kodhama writes into at project scope that
+ * resolves, through a symlink, outside the repo, so a repo cannot steer a
+ * write elsewhere. A skills folder must resolve strictly inside it, since
+ * its stage sits beside the folder it really is. One that does not exist
+ * yet is made inside it.
  * @param {string} root the repo's real path
  * @returns {readonly string[]}
  */
@@ -88,15 +90,18 @@ export const outsideRoot = (root) =>
   [".claude", ".agents"]
     .flatMap((harness) => [harness, join(harness, "skills"), join(harness, STAGE)])
     .concat([".kodhama", join(".kodhama", "cli")])
-    .map((rel) => join(root, rel))
-    .filter((path) => {
-      if (!present(path)) return false;
+    .flatMap((rel) => {
+      const path = join(root, rel);
+      if (!present(path)) return [];
+      let real;
       try {
-        const real = realpathSync(path);
-        return real !== root && !real.startsWith(root + sep);
+        real = realpathSync(path);
       } catch {
-        return true;
+        return [`${path} resolves outside ${root}`];
       }
+      if (real.startsWith(root + sep)) return [];
+      if (real !== root) return [`${path} resolves outside ${root}`];
+      return rel.endsWith("skills") ? [`${path} resolves to ${root} itself, so its stage would sit outside it`] : [];
     });
 
 /**

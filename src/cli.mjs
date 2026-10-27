@@ -188,7 +188,7 @@ export const run = async (args, cwd, env = process.env) => {
   if (outside.length > 0) {
     return {
       code: 1,
-      lines: [...outside.map((path) => `${path} resolves outside ${root}.`), "At project scope kodhama writes only inside the repo, so it wrote nothing."],
+      lines: [...outside.map((why) => `${why}.`), "At project scope kodhama writes only inside the repo, so it wrote nothing."],
     };
   }
   if (command === "install") return install({ ...parsed, tool }, context);

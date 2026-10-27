@@ -951,22 +951,51 @@ test("a copy that fails after --migrate still names the receipt", (t) => {
   assert.ok(outcome.stderr.includes(join(receipts, name)), outcome.stderr);
 });
 
-test("at project scope a folder kodhama writes into that resolves outside the repo refuses install and update", (t) => {
-  const machine = scratch(t);
-  machine.fakeTool("demo", ["0.1.0"]);
-  const repo = machine.project("work");
-  const elsewhere = join(machine.root, "elsewhere", "skills");
-  mkdirSync(elsewhere, { recursive: true });
-  mkdirSync(join(repo, ".claude"));
-  symlinkSync(elsewhere, join(repo, ".claude", "skills"));
-  const before = machine.state();
+test("at project scope each folder kodhama writes into that resolves outside the repo refuses install, update and remove", (t) => {
+  for (const rel of [
+    ".claude",
+    join(".claude", "skills"),
+    join(".claude", ".kodhama-stage"),
+    ".agents",
+    join(".agents", "skills"),
+    join(".agents", ".kodhama-stage"),
+    ".kodhama",
+    join(".kodhama", "cli"),
+  ]) {
+    const machine = scratch(t);
+    machine.fakeTool("demo", ["0.1.0"]);
+    const repo = machine.project("work");
+    const elsewhere = join(machine.root, "elsewhere");
+    mkdirSync(elsewhere);
+    mkdirSync(dirname(join(repo, rel)), { recursive: true });
+    symlinkSync(elsewhere, join(repo, rel));
+    const before = machine.state();
 
-  for (const verb of ["install", "update"]) {
-    const outcome = machine.kodhama([verb, "demo", "--scope", "project"], { cwd: repo });
-    assert.equal(outcome.status, 1, verb);
-    assert.ok(outcome.stderr.includes(`${join(repo, ".claude", "skills")} resolves outside ${repo}`), outcome.stderr);
+    for (const verb of ["install", "update", "remove"]) {
+      const outcome = machine.kodhama([verb, "demo", "--scope", "project"], { cwd: repo });
+      assert.equal(outcome.status, 1, `${verb} ${rel}`);
+      assert.ok(outcome.stderr.includes(`${join(repo, rel)} resolves outside ${repo}`), `${verb} ${rel}: ${outcome.stderr}`);
+    }
+    assert.deepEqual(machine.state(), before, rel);
   }
-  assert.deepEqual(machine.state(), before);
+});
+
+test("at project scope a skills folder that resolves to the repo itself is refused, since its stage would sit outside", (t) => {
+  for (const harness of [".claude", ".agents"]) {
+    const machine = scratch(t);
+    machine.fakeTool("demo", ["0.1.0"]);
+    const repo = machine.project("work");
+    mkdirSync(join(repo, harness));
+    symlinkSync("..", join(repo, harness, "skills"));
+    const before = machine.state();
+
+    const outcome = machine.kodhama(["install", "demo", "--scope", "project"], { cwd: repo });
+
+    assert.equal(outcome.status, 1, harness);
+    assert.ok(outcome.stderr.includes(`${join(repo, harness, "skills")} resolves to ${repo} itself`), outcome.stderr);
+    assert.deepEqual(machine.state(), before, harness);
+    assert.ok(!existsSync(join(dirname(repo), ".kodhama-stage")), harness);
+  }
 });
 
 test("a project-scope --migrate also waits on the user-scope run lock, since it edits user files", (t) => {
