@@ -5,10 +5,27 @@ status: approved  # maintainer intent act 2026-08-29, in session: "Remove conduc
 depends_on: [kodhama-0027, kodhama-0030-install-door-serves-trellis-only, kodhama-0031-work-leaves-github-issues]
 owner: agent
 updated: 2026-08-29
+superseded_in_part_by: [kodhama-0033-hub-and-spoke-topology]  # 2026-10-27 — the premise that this repository is the hub that keeps the decisions; D1-D5 stand
 provenance: "maintainer direction, 2026-08-29, given after being shown that kodhama-0027 D5 forbids deleting briefs and that .grove/lifecycle.md forbids editing superseded content away. Both were quoted; the direction was repeated with the alternative named as an unassisted hard delete."
 ---
 
 # 0032 — the hub keeps decisions and the door, and stops keeping the rest
+
+> **Superseded in part by `kodhama-0033-hub-and-spoke-topology`** (2026-10-27,
+> post-ratification annotation; text below preserved as written). The record
+> lives in `kodhama/kodhama` (`decisions/0033-hub-and-spoke-topology.md`).
+> **This repository stops being the hub.** `kodhama/kodhama` becomes the
+> suite's hub and takes in these decisions under their existing ids (0033 D1,
+> D6). The CLI and the `kodhama` marketplace go to `kodhama/cli`.
+> This repository is to become `kodhama/cli` (0033 D6: renamed, or, if the
+> rename's redirect test fails, replaced by a fresh `kodhama/cli` with this
+> repository frozen).
+> **D1–D5 stand.** The deletions were carried out. Grove's return does not
+> restore the installed lifecycle charter D3 removed. Git history is still
+> the archive, and ratified decisions keep their dangling references unedited.
+> The local decline of the charter's terminal clause rested on grove being
+> retired here. Whether that clause binds this repository again now that
+> grove returns is left open (0033, What this does not decide).
 
 ## Decision
 

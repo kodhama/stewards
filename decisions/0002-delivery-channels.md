@@ -3,7 +3,7 @@ id: kodhama-0002-delivery-channels
 type: decision
 status: approved  # ratified by PR #1 merge (2026-07-07); names read through kodhama-0003-family-naming
 depends_on: [kodhama-0001-family-delivery]
-superseded_in_part_by: [kodhama-0009-org-topology-spirit-stewards-trees]  # 2026-07-15 — §Decision 2's host-repo clause only ("in kodhama/kodhama"); the one-marketplace principle and the "kodhama" name stand
+superseded_in_part_by: [kodhama-0009-org-topology-spirit-stewards-trees, kodhama-0033-hub-and-spoke-topology]  # 2026-07-15 — §Decision 2's host-repo clause only ("in kodhama/kodhama"); the one-marketplace principle and the "kodhama" name stand; 0033 (2026-10-27) — §Decision 1's org-wide-CLI rejection; §Decision 3, the matrix row and the §5 block for espalier/grove; §Decision 2's one door, narrowed to plugins; the 0017 annotation's thin install-door boundary, for the CLI
 owner: agent
 updated: 2026-07-07
 provenance: maintainer review session 2026-07-07 — re-examination of family delivery prompted by espalier's interim vendoring UX; ratifies 0001's core and answers its marketplace open question
@@ -71,6 +71,32 @@ provenance: maintainer review session 2026-07-07 — re-examination of family de
 > org marketplace was "now the only door", and 0030 closes that door for
 > grove and wisp without opening a replacement. `kodhama-0030` §Cost 1 records
 > the gap.
+
+> **Superseded in part by `kodhama-0033-hub-and-spoke-topology`** (2026-10-27,
+> post-ratification annotation; text below preserved as written). The record
+> lives in `kodhama/kodhama` (`decisions/0033-hub-and-spoke-topology.md`).
+> **§Decision 1's rejection of an org-wide CLI is superseded.** It rejected the
+> idea because "it recreates release-cadence coupling and reintroduces a
+> binary for products that don't need one", and 0033 D8 answers both grounds.
+> The kodhama CLI bundles nothing: it fetches each tool from its own
+> repository at that tool's own tag. Beyond each tool's own files, the only
+> thing it installs is the cluster helper, a command grove now needs.
+> **Grove (espalier) is no longer "never a binary, and no npx".** That covers
+> §Decision 3, the channel matrix's espalier row ("org marketplace + composed
+> overlay — never a binary, no npx") and §5's espalier install block. Under
+> 0033 D7, grove installs through that CLI, run with `npx` from GitHub.
+> **§Decision 2's "canonical install front door" narrows to plugins.** The
+> org marketplace stays the one door for plugins, and the CLI is a second
+> door, for harness-installed tools such as grove, which the marketplace does
+> not list (0033 D7). The 0017 annotation below says "This decision's thin
+> install-door boundary stands, with only the narrower future exception
+> authorized by `kodhama-0017`". It gives way as 0017's "thin install-door
+> role" does, because this repository also carries the CLI.
+> **The one-door principle for plugins, the marketplace name `kodhama`, and
+> the other rows stand.**
+> This repository is to become `kodhama/cli` (0033 D6: renamed, or, if the
+> rename's redirect test fails, replaced by a fresh `kodhama/cli` with this
+> repository frozen).
 
 **Context (maintainer, 2026-07-07).** Espalier's current delivery
 ("vendor the charters by hand", espalier README §Adopting) reads as

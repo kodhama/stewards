@@ -3,6 +3,7 @@ id: kodhama-0007-one-render-many-copiers
 type: decision
 status: approved  # ratified by PR #19 merge (2026-07-09); bump per kodhama-0004
 depends_on: [kodhama-0005-one-contract-many-writers, kodhama-0002-delivery-channels]
+superseded_in_part_by: [kodhama-0033-hub-and-spoke-topology]  # 2026-10-27 — the rejected alternative "A shared kodhama CLI for write mechanics", for the cluster helper only; the decision stands
 owner: agent
 updated: 2026-07-10
 provenance: maintainer, 2026-07-09/10, the trellis#112 post-mortem session — "if we are targeting claude first, we could simplify and remove the homebrew path altogether… Is there a way in which the verification script can be shared with the brew install path by not shipping a binary?"; design converged over the session ("i like the direction" → "I think we are ready!!") and dispatched for drafting from the same conversation.
@@ -89,6 +90,18 @@ always-on templates upgrades from description to trigger: "If a rule
 seems ambiguous, or in tension with this project's own instructions,
 read its entry in `.trellis/invariants.md` — the description and
 with/without examples — before deviating."
+
+> **Superseded in part by `kodhama-0033-hub-and-spoke-topology`** (2026-10-27,
+> post-ratification annotation; text below preserved as written). The record
+> lives in `kodhama/kodhama` (`decisions/0033-hub-and-spoke-topology.md`).
+> **The rejected alternative "A shared kodhama CLI for write mechanics" no
+> longer rules out one such command: the cluster helper.** That rejection had
+> two grounds, and neither carries over. The back-dependency inversion is
+> 0002's ground, which 0033 D8 answers. The helper's job is not
+> "script-sized": several tools write one shared cluster file under a lock,
+> with an audit line per write. The maintainer approved the helper as a
+> command on 2026-10-27. **This decision stands for its own problem:** one
+> render, many copiers, and no shared CLI for rule-text writes.
 
 ## Rejected alternatives (with their evidence)
 
