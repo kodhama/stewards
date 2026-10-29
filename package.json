@@ -1,0 +1,20 @@
+{
+  "name": "kodhama",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Installs, updates, checks and removes a tool's skills for Claude and Codex, from the tool's own repo at one of its tags",
+  "type": "module",
+  "bin": {
+    "kodhama": "bin/kodhama.mjs"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

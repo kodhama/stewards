@@ -7,15 +7,21 @@ and the **install door**. What belongs here is settled by the rules below, not
 by that list.
 
 <!-- distribution-scope:begin -->
-The install door includes the host-native Claude and Codex catalogs. Both
-catalogs list `trellis` and nothing else, sourced from the repository that
-owns it. This repository **originates no plugin**: the `kodhama` package it
-used to carry was deleted along with its listing (`kodhama-0030`), and grove
-and wisp were delisted in the same act. That is a description of present
-contents, not a scope: it moves when the contents move. The install door does
-not certify product releases or support and owns no universal version, tag,
-release-history, approval, runtime-sandbox, cross-repository-resolution, or
-effective-support machinery.
+The repository root is the `kodhama` command (`package.json`, `bin/`,
+`src/`), run as `npx -y github:kodhama/stewards#v<version>`. It installs,
+updates, checks and removes a tool's skills for Claude and Codex by cloning
+that tool's own repository at one of the tool's tags. It bundles no tool's
+content, and its own tag never pins a tool's tag. The install door also
+includes the host-native Claude and Codex catalogs. Both catalogs list
+`trellis` and nothing else, sourced from the repository that owns it. This
+repository **originates no plugin**: the `kodhama` package it used to carry
+was deleted along with its listing (`kodhama-0030`), and grove and wisp were
+delisted in the same act. That is a description of present contents, not a
+scope: it moves when the contents move. Neither the command nor the catalogs
+certify product releases or support. Apart from the command's own tag
+lookup and `kodhama.json` contract (`kodhama-0033`), the repository owns no
+universal version, tag, release-history, approval, runtime-sandbox,
+cross-repository-resolution, or effective-support machinery.
 <!-- distribution-scope:end -->
 
 Decisions here keep the `kodhama-NNNN` id namespace — collective (steward)
@@ -59,11 +65,14 @@ retired from this catalog and no door is planned (`kodhama-0030`), so grove
 reaches this repo by an already-installed copy or a direct source install.
 Two placeholders are resolved locally.
 
-The test gate is `python3 -m unittest discover -s tests` — run it before
-reporting done. CI runs it on any PR touching `tests/`, either marketplace
-catalog, `.claude/settings.json`, or the validation workflow, and on nothing
-else. The Claude review and the parity job carry no `paths:` filter and run on
-every PR. There is no typecheck gate.
+The test gates are `python3 -m unittest discover -s tests` and `npm test`
+(the `kodhama` command's suite: Node >=20, no dependencies) — run both before
+reporting done. `test.yml` runs both on every PR and every push to `main`,
+with no `paths:` filter: `npm test` against the packed tarball on Node 20 and
+the current LTS, and the Python suite. The validation workflow also runs the
+Python suite, on any PR touching `tests/`, either marketplace catalog,
+`.claude/settings.json`, or that workflow. The Claude review and the parity
+job carry no `paths:` filter and run on every PR. There is no typecheck gate.
 
 <!-- grove:begin (managed by grove — dials live in .grove/, not this block) -->
 Load the complete driving-session dispatcher from `${CLAUDE_PLUGIN_ROOT}/reference/charters/dispatcher.md` in this current task.

@@ -171,12 +171,10 @@ class RepositoryShapeTests(unittest.TestCase):
         thing", because a paraphrase is how one copy quietly outlives the
         others.
 
-        **Disclosed limit:** none of the three files is in the CI `paths:`
-        filter, so this fires on any PR that also touches a gated path — and
-        not on a PR editing only `CLAUDE.md`. Putting them in the filter would
-        drag `CLAUDE.md` and `README.md` into the test gate, which is the cost
-        the narrow-filter ruling declines to pay for a prose edit. The residual
-        gap is inherent, not overlooked.
+        None of the three files is in the validation workflow's `paths:`
+        filter, so that workflow alone would miss a PR editing only
+        `CLAUDE.md`. `test.yml` closes the gap: its Python job carries no
+        `paths:` filter and runs this suite on every PR.
         """
         begin = "<!-- distribution-scope:begin -->"
         end = "<!-- distribution-scope:end -->"
